@@ -25,7 +25,7 @@ cfl = 0.3;
 %% Define grid
 
 % Grid size
-x_size = 200e-3; % m
+x_size = 100e-3; % m
 y_size = x_size;
 
 dx = c0 / f0 / ppw;

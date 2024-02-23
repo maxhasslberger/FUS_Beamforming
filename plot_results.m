@@ -1,4 +1,4 @@
-function plot_results(kgrid, data)
+function plot_results(kgrid, data, plot_title)
 
 % figure;
 % plot(kgrid.x_vec*1e3, amp_on_axis*1e-6, 'b.');
@@ -21,6 +21,6 @@ colormap('turbo');
 xlabel('Axial Position');
 ylabel('Lateral Position');
 axis image;
-title('Pressure Field');
+title(plot_title);
 
 end
