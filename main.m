@@ -17,60 +17,25 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 % karray.addAnnularArray(bowl_pos, source_roc, diameters, focus_pos);
 
 % Linear Array
-
 num_elements = 21;
-x_offset = 25;
-spacing = 1;
-t_mask = zeros(kgrid.Nx, kgrid.Ny);
-start_index = kgrid.Ny/2 - round(num_elements/2) * spacing + 1;
-t_mask(x_offset, start_index:spacing:start_index + num_elements * spacing - 1) = 1;
+x_offset = 25; % grid points
+spacing = 1; % grid points between elements
 
+create_linear_array(kgrid, num_elements, x_offset, spacing);
 
-% if kgrid.dim == 2
-%     n_elements = 10;
-%     element_pitch = 10e-3; % m
-%     translation = [0, 0];
-%     rotation = 0;
-%     element_width = 1e-3;
-%     
-%     % add rectangular array elements
-%     for ind = 1:n_elements
-%         
-%         % set element y position
-%         x_pos = 0 - (n_elements * element_pitch / 2 - element_pitch / 2) + (ind - 1) * element_pitch;
-%         
-%         % add element (set rotation angle to match the global rotation angle)
-%         karray_t.addRectElement([x_pos, kgrid.y_vec(1)], element_width, element_width, rotation);
-%         
-%     end
-% end
-% 
-% karray_t.setArrayPosition(translation, rotation)
-% t_mask = karray_t.getArrayBinaryMask(kgrid);
 
 %% Define (intracranial) Beamforming Pattern
 
 
 if kgrid.dim == 2
-    % Ring
 
+    % Ring
     b_mask = makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 10, false) ...
         - makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 5, false);
-
-%     karray_b = kWaveArray();
-%     r = 25e-3;
-%     dia = 50e-3;
-%     pos = [0, r];
-%     foc = [0, 1e-3];
-% 
-%     karray_b.addArcElement(+pos, r, dia, +foc)
-%     karray_b.addArcElement(-pos, r, dia, -foc)
 else
     
 end
 
-% b_mask = karray_b.getArrayBinaryMask(kgrid);
-imagesc(b_mask)
 
 amp = 30000 * ones(sum(b_mask(:)), 1);
 phase = zeros(length(amp), 1); % Zero phase for entire observation plane
