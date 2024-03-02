@@ -21,7 +21,7 @@ num_elements = 21;
 x_offset = 25; % grid points
 spacing = 1; % grid points between elements
 
-create_linear_array(kgrid, num_elements, x_offset, spacing);
+t_mask = create_linear_array(kgrid, num_elements, x_offset, spacing);
 
 
 %% Define (intracranial) Beamforming Pattern
@@ -47,14 +47,14 @@ imagesc(b_mask + t_mask)
 
 %% Time Reversal
 
-p_tr = sim_exe(kgrid, medium, f0, karray_b, b_des, b_mask, t_mask, input_args);
-p_tr = conj(p_tr);
-b_tr = sim_exe(kgrid, medium, f0, karray_t, p_tr, t_mask, b_mask, input_args);
+% p_tr = sim_exe(kgrid, medium, f0, b_des, b_mask, t_mask, input_args);
+% p_tr = conj(p_tr);
+% b_tr = sim_exe(kgrid, medium, f0, p_tr, t_mask, b_mask, input_args);
 
 %% Inverse Problem
 
 % Obtain propagation operator
-A = obtain_propagation_operator(t_mask, b_mask); % acousticFieldPropagator (Green's functions) vs. angularSpectrum vs. focus function?
+A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx); % acousticFieldPropagator (Green's functions)
 
 p_ip = pinv(A) * b_des;
 b_ip = sim_exe(kgrid, medium, f0, p_ip, t_mask, b_mask, input_args);
