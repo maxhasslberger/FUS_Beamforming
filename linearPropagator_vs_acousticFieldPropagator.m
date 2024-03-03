@@ -1,4 +1,4 @@
-function A = linearPropagator_vs_acousticFieldPropagator(t_mask, b_mask, f0, sound_speed, dx) % for now entire plane instead of only b_mask
+function A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, sound_speed, dx) % for now entire plane instead of only b_mask
 
 if min(sound_speed(:)) == max(sound_speed(:))
     amp_in = t_mask * 1.0;

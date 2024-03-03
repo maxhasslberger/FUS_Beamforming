@@ -1,4 +1,4 @@
-function A = obtain_linear_propagator(t_mask, b_mask, f0, sound_speed, dx) % for now entire plane instead of only b_mask
+function A = obtain_linear_propagator(t_mask, b_mask, f0, sound_speed, dx)
 
 if min(sound_speed(:)) == max(sound_speed(:))
 
@@ -6,6 +6,7 @@ if min(sound_speed(:)) == max(sound_speed(:))
     phase_in = 0;
     el_ids = find(t_mask);
     obs_ids = find(b_mask);
+%     obs_ids = 1:numel(t_mask);
     
     A = zeros(numel(obs_ids), numel(el_ids));
     for i = 1:length(el_ids)
@@ -20,9 +21,9 @@ else
     error("Only linear media supported at the moment!")
 end
 
-figure;
-imagesc(abs(A))
-title("A")
-colorbar;
+% figure;
+% imagesc(abs(A))
+% title("A")
+% colorbar;
 
 end

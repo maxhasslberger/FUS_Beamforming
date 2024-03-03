@@ -1,12 +1,17 @@
-function plot_results(kgrid, data, plot_title)
+function plot_results(kgrid, excitation, data, plot_title)
 
-% figure;
-% plot(kgrid.x_vec*1e3, amp_on_axis*1e-6, 'b.');
-% set(gca, 'XLim', [0, kgrid.Nx*kgrid.dx] * 1e3);
-% xlabel('Axial Position [mm]');
-% ylabel('Pressure [MPa]');
-% title('Axial Pressure');
+% Plot magnitude and phase of array elements
+figure;
+subplot(2, 1, 1)
+plot(abs(excitation))
+title(plot_title);
 
+subplot(2, 1, 2)
+plot(rad2deg(angle(excitation)))
+xlabel('Element #')
+ylabel('deg')
+
+% Plot result plane
 if kgrid.dim == 2
     p_data = abs(data);
 else
@@ -16,11 +21,13 @@ end
 
 % plot the pressure field 
 figure;
-imagesc(kgrid.x_vec, kgrid.y_vec, p_data);
+imagesc(p_data);
+% imagesc(kgrid.x_vec, kgrid.y_vec, p_data);
 colormap('turbo');
 xlabel('Axial Position');
 ylabel('Lateral Position');
 axis image;
 title(plot_title);
+colorbar;
 
 end
