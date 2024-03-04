@@ -1,8 +1,10 @@
 function p = post_processing(kgrid, f0, data, plot_flag)
 
-% extract amplitude and phase from the sensor data
-[amp, phase] = extractAmpPhase(data, 1/kgrid.dt, f0, ...
-    'Dim', 2, 'Window', 'Rectangular', 'FFTPadding', 1);
+% % extract amplitude and phase from the sensor data
+% [amp, phase] = extractAmpPhase(data, 1/kgrid.dt, f0, ...
+%     'Dim', 2, 'Window', 'Rectangular', 'FFTPadding', 1);
+amp = max(abs(data), [], 2);
+phase = zeros(length(amp), 1);
 
 % reshape data
 Nx = kgrid.Nx;

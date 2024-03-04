@@ -1,6 +1,7 @@
 function [kgrid, medium, ppp] = init_grid_medium(f0, varargin)
 
 n_dim = 2;
+dx_factor = 1.0;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -9,6 +10,8 @@ if ~isempty(varargin)
                 n_dim = varargin{arg_idx+1};
             case 'ct_scan'
                 ct_scan = varargin{arg_idx+1};
+            case 'dx_factor'
+                dx_factor = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -29,6 +32,7 @@ x_size = 100e-3; % m
 y_size = x_size;
 
 dx = c0 / f0 / ppw;
+dx = dx * dx_factor;
 
 Nx = round(x_size/dx);
 Ny = round(y_size/dx);
@@ -44,7 +48,7 @@ elseif n_dim == 3
     N = [N, Nz];
 
     kgrid = kWaveGrid(Nx, dx, Ny, dx, Nz, dx);
-    add_z = kgrid.z_size.^2;
+    add_z = kgrid.z_size.^2; % -> t_end
 end
 
 % Time
