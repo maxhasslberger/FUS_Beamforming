@@ -27,6 +27,7 @@ colormap('turbo');
 xlabel('Axial Position');
 ylabel('Lateral Position');
 axis image;
+% clim([0 30000])
 title(plot_title);
 colorbar;
 

@@ -1,4 +1,4 @@
-function p = sim_exe(kgrid, medium, f0, p_in, source_mask, sensor_mask, plot_flag, input_args)
+function p = sim_exe(kgrid, medium, f0, p_in, source_mask, sensor_mask, final_sim, input_args)
 
 %% Source
 
@@ -18,6 +18,6 @@ else
     sensor_data = kspaceFirstOrder3DC(kgrid, medium, source, sensor, input_args{:});
 end
 
-p = post_processing(kgrid, f0, sensor_data, plot_flag);
+p = post_processing(kgrid, f0, sensor_data, final_sim);
 
 end
