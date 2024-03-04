@@ -22,6 +22,7 @@ else
     % extract amplitude and phase from the sensor data
     [amp, phase] = extractAmpPhase(data, 1/kgrid.dt, f0, ...
         'Dim', 2, 'Window', 'Rectangular', 'FFTPadding', 1);
+    amp = max(amp) * ones(length(amp), 1);
 end
 
 p = amp .* exp(1j*phase);

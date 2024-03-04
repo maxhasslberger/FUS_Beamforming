@@ -50,6 +50,7 @@ end
 
 
 amp = 30000 * ones(sum(b_mask(:)), 1);
+amp(2) = 60000;
 phase = zeros(length(amp), 1); % Zero phase for entire observation plane
 
 b_des = amp .* exp(1j*phase); % only observed elements
