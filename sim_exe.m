@@ -1,4 +1,4 @@
-function p = sim_exe(kgrid, medium, f0, p_in, source_mask, sensor_mask, final_sim, input_args)
+function p = sim_exe(kgrid, medium, sensor, f0, p_in, source_mask, sensor_mask, final_sim, input_args)
 
 %% Source
 

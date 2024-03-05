@@ -1,13 +1,14 @@
 function p = post_processing(kgrid, f0, data, final_sim)
 
+% extract amplitude and phase from the sensor data
+[amp, phase] = extractAmpPhase(data, 1/kgrid.dt, f0, ...
+    'Dim', 2, 'Window', 'Rectangular', 'FFTPadding', 1);
+
 % reshape data
 Nx = kgrid.Nx;
 Ny = kgrid.Ny;
 
 if final_sim
-    % Only max amplitude matters
-    amp = max(abs(data), [], 2);
-    phase = zeros(length(amp), 1);
 
     if kgrid.dim == 2
         amp = reshape(amp, Nx, Ny);
@@ -19,10 +20,7 @@ if final_sim
         phase = reshape(phase, Nx, Ny, Nz);
     end
 else
-    % extract amplitude and phase from the sensor data
-    [amp, phase] = extractAmpPhase(data, 1/kgrid.dt, f0, ...
-        'Dim', 2, 'Window', 'Rectangular', 'FFTPadding', 1);
-    amp = max(amp) * ones(length(amp), 1);
+%     amp = max(amp) * ones(length(amp), 1); % Same amplitude for each element
 end
 
 p = amp .* exp(1j*phase);

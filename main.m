@@ -32,25 +32,31 @@ sensor_plane = ones(kgrid.Nx, kgrid.Ny);
 
 if kgrid.dim == 2
 
-    % Ring
-    b_mask = makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 20, false) ...
-        - makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 15, false);
+%     % Ring
+%     b_mask = makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 20, false) ...
+%         - makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 15, false);
+%     amp = 30000 * ones(sum(b_mask(:)), 1);
 
-    % Point
-    point_pos = [0.5 * kgrid.Nx, 0.6 * kgrid.Ny];
-    point_pos2 = [0.2 * kgrid.Nx, 0.5 * kgrid.Ny];
+    % Points
+    point_posx = [0.5, 0.2, 0.8] * kgrid.Nx;
+    point_posy = [0.6, 0.5, 0.2] * kgrid.Ny;
+    amp = [20, 10, 30]' * 1e3;
+%     amp = 30000 * ones(length(point_posx), 1);
+
+    % Assign amplitude acc. to closest position
+    idx = sub2ind([kgrid.Nx, kgrid.Ny], point_posx, point_posy);
+    [~, order] = sort(idx);
+    amp = amp(order);
 
     b_mask = zeros(kgrid.Nx, kgrid.Ny);
-    b_mask(point_pos(1), point_pos(2)) = 1;
-    b_mask(point_pos2(1), point_pos2(2)) = 1;
-%     b_mask(point_pos(1), kgrid.Ny - point_pos(2)) = 1;
+    for point = 1:length(point_posx)
+        b_mask(point_posx(point), point_posy(point)) = 1;
+    end
 else
     error("Not supported at the moment")
 end
 
 
-amp = 30000 * ones(sum(b_mask(:)), 1);
-amp(2) = 60000;
 phase = zeros(length(amp), 1); % Zero phase for entire observation plane
 
 b_des = amp .* exp(1j*phase); % only observed elements
@@ -62,9 +68,9 @@ imagesc(b_mask + t_mask)
 
 %% Time Reversal
 
-p_tr = sim_exe(kgrid, medium, f0, b_des, b_mask, t_mask, false, input_args);
+p_tr = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
 p_tr = conj(p_tr);
-b_tr = sim_exe(kgrid, medium, f0, p_tr, t_mask, sensor_plane, true, input_args);
+b_tr = sim_exe(kgrid, medium, sensor, f0, p_tr, t_mask, sensor_plane, true, input_args);
 
 %% Inverse Problem
 
@@ -73,13 +79,24 @@ b_tr = sim_exe(kgrid, medium, f0, p_tr, t_mask, sensor_plane, true, input_args);
 A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx); % acousticFieldPropagator (Green's functions)
 
 p_ip = pinv(A) * b_des;
-b_ip = sim_exe(kgrid, medium, f0, p_ip, t_mask, sensor_plane, true, input_args);
+b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_plane, true, input_args);
 
-%% Plot
+%% Results
 plot_results(kgrid, p_tr, b_tr, 'Time Reversal');
 plot_results(kgrid, p_ip, b_ip, 'Inverse Problem');
 
-% b_tr(point_pos(1), point_pos(2))
-% b_ip(point_pos(1), point_pos(2))
+
+b_tr_points = [];
+b_ip_points = [];
+for point = 1:length(point_posx)
+    b_tr_points = [b_tr_points, b_tr(point_posx(point), point_posy(point))];
+    b_ip_points = [b_ip_points, b_ip(point_posx(point), point_posy(point))];
+end
+
+amp
+abs(b_tr_points)
+abs(b_ip_points)
+angle(b_tr_points)
+angle(b_ip_points)
 
 
