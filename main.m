@@ -5,7 +5,7 @@ close all;
 
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 1.0;
+dx_factor = 5;
 [kgrid, medium, ppp] = init_grid_medium(f0, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
 sensor = init_sensor(kgrid, ppp);
 
@@ -20,11 +20,11 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 % karray.addAnnularArray(bowl_pos, source_roc, diameters, focus_pos);
 
 % Linear Array
-num_elements = 84 * dx_factor;
-x_offset = 0.05 * kgrid.Ny; % grid points
-spacing = 1; % grid points between elements
+num_elements = 84;
+x_offset = floor(0.05 * kgrid.Ny); % grid points
+spacing = ceil(1 * dx_factor); % grid points between elements
 
-t_mask = create_linear_array(kgrid, num_elements, x_offset, spacing); % TODO: More elements, circular
+t_mask = create_linear_array(kgrid, num_elements, x_offset, spacing); % TODO: Spacing -> indexing
 sensor_plane = ones(kgrid.Nx, kgrid.Ny);
 
 %% Define (intracranial) Beamforming Pattern
@@ -38,8 +38,8 @@ if kgrid.dim == 2
 %     amp = 30000 * ones(sum(b_mask(:)), 1);
 
     % Points
-    point_posx = [0.5, 0.2, 0.8] * kgrid.Nx;
-    point_posy = [0.6, 0.5, 0.2] * kgrid.Ny;
+    point_posx = floor([0.5, 0.2, 0.8] * kgrid.Nx);
+    point_posy = floor([0.6, 0.5, 0.2] * kgrid.Ny);
     amp = [20, 10, 30]' * 1e3;
 %     amp = 30000 * ones(length(point_posx), 1);
 
