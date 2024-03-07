@@ -5,7 +5,7 @@ close all;
 
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 5;
+dx_factor = 1;
 [kgrid, medium, ppp] = init_grid_medium(f0, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
 sensor = init_sensor(kgrid, ppp);
 
@@ -38,8 +38,8 @@ if kgrid.dim == 2
 %     amp = 30000 * ones(sum(b_mask(:)), 1);
 
     % Points
-    point_posx = floor([0.5, 0.2, 0.8] * kgrid.Nx);
-    point_posy = floor([0.6, 0.5, 0.2] * kgrid.Ny);
+    point_posx = round([0.5, 0.2, 0.8] * kgrid.Nx);
+    point_posy = round([0.6, 0.5, 0.2] * kgrid.Ny);
     amp = [20, 10, 30]' * 1e3;
 %     amp = 30000 * ones(length(point_posx), 1);
 
