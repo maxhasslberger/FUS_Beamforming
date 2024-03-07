@@ -5,7 +5,7 @@ close all;
 
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 1;
+dx_factor = 3;
 [kgrid, medium, ppp] = init_grid_medium(f0, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
 sensor = init_sensor(kgrid, ppp);
 sensor_plane = ones(kgrid.Nx, kgrid.Ny);
@@ -17,21 +17,32 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 
 % karray_t = kWaveArray();
 
-% Annular
+% % Annular
 % karray.addAnnularArray(bowl_pos, source_roc, diameters, focus_pos);
 
-% Linear Array
-num_elements = 84;
 el1_offset = round(0.05 * kgrid.Nx); % grid points
 el2_offset = round(0.05 * kgrid.Ny); % grid points
-spacing = ceil(1 * dx_factor); % grid points between elements
-shift = 0; % grid points
+shift = 0; % grid points -> tangential shift
 
-% Create Transducer mask
-t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
+% % Linear array
+% num_elements = 84;
+% spacing = ceil(1 * dx_factor); % grid points between elements
+% t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
 % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
-% t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
+% % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
+
+% Curvature
+grid_size = [kgrid.Nx, kgrid.Ny];
+radius = kgrid.Nx; % grid points -> curvature
+diameter = round(0.6 * kgrid.Ny + 1 - mod(kgrid.Ny, 2)); % grid points -> one end to the other
+focus_pos = round(grid_size / 2);
+
+t_mask = makeArc(grid_size, [el1_offset, round(kgrid.Ny / 2 + shift)], radius, diameter, focus_pos);
+t_mask = t_mask + makeArc(grid_size, [round(kgrid.Nx / 2 + shift), el2_offset], radius, diameter, focus_pos); % Second (orthogonal) curved array
+% t_mask = t_mask + makeArc(grid_size, [round(kgrid.Nx - el1_offset), round(kgrid.Ny / 2 + shift)], radius, diameter, focus_pos); % Second (antiparallel) curved array
+
 t_mask = t_mask > 0; % Return to logical in case of overlaps
+% imagesc(t_mask)
 
 %% Define (intracranial) Beamforming Pattern
 
