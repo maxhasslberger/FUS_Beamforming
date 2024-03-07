@@ -8,6 +8,7 @@ n_dim = 2;
 dx_factor = 1;
 [kgrid, medium, ppp] = init_grid_medium(f0, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
 sensor = init_sensor(kgrid, ppp);
+sensor_plane = ones(kgrid.Nx, kgrid.Ny);
 
 % set simulation input options
 input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', 'off'};
@@ -21,14 +22,18 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 
 % Linear Array
 num_elements = 84;
-x_offset = floor(0.05 * kgrid.Ny); % grid points
+el1_offset = round(0.05 * kgrid.Nx); % grid points
+el2_offset = round(0.05 * kgrid.Ny); % grid points
 spacing = ceil(1 * dx_factor); % grid points between elements
+shift = 0; % grid points
 
-t_mask = create_linear_array(kgrid, num_elements, x_offset, spacing); % TODO: Spacing -> indexing
-sensor_plane = ones(kgrid.Nx, kgrid.Ny);
+% Create Transducer mask
+t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
+% t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
+% t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
+t_mask = t_mask > 0; % Return to logical in case of overlaps
 
 %% Define (intracranial) Beamforming Pattern
-
 
 if kgrid.dim == 2
 
@@ -40,7 +45,7 @@ if kgrid.dim == 2
     % Points
     point_posx = round([0.5, 0.2, 0.8] * kgrid.Nx);
     point_posy = round([0.6, 0.5, 0.2] * kgrid.Ny);
-    amp = [20, 10, 30]' * 1e3;
+    amp = [10, 10, 10]' * 1e3;
 %     amp = 30000 * ones(length(point_posx), 1);
 
     % Assign amplitude acc. to closest position
