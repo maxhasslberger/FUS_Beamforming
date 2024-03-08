@@ -23,7 +23,7 @@ c0 = 1500; % m/s - water
 rho0 = 1000; % kg/m^3
 
 ppw = 3; % >= 2
-cfl = 0.3;
+cfl = 0.1;
 
 %% Define grid
 
@@ -53,7 +53,7 @@ end
 
 % Time
 ppp = round(ppw / cfl); % points per temporal period
-dt = 1 / (ppp * f0);
+dt = 1 / (ppp * f0); % <= dx/c_max
 
 % calculate the number of time steps to reach steady state
 t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / c0; 
