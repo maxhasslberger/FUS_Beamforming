@@ -6,7 +6,7 @@ if min(sound_speed(:)) == max(sound_speed(:))
     phase_in = 0;
     el_ids = find(t_mask);
     obs_ids = find(b_mask);
-%     obs_ids = 1:numel(t_mask);
+    obs_ids = 1:numel(t_mask);
     
     A = zeros(numel(obs_ids), numel(el_ids));
     for i = 1:length(el_ids)

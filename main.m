@@ -30,6 +30,7 @@ spacing = ceil(1 * dx_factor); % grid points between elements
 t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
 t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
 % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
+% t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
 
 % % Curvature
 % grid_size = [kgrid.Nx, kgrid.Ny];
@@ -42,32 +43,33 @@ t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, sp
 % % t_mask = t_mask + makeArc(grid_size, [round(kgrid.Nx - el1_offset), round(kgrid.Ny / 2 + shift)], radius, diameter, focus_pos); % Second (antiparallel) curved array
 
 t_mask = t_mask > 0; % Return to logical in case of overlaps
-% imagesc(t_mask)
+% imagesc(t_mask, [-1 1])
+% colormap(getColorMap);
 
 %% Define (intracranial) Beamforming Pattern
 
 if kgrid.dim == 2
 
-%     % Ring
-%     b_mask = makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 20, false) ...
-%         - makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, 15, false);
-%     amp = 30000 * ones(sum(b_mask(:)), 1);
+    % Ring
+    b_mask = makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, round(0.2 * kgrid.Nx), false) ...
+        - makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, round(0.15 * kgrid.Nx), false);
+    amp = 30000 * ones(sum(b_mask(:)), 1);
 
-    % Points
-    point_posx = round([0.5, 0.2, 0.8] * kgrid.Nx);
-    point_posy = round([0.6, 0.5, 0.2] * kgrid.Ny);
-    amp = [10, 10, 10]' * 1e3;
-%     amp = 30000 * ones(length(point_posx), 1);
-
-    % Assign amplitude acc. to closest position
-    idx = sub2ind([kgrid.Nx, kgrid.Ny], point_posx, point_posy);
-    [~, order] = sort(idx);
-    amp = amp(order);
-
-    b_mask = zeros(kgrid.Nx, kgrid.Ny);
-    for point = 1:length(point_posx)
-        b_mask(point_posx(point), point_posy(point)) = 1;
-    end
+%     % Points
+%     point_posx = round([0.5, 0.2, 0.8] * kgrid.Nx);
+%     point_posy = round([0.6, 0.5, 0.2] * kgrid.Ny);
+%     amp = [10, 10, 10]' * 1e3;
+% %     amp = 30000 * ones(length(point_posx), 1);
+% 
+%     % Assign amplitude acc. to closest position
+%     idx = sub2ind([kgrid.Nx, kgrid.Ny], point_posx, point_posy);
+%     [~, order] = sort(idx);
+%     amp = amp(order);
+% 
+%     b_mask = zeros(kgrid.Nx, kgrid.Ny);
+%     for point = 1:length(point_posx)
+%         b_mask(point_posx(point), point_posy(point)) = 1;
+%     end
 else
     error("Not supported at the moment")
 end
@@ -80,7 +82,8 @@ b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
 b_des_pl(find(b_mask)) = b_des;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-imagesc(b_mask + t_mask)
+imagesc(b_mask + t_mask, [-1 1])
+colormap(getColorMap);
 
 %% Time Reversal
 
@@ -94,13 +97,26 @@ b_tr = sim_exe(kgrid, medium, sensor, f0, p_tr, t_mask, sensor_plane, true, inpu
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx); % acousticFieldPropagator (Green's functions)
 
-p_ip = pinv(A) * b_des;
+% Solve inverse problem
+tic
+
+p_ip = pinv(A) * b_des_pl;
+
+opts = struct;
+opts.initMethod = 'custom';
+opts.customx0 = p_ip;
+[p_ip, outs, opts] = solvePhaseRetrieval(A, A', b_des_pl, [], opts);
+
+t_solve = toc;
+
 b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_plane, true, input_args);
+
 
 %% Results
 plot_results(kgrid, p_tr, b_tr, 'Time Reversal');
 plot_results(kgrid, p_ip, b_ip, 'Inverse Problem');
 
+disp("Time until solver converged: " + string(t_solve) + " s")
 
 b_tr_points = [];
 b_ip_points = [];

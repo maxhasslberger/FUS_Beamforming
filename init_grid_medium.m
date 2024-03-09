@@ -1,7 +1,7 @@
 function [kgrid, medium, ppp] = init_grid_medium(f0, varargin)
 
 n_dim = 2;
-dx_factor = 1.0;
+dx_frac = 1.0;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -11,7 +11,7 @@ if ~isempty(varargin)
             case 'ct_scan'
                 ct_scan = varargin{arg_idx+1};
             case 'dx_factor'
-                dx_factor = varargin{arg_idx+1};
+                dx_frac = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -32,7 +32,7 @@ x_size = 100e-3; % m
 y_size = x_size;
 
 dx = c0 / f0 / ppw;
-dx = dx * dx_factor;
+dx = dx * dx_frac;
 
 Nx = round(x_size/dx);
 Ny = round(y_size/dx);
