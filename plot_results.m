@@ -3,13 +3,14 @@ function plot_results(kgrid, excitation, data, plot_title)
 % Plot magnitude and phase of array elements
 figure;
 subplot(2, 1, 1)
-plot(abs(excitation))
+plot(abs(excitation * 1e-3))
 title(plot_title);
+ylabel('Amplitude (kPa)')
 
 subplot(2, 1, 2)
 plot(rad2deg(angle(excitation)))
 xlabel('Element #')
-ylabel('deg')
+ylabel('Phase (deg)')
 
 % Plot result plane
 if kgrid.dim == 2
@@ -21,14 +22,15 @@ end
 
 % plot the pressure field 
 figure;
-imagesc(p_data);
+imagesc(p_data * 1e-3);
 % imagesc(kgrid.x_vec, kgrid.y_vec, p_data);
 colormap('turbo');
-xlabel('Axial Position');
-ylabel('Lateral Position');
+xlabel('x Position (grid points)');
+ylabel('y Position (grid points)');
 axis image;
 % clim([0 30000])
 title(plot_title);
-colorbar;
+c = colorbar;
+c.Label.String = 'Pressure (kPa)';
 
 end
