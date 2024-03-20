@@ -25,8 +25,8 @@ el2_offset = round(0.05 * kgrid.Ny); % grid points
 shift = 0; % grid points -> tangential shift
 
 % Linear array
-num_elements = 84;
-spacing = ceil(1 * dx_factor); % grid points between elements
+num_elements = 42;
+spacing = ceil(2 * dx_factor); % grid points between elements
 t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
 t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
 % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
@@ -41,6 +41,8 @@ t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, sp
 % t_mask = makeArc(grid_size, [el1_offset, round(kgrid.Ny / 2 + shift)], radius, diameter, focus_pos);
 % t_mask = t_mask + makeArc(grid_size, [round(kgrid.Nx / 2 + shift), el2_offset], radius, diameter, focus_pos); % Second (orthogonal) curved array
 % % t_mask = t_mask + makeArc(grid_size, [round(kgrid.Nx - el1_offset), round(kgrid.Ny / 2 + shift)], radius, diameter, focus_pos); % Second (antiparallel) curved array
+
+% TODO: Define both transducer geometries in one (linear -> radius = inf;)
 
 t_mask = t_mask > 0; % Return to logical in case of overlaps
 % imagesc(t_mask, [-1 1])
@@ -118,17 +120,17 @@ plot_results(kgrid, p_ip, b_ip, 'Inverse Problem');
 
 disp("Time until solver converged: " + string(t_solve) + " s")
 
-b_tr_points = [];
-b_ip_points = [];
-for point = 1:length(point_posx)
-    b_tr_points = [b_tr_points, b_tr(point_posx(point), point_posy(point))];
-    b_ip_points = [b_ip_points, b_ip(point_posx(point), point_posy(point))];
-end
-
-amp
-abs(b_tr_points)
-abs(b_ip_points)
-angle(b_tr_points)
-angle(b_ip_points)
+% b_tr_points = [];
+% b_ip_points = [];
+% for point = 1:length(point_posx)
+%     b_tr_points = [b_tr_points, b_tr(point_posx(point), point_posy(point))];
+%     b_ip_points = [b_ip_points, b_ip(point_posx(point), point_posy(point))];
+% end
+% 
+% amp
+% abs(b_tr_points)
+% abs(b_ip_points)
+% angle(b_tr_points)
+% angle(b_ip_points)
 
 
