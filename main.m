@@ -10,9 +10,6 @@ dx_factor = 1;
 sensor = init_sensor(kgrid, ppp);
 sensor_plane = ones(kgrid.Nx, kgrid.Ny);
 
-% set simulation input options
-input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', 'off'};
-
 %% Define Transducer Geometry
 
 % karray_t = kWaveArray();
@@ -87,6 +84,9 @@ b_des_pl(find(b_mask)) = b_des;
 imagesc(b_mask + t_mask, [-1 1])
 colormap(getColorMap);
 
+% set simulation input options
+input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask, 'RecordMovie', true};
+
 %% Time Reversal
 
 p_tr = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
@@ -102,6 +102,7 @@ A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx); 
 % Solve inverse problem
 tic
 
+% p_ip = pinv(A) * b_des;
 p_ip = pinv(A) * b_des_pl;
 
 opts = struct;
