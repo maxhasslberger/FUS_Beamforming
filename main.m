@@ -11,6 +11,7 @@ sensor = init_sensor(kgrid, ppp);
 sensor_plane = ones(kgrid.Nx, kgrid.Ny);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
+set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 
 %% Define Transducer Geometry
 
@@ -110,30 +111,30 @@ b_tr = sim_exe(kgrid, medium, sensor, f0, p_tr, t_mask, sensor_plane, true, inpu
 
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt); % acousticFieldPropagator (Green's functions)
+A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt, set_current_A); % acousticFieldPropagator (Green's functions)
 
 % Solve inverse problem
 tic
 if only_focus_opt
-    b_ip = b_des;
-    sq_beta = 0;%.1; % constraint scaling factor
+    b_ip_des = b_des;
+    sq_beta = 0;%0.1; % constraint scaling factor
 else
-    b_ip = b_des_pl;
-    sq_beta = 100; % constraint scaling factor
+    b_ip_des = b_des_pl;
+    sq_beta = 0;%100; % constraint scaling factor
 end
 
-p_ip = pinv(A) * b_ip; % Initial solution cosidering phases
+p_ip = pinv(A) * b_ip_des; % Initial solution cosidering phases
 
 u = max(abs(p_ip)) * ones(size(p_ip)); % universal transducer amplitude
 
 % Apply constraints (same transducer amplitude among elements)
 A = [A; sq_beta * eye(length(p_ip))];
-b_ip = [b_ip; sq_beta * u];
+b_ip_des = [b_ip_des; sq_beta * u];
 
 opts = struct;
 opts.initMethod = 'custom';
 opts.customx0 = p_ip;
-[p_ip, outs, opts] = solvePhaseRetrieval(A, A', b_ip, [], opts);
+[p_ip, outs, opts] = solvePhaseRetrieval(A, A', b_ip_des, [], opts);
 
 t_solve = toc;
 
