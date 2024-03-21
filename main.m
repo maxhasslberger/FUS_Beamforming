@@ -115,16 +115,25 @@ A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, o
 % Solve inverse problem
 tic
 if only_focus_opt
-    p_ip = pinv(A) * b_des;
+    b_ip = b_des;
+    sq_beta = 0;%.1; % constraint scaling factor
 else
-
-    p_ip = pinv(A) * b_des_pl;
-    
-    opts = struct;
-    opts.initMethod = 'custom';
-    opts.customx0 = p_ip;
-    [p_ip, outs, opts] = solvePhaseRetrieval(A, A', b_des_pl, [], opts);
+    b_ip = b_des_pl;
+    sq_beta = 100; % constraint scaling factor
 end
+
+p_ip = pinv(A) * b_ip; % Initial solution cosidering phases
+
+u = max(abs(p_ip)) * ones(size(p_ip)); % universal transducer amplitude
+
+% Apply constraints (same transducer amplitude among elements)
+A = [A; sq_beta * eye(length(p_ip))];
+b_ip = [b_ip; sq_beta * u];
+
+opts = struct;
+opts.initMethod = 'custom';
+opts.customx0 = p_ip;
+[p_ip, outs, opts] = solvePhaseRetrieval(A, A', b_ip, [], opts);
 
 t_solve = toc;
 
@@ -136,6 +145,10 @@ plot_results(kgrid, p_tr, b_tr, 'Time Reversal');
 plot_results(kgrid, p_ip, b_ip, 'Inverse Problem');
 
 disp("Time until solver converged: " + string(t_solve) + " s")
+fprintf("\nDesired Transducer Amplitude (kPa):\n")
+disp(u(1) * 1e-3)
+fprintf("\nTransducer Amplitude mean deviation (Pa):\n")
+disp(mean(abs(abs(p_ip) - u)))
 
 if only_focus_opt
     b_tr_points = [];
