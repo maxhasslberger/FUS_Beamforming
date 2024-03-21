@@ -66,8 +66,8 @@ if kgrid.dim == 2
     else
 
         % Points
-        point_posx = round([0.5, 0.2, 0.8] * kgrid.Nx);
-        point_posy = round([0.6, 0.5, 0.2] * kgrid.Ny);
+        point_posx = round([0.2, 0.5, 0.8] * kgrid.Nx);
+        point_posy = round([0.5, 0.6, 0.2] * kgrid.Ny);
         amp = [10, 10, 10]' * 1e3;
 %         amp = 30000 * ones(length(point_posx), 1);
     
@@ -103,7 +103,7 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 %% Time Reversal
 
 p_tr = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
-p_tr = conj(p_tr);
+p_tr = max(abs(p_tr)) * exp(-1j * angle(p_tr));
 b_tr = sim_exe(kgrid, medium, sensor, f0, p_tr, t_mask, sensor_plane, true, input_args);
 
 %% Inverse Problem
