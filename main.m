@@ -38,18 +38,6 @@ else
     % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
 end
 
-% % Curvature
-% grid_size = [kgrid.Nx, kgrid.Ny];
-% radius = kgrid.Nx; % grid points -> curvature
-% diameter = round(0.6 * kgrid.Ny + 1 - mod(kgrid.Ny, 2)); % grid points -> one end to the other
-% focus_pos = round(grid_size / 2);
-% 
-% t_mask = makeArc(grid_size, [el1_offset, round(kgrid.Ny / 2 + shift)], radius, diameter, focus_pos);
-% t_mask = t_mask + makeArc(grid_size, [round(kgrid.Nx / 2 + shift), el2_offset], radius, diameter, focus_pos); % Second (orthogonal) curved array
-% % t_mask = t_mask + makeArc(grid_size, [round(kgrid.Nx - el1_offset), round(kgrid.Ny / 2 + shift)], radius, diameter, focus_pos); % Second (antiparallel) curved array
-
-% TODO: Define both transducer geometries in one (linear -> radius = inf;)
-
 t_mask = t_mask > 0; % Return to logical in case of overlaps
 % imagesc(t_mask, [-1 1])
 % colormap(getColorMap);
@@ -87,31 +75,32 @@ else
     error("Not supported at the moment")
 end
 
-
+% Create desired signal
 phase = zeros(length(amp), 1); % Zero phase for entire observation plane
 
 b_des = amp .* exp(1j*phase); % only observed elements
+
 b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
 b_des_pl(find(b_mask)) = b_des;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 imagesc(b_mask + t_mask, [-1 1])
 colormap(getColorMap);
 
 % set simulation input options
 input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask, 'RecordMovie', false};
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
 
 p_tr = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
-p_tr = max(abs(p_tr)) * exp(-1j * angle(p_tr));
+p_tr = max(abs(p_tr)) * exp(-1j * angle(p_tr)); % All elements with same amplitude
 b_tr = sim_exe(kgrid, medium, sensor, f0, p_tr, t_mask, sensor_plane, true, input_args);
 
 %% Inverse Problem
 
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt, set_current_A); % acousticFieldPropagator (Green's functions)
+A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt, set_current_A); % -> acousticFieldPropagator (Green's functions)
 
 % Solve inverse problem
 tic
@@ -131,6 +120,7 @@ u = max(abs(p_ip)) * ones(size(p_ip)); % universal transducer amplitude
 A = [A; sq_beta * eye(length(p_ip))];
 b_ip_des = [b_ip_des; sq_beta * u];
 
+% Solve phase retrieval problem
 opts = struct;
 opts.initMethod = 'custom';
 opts.customx0 = p_ip;
@@ -138,6 +128,7 @@ opts.customx0 = p_ip;
 
 t_solve = toc;
 
+% Evaluate obtained phase terms in forward simulation
 b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_plane, true, input_args);
 
 
@@ -145,12 +136,14 @@ b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_plane, true, inpu
 plot_results(kgrid, p_tr, b_tr, 'Time Reversal');
 plot_results(kgrid, p_ip, b_ip, 'Inverse Problem');
 
+% Metrics evaluation
 disp("Time until solver converged: " + string(t_solve) + " s")
 fprintf("\nDesired Transducer Amplitude (kPa):\n")
 disp(u(1) * 1e-3)
 fprintf("\nTransducer Amplitude mean deviation (Pa):\n")
 disp(mean(abs(abs(p_ip) - u)))
 
+% Evaluation of each defined point
 if only_focus_opt
     b_tr_points = [];
     b_ip_points = [];
