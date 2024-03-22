@@ -19,23 +19,25 @@ set_current_A = false; % Use precomputed propagation matrix - can be logical or 
 
 el1_offset = round(0.05 * kgrid.Nx); % grid points
 el2_offset = round(0.05 * kgrid.Ny); % grid points
-shift = 0; % grid points -> tangential shift
 
 % Linear array
 if only_focus_opt
-    num_elements = 84;
+    num_elements = 50;
+    shift = 0; % grid points -> tangential shift
     spacing = ceil(1 * dx_factor); % grid points between elements
     t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
     % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
     % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
     % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
 else
-    num_elements = 42;
+    num_elements = 25;
+    shift1 = 20; % grid points -> tangential shift
+    shift2 = -shift1;
     spacing = ceil(2 * dx_factor); % grid points between elements
-    t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
-    t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
-    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
-    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
+    t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
+    t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
+    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
+    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
 end
 
 t_mask = t_mask > 0; % Return to logical in case of overlaps
@@ -49,8 +51,8 @@ if kgrid.dim == 2
     if ~only_focus_opt
 
         % Ring
-        b_mask = makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, round(0.2 * kgrid.Nx), false) ...
-            - makeDisc(kgrid.Nx, kgrid.Ny, kgrid.Nx/2, kgrid.Ny/2, round(0.15 * kgrid.Nx), false);
+        b_mask = makeDisc(kgrid.Nx, kgrid.Ny, round(0.7 * kgrid.Nx), round(0.7 * kgrid.Ny), round(0.2 * kgrid.Nx), false) ...
+            - makeDisc(kgrid.Nx, kgrid.Ny, round(0.7 * kgrid.Nx), round(0.7 * kgrid.Ny), round(0.15 * kgrid.Nx), false);
         amp = 30000 * ones(sum(b_mask(:)), 1);
     else
 
