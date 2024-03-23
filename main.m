@@ -15,8 +15,6 @@ set_current_A = false; % Use precomputed propagation matrix - can be logical or 
 
 %% Define Transducer Geometry
 
-% karray_t = kWaveArray();
-
 el1_offset = round(0.05 * kgrid.Nx); % grid points
 el2_offset = round(0.05 * kgrid.Ny); % grid points
 
