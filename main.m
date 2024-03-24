@@ -6,9 +6,13 @@ close all;
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
 dx_factor = 1;
-[kgrid, medium, ppp] = init_grid_medium(f0, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
-sensor = init_sensor(kgrid, ppp);
-sensor_plane = ones(kgrid.Nx, kgrid.Ny);
+if n_dim == 2
+    grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
+else
+    grid_size = [150, 150, 100] * 1e-3; % m in [x, y, z] respectively
+end
+[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
+[sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
 set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
@@ -18,29 +22,48 @@ set_current_A = false; % Use precomputed propagation matrix - can be logical or 
 el1_offset = round(0.05 * kgrid.Nx); % grid points
 el2_offset = round(0.05 * kgrid.Ny); % grid points
 
-% Linear array
-if only_focus_opt
-    num_elements = 50;
-    shift = 0; % grid points -> tangential shift
-    spacing = ceil(1 * dx_factor); % grid points between elements
-    t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
-    % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
-    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
-    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
-else
-    num_elements = 25;
-    shift1 = 20; % grid points -> tangential shift
-    shift2 = -shift1;
-    spacing = ceil(2 * dx_factor); % grid points between elements
-    t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
-    t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
-    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
-    % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
-end
+if kgrid.dim == 2
+    % Linear array
+    if only_focus_opt
+        num_elements = 50;
+        shift = 0; % grid points -> tangential shift
+        spacing = ceil(1 * dx_factor); % grid points between elements
+        t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
+    else
+        num_elements = 25;
+        shift1 = 20; % grid points -> tangential shift
+        shift2 = -shift1;
+        spacing = ceil(2 * dx_factor); % grid points between elements
+        t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
+        t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
+    end
+    
+    karray_t = [];
+    t_mask = t_mask > 0; % Return to logical in case of overlaps
 
-t_mask = t_mask > 0; % Return to logical in case of overlaps
-% imagesc(t_mask, [-1 1])
-% colormap(getColorMap);
+%     imagesc(t_mask, [-1 1])
+%     colormap(getColorMap);
+else
+    % Planar Array
+    t_name = "std";
+    t1_pos = [-70, 20, 0]' * 1e-3; % m
+    t1_rot = [0, 90, 0]'; % deg
+    t2_pos = [20, -70, 0]' * 1e-3; % m
+    t2_rot = [90, 0, 0]'; % deg
+
+    t_pos = [t1_pos, t2_pos];
+    t_rot = [t1_rot, t2_rot];
+
+    karray_t = create_transducer(kgrid, t_name, t_pos, t_rot);
+    t_mask = karray_t.getArrayBinaryMask(kgrid);
+
+%     voxelPlot(double(t_mask))
+end
 
 %% Define (intracranial) Beamforming Pattern
 
@@ -55,8 +78,8 @@ if kgrid.dim == 2
     else
 
         % Points
-        point_posx = round([0.2, 0.5, 0.8] * kgrid.Nx);
-        point_posy = round([0.5, 0.6, 0.2] * kgrid.Ny);
+        point_posx = round([0.2, 0.5, 0.6] * kgrid.Nx);
+        point_posy = round([0.5, 0.6, 0.3] * kgrid.Ny);
         amp = [10, 10, 10]' * 1e3;
 %         amp = 30000 * ones(length(point_posx), 1);
     
@@ -71,8 +94,30 @@ if kgrid.dim == 2
             b_mask(point_posx(point), point_posy(point)) = 1;
         end
     end
+
+    imagesc(b_mask + t_mask, [-1 1])
+    colormap(getColorMap);
 else
-    error("Not supported at the moment")
+    only_focus_opt = true;
+
+    % Points
+    point_posx = round([0.2, 0.7, 0.8] * kgrid.Nx);
+    point_posy = round([0.5, 0.8, 0.5] * kgrid.Ny);
+    point_posz = round([0.5, 0.5, 0.5] * kgrid.Nz);
+    amp = [10, 10, 10]' * 1e3;
+
+    % Assign amplitude acc. to closest position
+    idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_posx, point_posy, point_posz);
+    [~, order] = sort(idx);
+    amp = amp(order);
+
+    b_mask = zeros(kgrid.Nx, kgrid.Ny, kgrid.Nz);
+
+    for point = 1:length(point_posx)
+        b_mask(point_posx(point), point_posy(point), point_posz(point)) = 1;
+    end
+
+    voxelPlot(double(t_mask + b_mask))
 end
 
 % Create desired signal
@@ -83,9 +128,6 @@ b_des = amp .* exp(1j*phase); % only observed elements
 b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
 b_des_pl(find(b_mask)) = b_des;
 
-imagesc(b_mask + t_mask, [-1 1])
-colormap(getColorMap);
-
 % set simulation input options
 input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask, 'RecordMovie', false};
 
@@ -94,7 +136,7 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 
 p_tr = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
 p_tr = max(abs(p_tr)) * exp(-1j * angle(p_tr)); % All elements with same amplitude
-b_tr = sim_exe(kgrid, medium, sensor, f0, p_tr, t_mask, sensor_plane, true, input_args);
+b_tr = sim_exe(kgrid, medium, sensor, f0, p_tr, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 %% Inverse Problem
 
@@ -129,7 +171,7 @@ opts.customx0 = p_ip;
 t_solve = toc;
 
 % Evaluate obtained phase terms in forward simulation
-b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_plane, true, input_args);
+b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 
 %% Results
@@ -147,9 +189,17 @@ disp(mean(abs(abs(p_ip) - u)))
 if only_focus_opt
     b_tr_points = [];
     b_ip_points = [];
-    for point = 1:length(point_posx)
-        b_tr_points = [b_tr_points, b_tr(point_posx(point), point_posy(point))];
-        b_ip_points = [b_ip_points, b_ip(point_posx(point), point_posy(point))];
+
+    if kgrid.dim == 2
+        for point = 1:length(point_posx)
+            b_tr_points = [b_tr_points, b_tr(point_posx(point), point_posy(point))];
+            b_ip_points = [b_ip_points, b_ip(point_posx(point), point_posy(point))];
+        end
+    else
+        for point = 1:length(point_posx)
+            b_tr_points = [b_tr_points, b_tr(point_posx(point), point_posy(point), point_posz(point))];
+            b_ip_points = [b_ip_points, b_ip(point_posx(point), point_posy(point), point_posz(point))];
+        end
     end
     
     fprintf("\nInput Amplitudes (kPa):\n")

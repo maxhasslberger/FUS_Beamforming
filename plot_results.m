@@ -16,7 +16,7 @@ ylabel('Phase (deg)')
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    p_data = abs(data(:,:,Nz/2+1));
+    p_data = abs(data(:,:,round(kgrid.Nz/2)));
     % Video or similar?...
 end
 

@@ -1,16 +1,7 @@
-clear;
+function karray_t = create_transducer(kgrid, t_name, t_pos, t_rot)
 
-f0 = 500e3; % Hz - transducer frequency
-n_dim = 3;
-dx_factor = 1;
-[kgrid, medium, ppp] = init_grid_medium(f0, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Init
-element_pos = load(fullfile('Array_Positions\std.mat')).ElementPosition'; % flat transducer array centered along [0, 0, 0] on the xy-plane
-t_pos = [-45, 0; 0, -45; 0, 0] * 1e-3; % m
-t_rot = [0, 90; 90, 0; 0, 0]; % deg
-
+element_pos = load(fullfile("Array_Positions", t_name + ".mat")).ElementPosition'; % flat transducer array centered at [0, 0, 0] along the xy-plane
 karray_t = kWaveArray();
 
 for tx = 1:size(t_pos, 2) % for each transducer
@@ -33,7 +24,4 @@ for tx = 1:size(t_pos, 2) % for each transducer
     end
 end
 
-% TODO: Rotation and translation considered before added to karray class
-
-mask = karray_t.getArrayBinaryMask(kgrid);
-voxelPlot(double(mask))
+end

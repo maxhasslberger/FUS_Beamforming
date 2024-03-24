@@ -1,4 +1,4 @@
-function [kgrid, medium, ppp] = init_grid_medium(f0, varargin)
+function [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, varargin)
 
 n_dim = 2;
 dx_frac = 1.0;
@@ -28,24 +28,19 @@ cfl = 0.1;
 %% Define grid
 
 % Grid size
-x_size = 100e-3; % m
-y_size = x_size;
 
 dx = c0 / f0 / ppw;
 dx = dx * dx_frac;
 
-Nx = round(x_size/dx);
-Ny = round(y_size/dx);
-N = [Nx, Ny];
+Nx = round(grid_size(1)/dx);
+Ny = round(grid_size(2)/dx);
 
 if n_dim == 2
     kgrid = kWaveGrid(Nx, dx, Ny, dx);
     add_z = 0.0;
 
 elseif n_dim == 3
-    z_size = x_size;
-    Nz = round(z_size/dx);
-    N = [N, Nz];
+    Nz = round(grid_size(3)/dx);
 
     kgrid = kWaveGrid(Nx, dx, Ny, dx, Nz, dx);
     add_z = kgrid.z_size.^2; % -> t_end
