@@ -7,6 +7,8 @@ if kgrid.dim == 2
     t_mask(plane_offset, start_index:spacing:start_index + num_elements * spacing - 1) = 1;
     if rotate
         t_mask = rot90(t_mask);
+        grid_corr = 1;
+        t_mask = [t_mask(grid_corr+1:end, :); zeros(grid_corr, size(t_mask, 2))];
     end
 else
     error("Not supported at the moment")

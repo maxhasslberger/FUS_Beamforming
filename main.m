@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 2;
+n_dim = 3;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -15,28 +15,30 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 
 %% Define Transducer Geometry
 
-el1_offset = round(0.05 * kgrid.Nx); % grid points
-el2_offset = round(0.05 * kgrid.Ny); % grid points
-
 if kgrid.dim == 2
     % Linear array
+    tx_pos = -0.045; % m
+    ty_pos = -0.045; % m
+
+    el1_offset = round((tx_pos - kgrid.x_vec(1)) / kgrid.dx); % grid points
+    el2_offset = round((ty_pos - kgrid.y_vec(1)) / kgrid.dy); % grid points
     if only_focus_opt
         num_elements = 50;
-        shift = 0; % grid points -> tangential shift
-        spacing = ceil(1 * dx_factor); % grid points between elements
+        shift = round(0e-3 / kgrid.dx); % m -> tangential shift in grid points
+        spacing = ceil(1e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
         t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
     else
         num_elements = 25;
-        shift1 = 20; % grid points -> tangential shift
+        shift1 = round(20e-3 / kgrid.dx); % m -> tangential shift in grid points
         shift2 = -shift1;
-        spacing = ceil(2 * dx_factor); % grid points between elements
+        spacing = ceil(2e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
         t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
         t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
@@ -172,6 +174,8 @@ t_solve = toc;
 
 % Evaluate obtained phase terms in forward simulation
 b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+
+%% Save Results in mat-file
 
 
 %% Results

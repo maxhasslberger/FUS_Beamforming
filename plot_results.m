@@ -22,11 +22,11 @@ end
 
 % plot the pressure field 
 figure;
-imagesc(p_data * 1e-3);
-% imagesc(kgrid.x_vec, kgrid.y_vec, p_data);
+% imagesc(p_data * 1e-3);
+imagesc(kgrid.x_vec * 1e3, kgrid.y_vec * 1e3, p_data * 1e-3);
 colormap('turbo');
-xlabel('x Position (grid points)');
-ylabel('y Position (grid points)');
+xlabel('x (mm)');
+ylabel('y (mm)');
 axis image;
 % clim([0 30000])
 title(plot_title);
