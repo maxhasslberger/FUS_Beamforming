@@ -25,22 +25,22 @@ all_elements_active_2 = reshape(all_elements_active_2, size(t_mask, 1), size(t_m
 
 figure;
 imagesc(all_elements_active_2)
-title("Approx")
+title("Linear propagator solution")
 colorbar;
 
 figure;
 imagesc(all_elements_active)
-title("Exact")
+title("Exact Green's function solution")
 colorbar;
 
 figure;
 imagesc(abs(all_elements_active_2 - all_elements_active))
-title("Diff")
+title("Difference")
 colorbar;
 
 figure;
 imagesc(abs(A))
-title("A")
+title("Linear propagator entries")
 colorbar;
 
 end
