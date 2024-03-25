@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -15,17 +15,17 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 
 %% Define Transducer Geometry
 
 if kgrid.dim == 2
     % Linear array
-    tx_pos = -0.045; % m
-    ty_pos = -0.045; % m
+    t1_pos = -0.045; % m
+    t2_pos = -0.045; % m
 
-    el1_offset = round((tx_pos - kgrid.x_vec(1)) / kgrid.dx); % grid points
-    el2_offset = round((ty_pos - kgrid.y_vec(1)) / kgrid.dy); % grid points
+    el1_offset = round((t1_pos - kgrid.x_vec(1)) / kgrid.dx); % grid points
+    el2_offset = round((t2_pos - kgrid.y_vec(1)) / kgrid.dy); % grid points
     if only_focus_opt
         num_elements = 50;
         shift = round(0e-3 / kgrid.dx); % m -> tangential shift in grid points
@@ -82,7 +82,8 @@ if kgrid.dim == 2
         % Points
         point_posx = round([0.2, 0.5, 0.6] * kgrid.Nx);
         point_posy = round([0.5, 0.6, 0.3] * kgrid.Ny);
-        amp = [10, 10, 10]' * 1e3;
+        point_posz = [];
+        amp = [0, 100, 200]' * 1e3;
 %         amp = 30000 * ones(length(point_posx), 1);
     
         % Assign amplitude acc. to closest position
@@ -176,7 +177,26 @@ t_solve = toc;
 b_ip = sim_exe(kgrid, medium, sensor, f0, p_ip, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 %% Save Results in mat-file
+% f0
+% kgrid
+% b_mask
+% t_mask
+% t1_pos
+% t2_pos
 
+tr.p_tr = p_tr;
+tr.b_tr = b_tr;
+
+ip.A = A;
+ip.p_ip = p_ip;
+ip.b_ip = b_ip;
+ip.t_solve = t_solve;
+ip.u = u;
+ip.sq_beta = sq_beta;
+
+point_pos.x = point_posx;
+point_pos.y = point_posy;
+point_pos.z = point_posz;
 
 %% Results
 plot_results(kgrid, p_tr, b_tr, 'Time Reversal');
