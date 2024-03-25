@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -15,7 +15,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 
 %% Define Transducer Geometry
 
@@ -83,7 +83,7 @@ if kgrid.dim == 2
         point_posx = round([0.2, 0.5, 0.6] * kgrid.Nx);
         point_posy = round([0.5, 0.6, 0.3] * kgrid.Ny);
         point_posz = [];
-        amp = [10, 10, 10]' * 1e3;
+        amp = [0, 100, 200]' * 1e3;
 %         amp = 30000 * ones(length(point_posx), 1);
     
         % Assign amplitude acc. to closest position
