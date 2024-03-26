@@ -61,6 +61,8 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
+    t_pos = t1_pos;
+    t_rot = t1_rot;
 
     karray_t = create_transducer(kgrid, t_name, t_pos, t_rot);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
@@ -81,11 +83,12 @@ if kgrid.dim == 2
     else
 
         % Points
-        point_pos.x = round([0.2, 0.5, 0.6] * kgrid.Nx);
-        point_pos.y = round([0.5, 0.6, 0.3] * kgrid.Ny);
-        point_pos.z = [];
-        amp_in = [0, 100, 200]' * 1e3;
-%         amp = 30000 * ones(length(point_posx), 1);
+        point_pos_m.x = [-0.03, -0.01]; % m
+        point_pos_m.y = [0.0, 0.025]; % m
+        amp_in = [100, 200]' * 1e3; % Pa
+
+        point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
+        point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
     
         % Assign amplitude acc. to closest position
         idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
@@ -105,10 +108,14 @@ else
     only_focus_opt = true;
 
     % Points
-    point_pos.x = round([0.2, 0.7, 0.8] * kgrid.Nx);
-    point_pos.y = round([0.5, 0.8, 0.5] * kgrid.Ny);
-    point_pos.z = round([0.5, 0.5, 0.5] * kgrid.Nz);
-    amp_in = [10, 10, 10]' * 1e3;
+    point_pos_m.x = [-0.03, -0.01]; % m
+    point_pos_m.y = [0.0, 0.035]; % m
+    point_pos_m.z = [0.0, 0.0]; % m
+    amp_in = [10, 10]' * 1e3; % Pa
+
+    point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
+    point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
+    point_pos.z = round((point_pos_m.z - kgrid.z_vec(1)) / kgrid.dz); % grid points
 
     % Assign amplitude acc. to closest position
     idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_pos.x, point_pos.y, point_pos.z);
