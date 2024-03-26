@@ -13,7 +13,8 @@ ip_delays = ip_angles / (2*pi * f0);
 
 %% Save as txt files
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
+out_filename = "test";
 
-dlmwrite(fullfile("..", "Transducer_Delay_Files", current_datetime + "_tr.txt"), tr_delays, 'delimiter', ' ');
-dlmwrite(fullfile("..", "Transducer_Delay_Files", current_datetime + "_ip.txt"), ip_delays, 'delimiter', ' ');
+dlmwrite(fullfile("..", "Transducer_Delay_Files", current_datetime + "_" + out_filename + "_tr.txt"), tr_delays, 'delimiter', ' ');
+dlmwrite(fullfile("..", "Transducer_Delay_Files", current_datetime + "_" + out_filename + "_ip.txt"), ip_delays, 'delimiter', ' ');
 
