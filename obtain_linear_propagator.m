@@ -6,23 +6,17 @@ if islogical(set_current_A)
     
         if min(sound_speed(:)) == max(sound_speed(:)) % homogeneous medium
         
-            % Excite one element after the other
             phase_in = 0;
             el_ids = find(t_mask);
-            
-            if only_focus_opt
-                obs_ids = find(b_mask);
-            else
-                obs_ids = 1:numel(t_mask);
-            end
-            
-            A = zeros(numel(obs_ids), numel(el_ids));
+            A = zeros(numel(t_mask), numel(el_ids));
+
+            % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:length(el_ids)
                 amp_in = zeros(size(t_mask));
                 amp_in(el_ids(i)) = 1;
                 a_coli = acousticFieldPropagator(amp_in, phase_in, dx, f0, sound_speed);
                 a_coli = reshape(a_coli, [], 1);
-                A(:, i) = a_coli(obs_ids);
+                A(:, i) = a_coli;
             end
         
         else

@@ -16,7 +16,7 @@ end
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
 set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-save_results = true;
+save_results = false;
 
 %% Define Transducer Geometry
 
@@ -153,14 +153,20 @@ tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input
 
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-ip.A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt, set_current_A); % -> acousticFieldPropagator (Green's functions)
+ip.A_all = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt, set_current_A); % -> acousticFieldPropagator (Green's functions)
 
 % Solve inverse problem
 tic
 if only_focus_opt
+    % Preserve sonicated points only
+    obs_ids = find(b_mask);
+    ip.A = ip.A_all(obs_ids, :);
     b_ip_des = b_des;
+
     ip.sq_beta = 0;%0.1; % constraint scaling factor
 else
+    % Take entire observation grid into account
+    ip.A = ip.A_all;
     b_ip_des = b_des_pl;
     ip.sq_beta = 0;%100; % constraint scaling factor
 end
