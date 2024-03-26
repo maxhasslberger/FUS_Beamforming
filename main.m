@@ -3,7 +3,7 @@ close all;
 
 %% Init
 
-f0 = 500e3; % Hz - transducer frequency
+f0 = 470e3; % Hz - transducer frequency
 n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
