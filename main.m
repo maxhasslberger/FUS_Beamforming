@@ -22,24 +22,26 @@ save_results = false;
 
 if kgrid.dim == 2
     % Linear array
-    t1_pos = -0.045; % m
-    t2_pos = -0.045; % m
+    t1_pos = [-45, 20]' * 1e-3; % m
+    t2_pos = [-20, -45]' * 1e-3; % m
+    t_pos = [t1_pos, t2_pos];
 
-    el1_offset = round((t1_pos - kgrid.x_vec(1)) / kgrid.dx); % grid points
-    el2_offset = round((t2_pos - kgrid.y_vec(1)) / kgrid.dy); % grid points
+    el1_offset = round((t1_pos(1) - kgrid.x_vec(1)) / kgrid.dx); % grid points
+    el2_offset = round((t2_pos(2) - kgrid.y_vec(1)) / kgrid.dy); % grid points
+    shift1 = round(t1_pos(2) / kgrid.dx); % m -> tangential shift in grid points
+    shift2 = round(t2_pos(1) / kgrid.dx); % m -> tangential shift in grid points
     if only_focus_opt
         num_elements = 50;
-        shift = round(0e-3 / kgrid.dx); % m -> tangential shift in grid points
         spacing = ceil(1e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
-        t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift, spacing, false);
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift, spacing, true); % Second (orthogonal) linear array
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift, spacing, false); % Second (antiparallel) linear array
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift, spacing, true); % Third (orthogonal) linear array
+
+        t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
+        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
     else
         num_elements = 25;
-        shift1 = round(20e-3 / kgrid.dx); % m -> tangential shift in grid points
-        shift2 = -shift1;
         spacing = ceil(2e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
+
         t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
         t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
@@ -80,6 +82,9 @@ if kgrid.dim == 2
         b_mask = makeDisc(kgrid.Nx, kgrid.Ny, round(0.7 * kgrid.Nx), round(0.7 * kgrid.Ny), round(0.2 * kgrid.Nx), false) ...
             - makeDisc(kgrid.Nx, kgrid.Ny, round(0.7 * kgrid.Nx), round(0.7 * kgrid.Ny), round(0.15 * kgrid.Nx), false);
         amp_in = 30000 * ones(sum(b_mask(:)), 1);
+
+        point_pos_m = [];
+        point_pos = [];
     else
 
         % Points
@@ -195,12 +200,12 @@ if save_results
     current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
     res_filename = "results";
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask", "t1_pos", "t2_pos", "tr", "ip", "amp_in", "point_pos", "only_focus_opt");
+        "f0", "kgrid", "b_mask", "t_mask", "t_pos", "tr", "ip", "amp_in", "point_pos", "point_pos_m", "only_focus_opt", "input_args");
 end
 
 %% Results
-plot_results(kgrid, tr.p, tr.b, 'Time Reversal');
-plot_results(kgrid, ip.p, ip.b, 'Inverse Problem');
+plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal');
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem');
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
@@ -232,9 +237,9 @@ if only_focus_opt
     disp(abs(b_tr_points) * 1e-3)
     fprintf("\nInverse Problem Total Amplitudes (kPa):\n")
     disp(abs(b_ip_points) * 1e-3)
-    fprintf("\nTime Reversal Phase Angles (kPa):\n")
-    disp(angle(b_tr_points) * 1e-3)
-    fprintf("\nInverse Problem Phase Angles (kPa):\n")
-    disp(angle(b_ip_points) * 1e-3)
+    fprintf("\nTime Reversal Phase Angles (deg):\n")
+    disp(angle(b_tr_points) / pi * 180)
+    fprintf("\nInverse Problem Phase Angles (deg):\n")
+    disp(angle(b_ip_points) / pi * 180)
 end
 
