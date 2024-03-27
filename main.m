@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 2;
+n_dim = 3;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -63,8 +63,8 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-    t_pos = t1_pos;
-    t_rot = t1_rot;
+%     t_pos = t1_pos;
+%     t_rot = t1_rot;
 
     karray_t = create_transducer(kgrid, t_name, t_pos, t_rot);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
