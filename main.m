@@ -63,8 +63,8 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-    t_pos = t1_pos;
-    t_rot = t1_rot;
+%     t_pos = t1_pos;
+%     t_rot = t1_rot;
 
     karray_t = create_transducer(kgrid, t_name, t_pos, t_rot);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
