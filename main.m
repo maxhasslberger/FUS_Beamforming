@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 2;
+n_dim = 3;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -15,7 +15,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 save_results = false;
 
 %% Define Transducer Geometry
@@ -66,7 +66,7 @@ else
 %     t_pos = t1_pos;
 %     t_rot = t1_rot;
 
-    karray_t = create_transducer(kgrid, t_name, t_pos, t_rot);
+    [karray_t, el2mask_ids] = create_transducer(kgrid, t_name, t_pos, t_rot);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
 
 %     voxelPlot(double(t_mask))

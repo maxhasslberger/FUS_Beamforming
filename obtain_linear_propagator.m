@@ -23,14 +23,14 @@ if islogical(set_current_A)
             error("Only linear media supported at the moment!")
         end
         
-        save(fullfile("Lin_Prop_Matrices\A_current.mat"), "A", "-v7.3")
+        save(fullfile("Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
         
     else
-        A = load(fullfile("Lin_Prop_Matrices\A_current.mat")).A;
+        A = load(fullfile("Lin_Prop_Matrices", "A_current.mat")).A;
     end
 
 else
-    A = load(fullfile("Lin_Prop_Matrices\" + string(set_current_A) + ".mat")).A;
+    A = load(fullfile("Lin_Prop_Matrices", string(set_current_A) + ".mat")).A;
 end
 
 % figure;
