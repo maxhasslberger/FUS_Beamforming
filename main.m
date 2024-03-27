@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -148,11 +148,11 @@ b_des_pl(find(b_mask)) = b_des;
 input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask, 'RecordMovie', false};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %% Time Reversal
-% 
-% tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
-% tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
-% tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+%% Time Reversal
+
+tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
+tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
+tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 %% Inverse Problem
 
