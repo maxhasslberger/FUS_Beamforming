@@ -16,7 +16,8 @@ end
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
 set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-save_results = false;
+do_time_reversal = false;
+save_results = true;
 
 %% Define Transducer Geometry
 
@@ -149,13 +150,16 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
-
-tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
-tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
-if ~isempty(karray_t)
-    tr.p = tr.p(el2mask_ids);
+if do_time_reversal
+    tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
+    tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
+    if ~isempty(karray_t)
+        tr.p = tr.p(el2mask_ids);
+    end
+    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+else
+    tr = [];
 end
-tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 %% Inverse Problem
 
@@ -207,7 +211,9 @@ if save_results
 end
 
 %% Results
-plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal');
+if do_time_reversal
+    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal');
+end
 plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem');
 
 % Metrics evaluation
@@ -230,7 +236,7 @@ if only_focus_opt
     else
         for point = 1:length(point_pos.x)
             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
-            b_ip_points = [b_ip_points, b_ip(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
+            b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
         end
     end
     
