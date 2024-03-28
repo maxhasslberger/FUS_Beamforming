@@ -152,13 +152,16 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 
 tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
 tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
+if ~isempty(karray_t)
+    tr.p = tr.p(el2mask_ids);
+end
 tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 %% Inverse Problem
 
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt, set_current_A); % -> acousticFieldPropagator (Green's functions)
+A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, el2mask_ids); % -> acousticFieldPropagator (Green's functions)
 
 % Solve inverse problem
 tic
@@ -200,7 +203,7 @@ if save_results
     current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
     res_filename = "results";
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask", "t_pos", "tr", "ip", "amp_in", "point_pos", "point_pos_m", "only_focus_opt", "input_args");
+        "f0", "kgrid", "b_mask", "t_mask", "el2mask_ids", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", "only_focus_opt", "input_args");
 end
 
 %% Results

@@ -1,15 +1,12 @@
 function p = sim_exe(kgrid, medium, sensor, f0, p_in, source_mask, sensor_mask, final_sim, input_args, varargin)
 
 karray_t = [];
-el2mask_ids = [];
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
             case 'karray_t'
                 karray_t = varargin{arg_idx+1};
-            case 'el2mask_ids'
-                el2mask_ids = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -23,8 +20,7 @@ source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
 if isempty(karray_t)
     source.p = source_signal;
 else
-    p_unsorted = karray_t.getDistributedSourceSignal(kgrid, source_signal);
-%     source.p = p_unsorted(el2mask_ids, :);
+    source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal);
     source.p = source_signal;
 end
 

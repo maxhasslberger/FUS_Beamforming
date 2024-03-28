@@ -1,4 +1,4 @@
-function A = obtain_linear_propagator(t_mask, b_mask, f0, sound_speed, dx, only_focus_opt, set_current_A)
+function A = obtain_linear_propagator(t_mask, f0, sound_speed, dx, set_current_A, el2mask_ids)
 
 if islogical(set_current_A)
 
@@ -6,8 +6,11 @@ if islogical(set_current_A)
     
         if min(sound_speed(:)) == max(sound_speed(:)) % homogeneous medium
         
-            phase_in = 0;
             el_ids = find(t_mask);
+            el2mask_ids = sort(el2mask_ids); % Mapping mask -> element index
+            el_ids = el_ids(el2mask_ids);
+
+            phase_in = 0;
             A = zeros(numel(t_mask), numel(el_ids));
 
             % Excite one element at a time and obtain one column (observation) after the other
