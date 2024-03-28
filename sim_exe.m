@@ -24,7 +24,7 @@ if isempty(karray_t)
     source.p = source_signal;
 else
     p_unsorted = karray_t.getDistributedSourceSignal(kgrid, source_signal);
-    source.p = p_unsorted(el2mask_ids);
+    source.p = p_unsorted(el2mask_ids, :);
 %     source.p = source_signal;
 end
 

@@ -50,6 +50,7 @@ if kgrid.dim == 2
     end
     
     karray_t = [];
+    el2mask_ids = [];
     t_mask = t_mask > 0; % Return to logical in case of overlaps
 
 %     imagesc(t_mask, [-1 1])
@@ -156,7 +157,7 @@ if do_time_reversal
     if ~isempty(karray_t)
         tr.p = tr.p(el2mask_ids);
     end
-    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t, 'el2mask_ids', el2mask_ids);
 else
     tr = [];
 end
@@ -166,7 +167,7 @@ end
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, el2mask_ids); % -> acousticFieldPropagator (Green's functions)
-A = A(:, 1:256);
+% A = A(:, 1:256);
 % Solve inverse problem
 tic
 if only_focus_opt
@@ -200,7 +201,7 @@ opts.customx0 = ip.p;
 ip.t_solve = toc;
 
 % Evaluate obtained phase terms in forward simulation
-ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t, 'el2mask_ids', el2mask_ids);
 
 %% Save Results in mat-file
 if save_results
