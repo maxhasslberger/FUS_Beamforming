@@ -15,9 +15,9 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = "A_3D_sorted"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false;
-save_results = true;
+save_results = false;
 
 %% Define Transducer Geometry
 
@@ -64,8 +64,8 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-%     t_pos = t1_pos;
-%     t_rot = t1_rot;
+    t_pos = t1_pos;
+    t_rot = t1_rot;
 
     [karray_t, el2mask_ids] = create_transducer(kgrid, t_name, t_pos, t_rot);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
@@ -113,11 +113,11 @@ if kgrid.dim == 2
 else
     only_focus_opt = true;
 
-    % Points
-    point_pos_m.x = [-0.03, -0.01]; % m
-    point_pos_m.y = [0.0, 0.035]; % m
-    point_pos_m.z = [0.0, 0.0]; % m
-    amp_in = [10, 10]' * 1e3; % Pa
+    % Point - rel. to transducer surface -> [20, 10, 25] mm
+    point_pos_m.x = [-0.03]; % m
+    point_pos_m.y = [0.00]; % m
+    point_pos_m.z = [0.01]; % m
+    amp_in = [100]' * 1e3; % Pa
 
     point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
     point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
@@ -166,7 +166,7 @@ end
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, el2mask_ids); % -> acousticFieldPropagator (Green's functions)
-
+A = A(:, 1:256);
 % Solve inverse problem
 tic
 if only_focus_opt
