@@ -21,7 +21,7 @@ if isempty(karray_t)
     source.p = source_signal;
 else
     source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal);
-    source.p = source_signal;
+%     source.p = source_signal;
 end
 
 %% Sensor
