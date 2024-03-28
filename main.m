@@ -15,7 +15,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = "A_3D_sorted"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false;
 save_results = true;
 

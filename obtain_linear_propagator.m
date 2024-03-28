@@ -7,8 +7,8 @@ if islogical(set_current_A)
         if min(sound_speed(:)) == max(sound_speed(:)) % homogeneous medium
         
             el_ids = find(t_mask);
-            el2mask_ids = sort(el2mask_ids); % Mapping mask -> element index
-            el_ids = el_ids(el2mask_ids);
+%             el2mask_ids = sort(el2mask_ids); % Mapping mask -> element index
+%             el_ids = el_ids(el2mask_ids);
 
             phase_in = 0;
             A = zeros(numel(t_mask), numel(el_ids));
