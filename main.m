@@ -154,7 +154,7 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 if do_time_reversal
     tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
     tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
-    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t, 'el2mask_ids', el2mask_ids);
+    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 else
     tr = [];
 end
@@ -200,7 +200,7 @@ opts.customx0 = ip.p;
 ip.t_solve = toc;
 
 % Evaluate obtained phase terms in forward simulation
-ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t, 'el2mask_ids', el2mask_ids);
+ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 %% Save Results in mat-file
 if save_results

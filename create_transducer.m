@@ -19,7 +19,7 @@ for tx = 1:size(t_pos, 2) % for each transducer
 end
 
 [elementAll_pos, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask -> getDistributedSourceSignal
-elementAll_pos = elementAll_pos';
+elementAll_pos = elementAll_pos'; % TODO: Fix indexing!
 
 % TODO: Real mask with all elements (karray) + mask with center elements only
     
