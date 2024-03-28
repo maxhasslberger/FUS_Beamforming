@@ -15,7 +15,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = "A_3D"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = "A_3D_1T"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false;
 save_results = true;
 
@@ -114,7 +114,7 @@ if kgrid.dim == 2
 else
     only_focus_opt = true;
 
-    % Point - rel. to transducer surface -> [20, 10, 25] mm - TODO: Output point coordinates relative to transducer 1 surface
+    % Point - rel. to transducer surface -> [40, 10, 25] mm - TODO: Output point coordinates relative to transducer 1 surface
     point_pos_m.x = [-0.03]; % m
     point_pos_m.y = [0.00]; % m
     point_pos_m.z = [0.01]; % m
