@@ -23,9 +23,8 @@ source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
 if isempty(karray_t)
     source.p = source_signal;
 else
-    p_unsorted = karray_t.getDistributedSourceSignal(kgrid, source_signal);
-%     source.p = p_unsorted(el2mask_ids, :);
-    source.p = source_signal;
+    source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal);
+%     source.p = source_signal;
 end
 
 %% Sensor

@@ -18,9 +18,10 @@ for tx = 1:size(t_pos, 2) % for each transducer
     elementAll_pos(:, (tx - 1) * n_tr_elements + 1 : tx * n_tr_elements) = elementx_pos + repmat(tx_pos, 1, size(element_pos, 2));
 end
 
-[~, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask
+[elementAll_pos, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask -> getDistributedSourceSignal
+elementAll_pos = elementAll_pos';
 
-% TODO: Add in right order acc to el2mask_ids
+% TODO: Real mask with all elements (karray) + mask with center elements only
     
 % Add one array element after another
 for i = 1:length(elementAll_pos)

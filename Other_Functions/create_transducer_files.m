@@ -8,7 +8,7 @@ load(fullfile("..", "Results", in_filename + ".mat"));
 % tr_angles = angle(tr.p') + pi; % between 0 and 2*pi
 % tr_delays = tr_angles / (2*pi * f0);
 
-[~, mask2el_inds] = sort(el2mask_ids);
+[~, mask2el_inds] = sort(el2mask_ids); % Mapping Mask -> Element IDs
 ip_corrected = ip.p(mask2el_inds);
 ip_angles = angle(ip_corrected') + pi; % between 0 and 2*pi
 ip_delays = ip_angles / (2*pi * f0);
