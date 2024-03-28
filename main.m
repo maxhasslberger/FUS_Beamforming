@@ -114,7 +114,7 @@ if kgrid.dim == 2
 else
     only_focus_opt = true;
 
-    % Point - rel. to transducer surface -> [20, 10, 25] mm
+    % Point - rel. to transducer surface -> [20, 10, 25] mm - TODO: Output point coordinates relative to transducer 1 surface
     point_pos_m.x = [-0.03]; % m
     point_pos_m.y = [0.00]; % m
     point_pos_m.z = [0.01]; % m
@@ -154,9 +154,6 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 if do_time_reversal
     tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
     tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
-    if ~isempty(karray_t)
-        tr.p = tr.p(el2mask_ids);
-    end
     tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t, 'el2mask_ids', el2mask_ids);
 else
     tr = [];
@@ -167,7 +164,9 @@ end
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, el2mask_ids); % -> acousticFieldPropagator (Green's functions)
-% A = A(:, 1:256);
+
+% TODO: Only keep columns of utilized transducer elements
+
 % Solve inverse problem
 tic
 if only_focus_opt

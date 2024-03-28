@@ -19,6 +19,8 @@ for tx = 1:size(t_pos, 2) % for each transducer
 end
 
 [~, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask
+
+% TODO: Add in right order acc to el2mask_ids
     
 % Add one array element after another
 for i = 1:length(elementAll_pos)
