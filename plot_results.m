@@ -1,4 +1,4 @@
-function plot_results(kgrid, excitation, data, t_pos, plot_title)
+function plot_results(kgrid, excitation, data, t_pos, plot_title, varargin)
 
 % Plot magnitude and phase of array elements
 figure;
@@ -16,7 +16,20 @@ ylabel('Phase (deg)')
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    p_data = abs(data(:,:,round(kgrid.Nz/2)));
+    z_coord = round(kgrid.Nz/2);
+
+    if ~isempty(varargin)
+        for arg_idx = 1:2:length(varargin)
+            switch varargin{arg_idx}
+                case 'z_coord'
+                    z_coord = varargin{arg_idx+1};
+                otherwise
+                    error('Unknown optional input.');
+            end
+        end
+    end
+
+    p_data = abs(data(:,:,z_coord));
     % Video or similar?...
 end
 

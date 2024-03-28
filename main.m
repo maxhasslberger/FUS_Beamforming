@@ -213,11 +213,13 @@ if save_results
         "f0", "kgrid", "b_mask", "t_mask", "el2mask_ids", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", "only_focus_opt", "input_args");
 end
 
-%% Results
+%% TR Results
 if do_time_reversal
     plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal');
 end
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem');
+
+%% IP Results
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', 'z_coord', point_pos.z(1));
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
