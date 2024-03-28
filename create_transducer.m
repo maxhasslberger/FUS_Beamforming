@@ -5,7 +5,7 @@ element_pos = load(fullfile("Array_Positions", t_name + ".mat")).ElementPosition
 karray_t = kWaveArray();
 
 n_tr_elements = size(element_pos, 2);
-elementAll_pos = nan(3, n_tr_elements * size(t_pos, 2));
+elementAll_pos_orig = nan(3, n_tr_elements * size(t_pos, 2));
 for tx = 1:size(t_pos, 2) % for each transducer
 
     tx_pos = t_pos(:, tx);
@@ -15,10 +15,10 @@ for tx = 1:size(t_pos, 2) % for each transducer
     tx_transf = getAffineMatrix(tx_pos, tx_rot);
     
     elementx_pos = tx_transf(1:3, 1:3) * element_pos;
-    elementAll_pos(:, (tx - 1) * n_tr_elements + 1 : tx * n_tr_elements) = elementx_pos + repmat(tx_pos, 1, size(element_pos, 2));
+    elementAll_pos_orig(:, (tx - 1) * n_tr_elements + 1 : tx * n_tr_elements) = elementx_pos + repmat(tx_pos, 1, size(element_pos, 2));
 end
 
-[elementAll_pos, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask -> getDistributedSourceSignal
+[elementAll_pos, el2mask_ids] = sortrows(elementAll_pos_orig'); % refer element indices to mask -> getDistributedSourceSignal
 elementAll_pos = elementAll_pos'; % TODO: Fix indexing!
 
 % TODO: Real mask with all elements (karray) + mask with center elements only
