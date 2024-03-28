@@ -206,6 +206,9 @@ ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask, sensor_mask, true, input
 if save_results
     current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
     res_filename = "results";
+    if ~only_focus_opt
+        ip.A = []; % A might be very large...
+    end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
         "f0", "kgrid", "b_mask", "t_mask", "el2mask_ids", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", "only_focus_opt", "input_args");
 end
