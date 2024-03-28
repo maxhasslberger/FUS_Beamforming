@@ -1,14 +1,16 @@
 clear;
 
 %% Load desired Results file
-in_filename = "20240325190245_results";
+in_filename = "20240327204947_results";
 load(fullfile("..", "Results", in_filename + ".mat"));
 
 %% Compute Delays for Time Reversal and Inverse Problem
 % tr_angles = angle(tr.p') + pi; % between 0 and 2*pi
 % tr_delays = tr_angles / (2*pi * f0);
 
-ip_angles = angle(ip.p') + pi; % between 0 and 2*pi
+[~, mask2el_inds] = sort(el2mask_ids);
+ip_corrected = ip.p(mask2el_inds);
+ip_angles = angle(ip_corrected') + pi; % between 0 and 2*pi
 ip_delays = ip_angles / (2*pi * f0);
 
 %% Save as txt files
