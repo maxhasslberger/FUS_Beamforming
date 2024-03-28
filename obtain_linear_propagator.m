@@ -11,7 +11,7 @@ if islogical(set_current_A)
 %             el_ids = el_ids(el2mask_ids);
 
             phase_in = 0;
-            A = zeros(numel(t_mask), numel(el_ids));
+            A = single(zeros(numel(t_mask), numel(el_ids)));
 
             % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:length(el_ids)
