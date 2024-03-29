@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -15,7 +15,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = "A_3D_1T"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false;
 save_results = true;
 
@@ -53,8 +53,16 @@ if kgrid.dim == 2
     el2mask_ids = [];
     t_mask = t_mask > 0; % Return to logical in case of overlaps
 
-%     imagesc(t_mask, [-1 1])
-%     colormap(getColorMap);
+    t_name = "std";
+    t1_pos = [0, 0]' * 1e-3; % m
+    t2_pos = [-20, -45]' * 1e-3; % m
+    t_pos = [t1_pos];
+    t_rot = [0];
+    [karray_t, el2mask_ids] = create_transducer(kgrid, t_name, t_pos, t_rot);
+    t_mask = karray_t.getArrayBinaryMask(kgrid);
+
+    imagesc(t_mask, [-1 1])
+    colormap(getColorMap);
 else
     % Planar Array
     t_name = "std";
@@ -109,6 +117,7 @@ if kgrid.dim == 2
         end
     end
 
+    figure;
     imagesc(b_mask + t_mask, [-1 1])
     colormap(getColorMap);
 else
@@ -219,7 +228,12 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', 'z_coord', point_pos.z(1));
+if kgrid.dim == 2
+    varargin = {};
+else
+    varargin = {'z_coord', point_pos.z(1)};
+end
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")

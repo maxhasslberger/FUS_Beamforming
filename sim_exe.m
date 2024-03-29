@@ -17,11 +17,13 @@ end
 
 source.p_mask = source_mask;
 source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
+source_signal = createCWSignals(kgrid.t_array, f0, 1:9, 0);
 if isempty(karray_t)
     source.p = source_signal;
 else
     source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal);
-%     source.p = source_signal;
+    a = source_signal;
+    source.p = source_signal;
 end
 
 %% Sensor
