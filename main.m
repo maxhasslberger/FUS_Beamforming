@@ -58,17 +58,18 @@ if kgrid.dim == 2
 else
     % Planar Array
     t_name = "std";
+    sparsity_name = "sparsity_ids";
     t1_pos = [-70, 20, 0]' * 1e-3; % m
-    t1_rot = [0, 90, 0]'; % deg
+    t1_rot = [-90, 0, 90]'; % deg
     t2_pos = [20, -70, 0]' * 1e-3; % m
-    t2_rot = [90, 0, 0]'; % deg
+    t2_rot = [-90, 0, 180]'; % deg
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-    t_pos = t1_pos;
-    t_rot = t1_rot;
+%     t_pos = t1_pos;
+%     t_rot = t1_rot;
 
-    [karray_t, el2mask_ids] = create_transducer(kgrid, t_name, t_pos, t_rot);
+    [karray_t, el2mask_ids, mask2el_ids] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
 
 %     voxelPlot(double(t_mask))
@@ -210,7 +211,8 @@ if save_results
         ip.A = []; % A might be very large...
     end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask", "el2mask_ids", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", "only_focus_opt", "input_args");
+        "f0", "kgrid", "b_mask", "t_mask", "el2mask_ids", "mask2el_ids", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
+        "only_focus_opt", "input_args");
 end
 
 %% TR Results
