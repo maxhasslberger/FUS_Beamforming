@@ -20,10 +20,10 @@ end
 
 elementAll_pos = elementAll_pos_orig([2 1 3], :);
 [elementAll_pos, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask -> getDistributedSourceSignal
-elementAll_pos = elementAll_pos'; % TODO: Fix indexing!
+elementAll_pos = elementAll_pos';
 elementAll_pos = elementAll_pos([2 1 3], :);
 
-% TODO: Real mask with all elements (karray) + mask with center elements only
+% TODO: Mask for transducer delay files; Real mask with all elements (karray) + mask with center elements only
     
 % Add one array element after another
 for i = 1:length(elementAll_pos)

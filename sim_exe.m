@@ -20,8 +20,8 @@ source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
 if isempty(karray_t)
     source.p = source_signal;
 else
-    source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal);
-%     source.p = source_signal;
+    source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal); % TODO: Upscale signal!
+    source.p = source_signal;
 end
 
 %% Sensor
