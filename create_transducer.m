@@ -23,7 +23,7 @@ elementAll_pos = elementAll_pos_orig([2 1 3], :);
 elementAll_pos = elementAll_pos';
 elementAll_pos = elementAll_pos([2 1 3], :);
 
-% TODO: Mask for transducer delay files; Real mask with all elements (karray) + mask with center elements only
+% TODO: Mask for transducer delay files + " " A matrix creation; (Real mask with all elements (karray) + mask with center elements only)
     
 % Add one array element after another
 for i = 1:length(elementAll_pos)
