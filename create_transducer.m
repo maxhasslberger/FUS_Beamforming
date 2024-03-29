@@ -19,11 +19,15 @@ for tx = 1:size(t_pos, 2) % for each transducer
 end
 
 elementAll_pos = elementAll_pos_orig([2 1 3], :);
-[elementAll_pos, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask -> getDistributedSourceSignal
+
+[elementAll_pos, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask -> right order in getDistributedSourceSignal
+% tr1_ids = find(el2mask_ids <= 256); % If only tr1 used -> refer to its indices in propagation matrix (A)
+% [~, mask2el_ids] = sort(el2mask_ids); % First 256 elements refer to first transducer in the original order acc. to element_pos
+
 elementAll_pos = elementAll_pos';
 elementAll_pos = elementAll_pos([2 1 3], :);
 
-% TODO: Mask for transducer delay files + " " A matrix creation; (Real mask with all elements (karray) + mask with center elements only)
+% (TODO: karray with all elements + karray with center elements only)
     
 % Add one array element after another
 for i = 1:length(elementAll_pos)
