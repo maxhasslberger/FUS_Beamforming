@@ -1,4 +1,20 @@
-function A = obtain_linear_propagator(t_mask, f0, sound_speed, dx, set_current_A, el2mask_ids)
+function A = obtain_linear_propagator(t_mask, f0, sound_speed, dx, set_current_A, varargin)
+
+mask2el_ids = [];
+tr_ids = [];
+
+if ~isempty(varargin)
+    for arg_idx = 1:2:length(varargin)
+        switch varargin{arg_idx}
+            case 'mask2el_ids'
+                mask2el_ids = varargin{arg_idx+1};
+            case 'tr_ids'
+                tr_ids = varargin{arg_idx+1};
+            otherwise
+                error('Unknown optional input.');
+        end
+    end
+end
 
 if islogical(set_current_A)
 
@@ -30,6 +46,19 @@ if islogical(set_current_A)
         
     else
         A = load(fullfile("Lin_Prop_Matrices", "A_current.mat")).A;
+
+        % Only use subset of available transducers
+        if ~isempty(mask2el_ids) && ~isempty(tr_ids)
+            if numel(tr_ids) < size(mask2el_ids, 2)
+
+                % Obtain transducer element ids
+                mask2el_ids = mask2el_ids(:, tr_ids);
+                mask2el_ids = sort(mask2el_ids(:));
+                
+                % Update A
+                A = A(:, mask2el_ids);
+            end
+        end
     end
 
 else

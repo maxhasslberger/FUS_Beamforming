@@ -51,6 +51,7 @@ if kgrid.dim == 2
     
     karray_t = [];
     el2mask_ids = [];
+    mask2el_ids = [];
     t_mask = t_mask > 0; % Return to logical in case of overlaps
 
 %     imagesc(t_mask, [-1 1])
@@ -164,7 +165,7 @@ end
 
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, el2mask_ids); % -> acousticFieldPropagator (Green's functions)
+A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, mask2el_ids); % -> acousticFieldPropagator (Green's functions)
 
 % TODO: Only keep columns of utilized transducer elements
 
