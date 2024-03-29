@@ -30,8 +30,6 @@ mask2el_ids = reshape(mask2el_ids, n_tr_elements, []); % Original order per tran
 
 elementAll_pos = elementAll_pos';
 elementAll_pos = elementAll_pos([2 1 3], :);
-
-% (TODO: karray with all elements + karray with center elements only)
     
 % Add one array element after another
 for i = 1:length(elementAll_pos)

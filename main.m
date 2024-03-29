@@ -9,7 +9,7 @@ dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
 else
-    grid_size = [150, 150, 100] * 1e-3; % m in [x, y, z] respectively
+    grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
 end
 [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
@@ -59,9 +59,9 @@ else
     % Planar Array
     t_name = "std";
     sparsity_name = "sparsity_ids";
-    t1_pos = [-70, 20, 0]' * 1e-3; % m
+    t1_pos = [-55, 20, 0]' * 1e-3; % m
     t1_rot = [-90, 0, 90]'; % deg
-    t2_pos = [20, -70, 0]' * 1e-3; % m
+    t2_pos = [20, -55, 0]' * 1e-3; % m
     t2_rot = [-90, 0, 180]'; % deg
 
     t_pos = [t1_pos, t2_pos];
@@ -116,9 +116,9 @@ else
     only_focus_opt = true;
 
     % Point - rel. to transducer surface -> [40, 10, 25] mm - TODO: Output point coordinates relative to transducer 1 surface
-    point_pos_m.x = [-0.03]; % m
-    point_pos_m.y = [0.00]; % m
-    point_pos_m.z = [0.01]; % m
+    point_pos_m.x = [20] * 1e-3; % m
+    point_pos_m.y = [0] * 1e-3; % m
+    point_pos_m.z = [10] * 1e-3; % m
     amp_in = [100]' * 1e3; % Pa
 
     point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
