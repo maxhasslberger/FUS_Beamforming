@@ -7,7 +7,7 @@ f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
-    grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
+    grid_size = [110, 100] * 1e-3; % m in [x, y] respectively
 else
     grid_size = [150, 150, 100] * 1e-3; % m in [x, y, z] respectively
 end
