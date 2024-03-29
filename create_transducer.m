@@ -5,7 +5,7 @@ dim = 2;
 element_pos = load(fullfile("Array_Positions", t_name + ".mat")).ElementPosition'; % flat transducer array centered at [0, 0, 0] along the xy-plane
 % element_pos = element_pos(1:dim, [1, 13, 26, 39, 42, 55, 67, 140, 210])%2D
 % element_pos = element_pos(1:dim, [1, 67, 140, 210])%2D
-element_pos = element_pos(1:dim, 200:256);%2D
+element_pos = element_pos(1:dim, 1:140);%2D
 karray_t = kWaveArray();
 
 n_tr_elements = size(element_pos, 2);
@@ -36,10 +36,10 @@ for i = 1:length(elementAll_pos)
 %     mask = karray_t.getArrayBinaryMask(kgrid);
 %     voxelPlot(double(mask))
 end
-% mask = karray_t.getArrayBinaryMask(kgrid);
+mask = karray_t.getArrayBinaryMask(kgrid);
 % % voxelPlot(double(mask))
-% imagesc(mask, [-1 1])
-% colormap(getColorMap);
+imagesc(mask, [-1 1])
+colormap(getColorMap);
 % 
 % karr2 = kWaveArray();
 % karr2.addDiscElement(round(elementAll_pos(:, 1), 3), 1e-4, zeros(1, 3));
