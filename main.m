@@ -15,7 +15,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false;
 save_results = true;
 
@@ -100,7 +100,7 @@ if kgrid.dim == 2
         % Points
         point_pos_m.x = [-0.03, -0.01]; % m
         point_pos_m.y = [0.0, 0.025]; % m
-        amp_in = [100, 200]' * 1e3; % Pa
+        amp_in = [100, 100]' * 1e3; % Pa
 
         point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
         point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points

@@ -3,9 +3,9 @@ function [karray_t, el2mask_ids] = create_transducer(kgrid, t_name, t_pos, t_rot
 % Init
 dim = 2;
 element_pos = load(fullfile("Array_Positions", t_name + ".mat")).ElementPosition'; % flat transducer array centered at [0, 0, 0] along the xy-plane
-element_pos = element_pos(1:dim, [1, 13, 26, 39, 42, 55, 67, 140, 210])%2D
+% element_pos = element_pos(1:dim, [1, 13, 26, 39, 42, 55, 67, 140, 210])%2D
 % element_pos = element_pos(1:dim, [1, 67, 140, 210])%2D
-% element_pos = element_pos(1:dim, 200:256);%2D
+element_pos = element_pos(1:dim, 200:256);%2D
 karray_t = kWaveArray();
 
 n_tr_elements = size(element_pos, 2);
@@ -32,7 +32,7 @@ elementAll_pos
 % Add one array element after another
 for i = 1:length(elementAll_pos)
 %     karray_t.addCustomElement(round(element_pos(:, i), 3), 0, 2, char("el_" + string(i)));
-    karray_t.addDiscElement(round(elementAll_pos(:, i), 3), 1e-4, zeros(1, 3));
+    karray_t.addDiscElement(round(elementAll_pos(:, i), 3), 1e-5, zeros(1, 3));
 %     mask = karray_t.getArrayBinaryMask(kgrid);
 %     voxelPlot(double(mask))
 end
