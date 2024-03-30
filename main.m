@@ -165,9 +165,7 @@ end
 
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, mask2el_ids); % -> acousticFieldPropagator (Green's functions)
-
-% TODO: Only keep columns of utilized transducer elements
+A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A); % -> acousticFieldPropagator (Green's functions)
 
 % Solve inverse problem
 tic
