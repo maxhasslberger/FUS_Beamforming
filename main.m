@@ -227,7 +227,7 @@ else
     varargin = {'z_coord', point_pos.z(1)};
 end
 
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin);
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin{:});
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
@@ -243,24 +243,24 @@ if only_focus_opt
 
     if kgrid.dim == 2
         for point = 1:length(point_pos.x)
-            b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
+%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point))];
         end
     else
         for point = 1:length(point_pos.x)
-            b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
+%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
         end
     end
     
     fprintf("\nInput Amplitudes (kPa):\n")
     disp(amp_in' * 1e-3)
-    fprintf("\nTime Reversal Total Amplitudes (kPa):\n")
-    disp(abs(b_tr_points) * 1e-3)
+%     fprintf("\nTime Reversal Total Amplitudes (kPa):\n")
+%     disp(abs(b_tr_points) * 1e-3)
     fprintf("\nInverse Problem Total Amplitudes (kPa):\n")
     disp(abs(b_ip_points) * 1e-3)
-    fprintf("\nTime Reversal Phase Angles (deg):\n")
-    disp(angle(b_tr_points) / pi * 180)
+%     fprintf("\nTime Reversal Phase Angles (deg):\n")
+%     disp(angle(b_tr_points) / pi * 180)
     fprintf("\nInverse Problem Phase Angles (deg):\n")
     disp(angle(b_ip_points) / pi * 180)
 end
