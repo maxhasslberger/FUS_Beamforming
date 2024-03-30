@@ -1,0 +1,1 @@
+Folder where simulation results are saved.
