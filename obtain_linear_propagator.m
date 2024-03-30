@@ -43,7 +43,6 @@ if islogical(set_current_A)
         end
         
         save(fullfile("Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
-        return;
         
     else
         A = load(fullfile("Lin_Prop_Matrices", "A_current.mat")).A;

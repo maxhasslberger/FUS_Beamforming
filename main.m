@@ -68,7 +68,7 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-    active_tr_ids = [1];
+    active_tr_ids = [1,2];
 
     [karray_t, el2mask_ids, mask2el_ids] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
