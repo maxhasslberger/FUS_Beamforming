@@ -53,12 +53,8 @@ else
 end
 
 % Only use subset of available transducers
-if ~isempty(mask2el_ids) && ~isempty(active_tr_ids)
+if ~isempty(mask2el_ids)
     if sum(t_mask(:)) < size(A, 2)
-
-        % Obtain transducer element ids
-        mask2el_ids = mask2el_ids(:, active_tr_ids);
-        mask2el_ids = sort(mask2el_ids(:));
         
         % Update A
         A = A(:, mask2el_ids);
