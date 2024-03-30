@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 2;
+n_dim = 3;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -15,8 +15,8 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-do_time_reversal = true;
+set_current_A = "A_3D_2Trs_sparse"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+do_time_reversal = false;
 save_results = true;
 
 %% Define Transducer Geometry
@@ -243,24 +243,24 @@ if only_focus_opt
 
     if kgrid.dim == 2
         for point = 1:length(point_pos.x)
-            b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
+%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point))];
         end
     else
         for point = 1:length(point_pos.x)
-            b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
+%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
         end
     end
     
     fprintf("\nInput Amplitudes (kPa):\n")
     disp(amp_in' * 1e-3)
-    fprintf("\nTime Reversal Total Amplitudes (kPa):\n")
-    disp(abs(b_tr_points) * 1e-3)
+%     fprintf("\nTime Reversal Total Amplitudes (kPa):\n")
+%     disp(abs(b_tr_points) * 1e-3)
     fprintf("\nInverse Problem Total Amplitudes (kPa):\n")
     disp(abs(b_ip_points) * 1e-3)
-    fprintf("\nTime Reversal Phase Angles (deg):\n")
-    disp(angle(b_tr_points) / pi * 180)
+%     fprintf("\nTime Reversal Phase Angles (deg):\n")
+%     disp(angle(b_tr_points) / pi * 180)
     fprintf("\nInverse Problem Phase Angles (deg):\n")
     disp(angle(b_ip_points) / pi * 180)
 end
