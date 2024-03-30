@@ -1,4 +1,20 @@
-function A = obtain_linear_propagator(t_mask, b_mask, f0, sound_speed, dx, only_focus_opt, set_current_A)
+function A = obtain_linear_propagator(t_mask, f0, sound_speed, dx, set_current_A, varargin)
+
+mask2el_ids = [];
+tr_ids = [];
+
+if ~isempty(varargin)
+    for arg_idx = 1:2:length(varargin)
+        switch varargin{arg_idx}
+            case 'mask2el_ids'
+                mask2el_ids = varargin{arg_idx+1};
+            case 'tr_ids'
+                tr_ids = varargin{arg_idx+1};
+            otherwise
+                error('Unknown optional input.');
+        end
+    end
+end
 
 if islogical(set_current_A)
 
@@ -6,9 +22,12 @@ if islogical(set_current_A)
     
         if min(sound_speed(:)) == max(sound_speed(:)) % homogeneous medium
         
-            phase_in = 0;
             el_ids = find(t_mask);
-            A = zeros(numel(t_mask), numel(el_ids));
+%             el2mask_ids = sort(el2mask_ids); % Mapping mask -> element index
+%             el_ids = el_ids(el2mask_ids);
+
+            phase_in = 0;
+            A = single(zeros(numel(t_mask), numel(el_ids)));
 
             % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:length(el_ids)
@@ -23,14 +42,27 @@ if islogical(set_current_A)
             error("Only linear media supported at the moment!")
         end
         
-        save(fullfile("Lin_Prop_Matrices\A_current.mat"), "A", "-v7.3")
+        save(fullfile("Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
         
     else
-        A = load(fullfile("Lin_Prop_Matrices\A_current.mat")).A;
+        A = load(fullfile("Lin_Prop_Matrices", "A_current.mat")).A;
+
+        % Only use subset of available transducers
+        if ~isempty(mask2el_ids) && ~isempty(tr_ids)
+            if numel(tr_ids) < size(mask2el_ids, 2)
+
+                % Obtain transducer element ids
+                mask2el_ids = mask2el_ids(:, tr_ids);
+                mask2el_ids = sort(mask2el_ids(:));
+                
+                % Update A
+                A = A(:, mask2el_ids);
+            end
+        end
     end
 
 else
-    A = load(fullfile("Lin_Prop_Matrices\" + string(set_current_A) + ".mat")).A;
+    A = load(fullfile("Lin_Prop_Matrices", string(set_current_A) + ".mat")).A;
 end
 
 % figure;

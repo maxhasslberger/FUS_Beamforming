@@ -20,9 +20,8 @@ source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
 if isempty(karray_t)
     source.p = source_signal;
 else
+    source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal); % TODO: Upscale signal!
     source.p = source_signal;
-    source.p = source_signal;
-%     source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal);
 end
 
 %% Sensor
@@ -30,7 +29,7 @@ end
 sensor.mask = sensor_mask;
 
 %% Run Acoustic Simulation
-
+% Linux (in binaries folder): chmod +x ./kspaceFirstOrder3D-OMP or chmod +x ./kspaceFirstOrder-OMP
 if kgrid.dim == 2
     sensor_data = kspaceFirstOrder2DC(kgrid, medium, source, sensor, input_args{:});
 else

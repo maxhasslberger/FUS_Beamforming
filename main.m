@@ -9,14 +9,15 @@ dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
 else
-    grid_size = [150, 150, 100] * 1e-3; % m in [x, y, z] respectively
+    grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
 end
 [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
 set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-save_results = false;
+do_time_reversal = true;
+save_results = true;
 
 %% Define Transducer Geometry
 
@@ -25,6 +26,7 @@ if kgrid.dim == 2
     t1_pos = [-45, 20]' * 1e-3; % m
     t2_pos = [-20, -45]' * 1e-3; % m
     t_pos = [t1_pos, t2_pos];
+    t_rot = [];
 
     el1_offset = round((t1_pos(1) - kgrid.x_vec(1)) / kgrid.dx); % grid points
     el2_offset = round((t2_pos(2) - kgrid.y_vec(1)) / kgrid.dy); % grid points
@@ -49,6 +51,8 @@ if kgrid.dim == 2
     end
     
     karray_t = [];
+    el2mask_ids = [];
+    mask2el_ids = [];
     t_mask = t_mask > 0; % Return to logical in case of overlaps
 
 %     imagesc(t_mask, [-1 1])
@@ -56,17 +60,18 @@ if kgrid.dim == 2
 else
     % Planar Array
     t_name = "std";
-    t1_pos = [-70, 20, 0]' * 1e-3; % m
-    t1_rot = [0, 90, 0]'; % deg
-    t2_pos = [20, -70, 0]' * 1e-3; % m
-    t2_rot = [90, 0, 0]'; % deg
+    sparsity_name = "sparsity_ids";
+    t1_pos = [-55, 20, 0]' * 1e-3; % m
+    t1_rot = [-90, 0, 90]'; % deg
+    t2_pos = [20, -55, 0]' * 1e-3; % m
+    t2_rot = [-90, 0, 180]'; % deg
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
 %     t_pos = t1_pos;
 %     t_rot = t1_rot;
 
-    karray_t = create_transducer(kgrid, t_name, t_pos, t_rot);
+    [karray_t, el2mask_ids, mask2el_ids] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
 
 %     voxelPlot(double(t_mask))
@@ -88,9 +93,9 @@ if kgrid.dim == 2
     else
 
         % Points
-        point_pos_m.x = [-0.03, -0.01]; % m
-        point_pos_m.y = [0.0, 0.025]; % m
-        amp_in = [100, 200]' * 1e3; % Pa
+        point_pos_m.x = [10, -10] * 1e-3; % m
+        point_pos_m.y = [0, 35] * 1e-3; % m
+        amp_in = [200, 200]' * 1e3; % Pa
 
         point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
         point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
@@ -112,11 +117,11 @@ if kgrid.dim == 2
 else
     only_focus_opt = true;
 
-    % Points
-    point_pos_m.x = [-0.03, -0.01]; % m
-    point_pos_m.y = [0.0, 0.035]; % m
-    point_pos_m.z = [0.0, 0.0]; % m
-    amp_in = [10, 10]' * 1e3; % Pa
+    % Point - rel. to transducer surface -> [40, 10, 25] mm - TODO: Output point coordinates relative to transducer 1 surface
+    point_pos_m.x = [20] * 1e-3; % m
+    point_pos_m.y = [0] * 1e-3; % m
+    point_pos_m.z = [10] * 1e-3; % m
+    amp_in = [100]' * 1e3; % Pa
 
     point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
     point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
@@ -149,16 +154,19 @@ input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMa
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
-
-tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
-tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
-tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+if do_time_reversal
+    tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
+    tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
+    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+else
+    tr = [];
+end
 
 %% Inverse Problem
 
 % Obtain propagation operator
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, b_mask, f0, medium.sound_speed, kgrid.dx, only_focus_opt, set_current_A); % -> acousticFieldPropagator (Green's functions)
+A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A); % -> acousticFieldPropagator (Green's functions)
 
 % Solve inverse problem
 tic
@@ -199,13 +207,27 @@ ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask, sensor_mask, true, input
 if save_results
     current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
     res_filename = "results";
+    if ~only_focus_opt
+        ip.A = []; % A might be very large...
+    end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask", "t_pos", "tr", "ip", "amp_in", "point_pos", "point_pos_m", "only_focus_opt", "input_args");
+        "f0", "kgrid", "b_mask", "t_mask", "el2mask_ids", "mask2el_ids", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
+        "only_focus_opt", "input_args");
 end
 
-%% Results
-plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal');
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem');
+%% TR Results
+if do_time_reversal
+    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal');
+end
+
+%% IP Results
+if kgrid.dim == 2
+    varargin = {};
+else
+    varargin = {'z_coord', point_pos.z(1)};
+end
+
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
@@ -227,7 +249,7 @@ if only_focus_opt
     else
         for point = 1:length(point_pos.x)
             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
-            b_ip_points = [b_ip_points, b_ip(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
+            b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
         end
     end
     
