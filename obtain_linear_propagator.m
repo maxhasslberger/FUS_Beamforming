@@ -43,31 +43,27 @@ if islogical(set_current_A)
         end
         
         save(fullfile("Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
+        return;
         
     else
         A = load(fullfile("Lin_Prop_Matrices", "A_current.mat")).A;
-
-        % Only use subset of available transducers
-        if ~isempty(mask2el_ids) && ~isempty(tr_ids)
-            if numel(tr_ids) < size(mask2el_ids, 2)
-
-                % Obtain transducer element ids
-                mask2el_ids = mask2el_ids(:, tr_ids);
-                mask2el_ids = sort(mask2el_ids(:));
-                
-                % Update A
-                A = A(:, mask2el_ids);
-            end
-        end
     end
 
 else
     A = load(fullfile("Lin_Prop_Matrices", string(set_current_A) + ".mat")).A;
 end
 
-% figure;
-% imagesc(abs(A))
-% title("A")
-% colorbar;
+% Only use subset of available transducers
+if ~isempty(mask2el_ids) && ~isempty(tr_ids)
+    if numel(tr_ids) < size(A, 2)
+
+        % Obtain transducer element ids
+        mask2el_ids = mask2el_ids(:, tr_ids);
+        mask2el_ids = sort(mask2el_ids(:));
+        
+        % Update A
+        A = A(:, mask2el_ids);
+    end
+end
 
 end
