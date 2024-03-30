@@ -91,13 +91,16 @@ if kgrid.dim == 2
         point_pos = [];
     else
 
-        % Points
-        point_pos_m.x = [10, -10] * 1e-3; % m
-        point_pos_m.y = [0, 35] * 1e-3; % m
+        % Focal points - rel. to transducer surface
+        point_pos_m.x = [55, 35] * 1e-3; % m
+        point_pos_m.y = [-20, 15] * 1e-3; % m
         amp_in = [200, 200]' * 1e3; % Pa
 
-        point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
-        point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
+        point_pos.x = point_pos_m.x + t_pos(1, 1);
+        point_pos.y = point_pos_m.y + t_pos(2, 1);
+
+        point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
+        point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
     
         % Assign amplitude acc. to closest position
         idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
@@ -117,15 +120,19 @@ if kgrid.dim == 2
 else
     only_focus_opt = true;
 
-    % Point - rel. to transducer surface -> [40, 10, 25] mm - TODO: Output point coordinates relative to transducer 1 surface
-    point_pos_m.x = [20] * 1e-3; % m
-    point_pos_m.y = [0] * 1e-3; % m
+    % Focal points - rel. to transducer surface
+    point_pos_m.x = [75] * 1e-3; % m
+    point_pos_m.y = [-20] * 1e-3; % m
     point_pos_m.z = [10] * 1e-3; % m
     amp_in = [100]' * 1e3; % Pa
 
-    point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
-    point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
-    point_pos.z = round((point_pos_m.z - kgrid.z_vec(1)) / kgrid.dz); % grid points
+    point_pos.x = point_pos_m.x + t_pos(1, 1);
+    point_pos.y = point_pos_m.y + t_pos(2, 1);
+    point_pos.z = point_pos_m.z + t_pos(3, 1);
+
+    point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
+    point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
+    point_pos.z = round((point_pos.z - kgrid.z_vec(1)) / kgrid.dz); % grid points
 
     % Assign amplitude acc. to closest position
     idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_pos.x, point_pos.y, point_pos.z);

@@ -36,10 +36,10 @@ end
 % plot the pressure field 
 figure;
 % imagesc(p_data * 1e-3);
-imagesc((kgrid.x_vec - t_pos(2, 1)) * 1e3, (kgrid.y_vec - t_pos(1, 1)) * 1e3, p_data * 1e-3); % relative to transducer 1 face (center)
+imagesc((kgrid.y_vec - t_pos(2, 1)) * 1e3, (kgrid.x_vec - t_pos(1, 1)) * 1e3, p_data * 1e-3); % relative to transducer 1 face (center)
 colormap('turbo');
-xlabel('x (mm)');
-ylabel('y (mm)');
+xlabel('y (mm)');
+ylabel('x (mm)');
 axis image;
 % clim([0 30000])
 title(plot_title);
