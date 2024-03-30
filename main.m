@@ -36,7 +36,7 @@ if kgrid.dim == 2
         num_elements = 50;
         spacing = ceil(1e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
 
-        t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
+        t_mask_ps = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
@@ -44,16 +44,16 @@ if kgrid.dim == 2
         num_elements = 25;
         spacing = ceil(2e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
 
-        t_mask = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
-        t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
+        t_mask_ps = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
+        t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
         % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
     end
     
     karray_t = [];
-    mask_active = [];
+    active_ids = [];
     mask2el_delayFiles = [];
-    t_mask = t_mask > 0; % Return to logical in case of overlaps
+    t_mask_ps = t_mask_ps > 0; % Return to logical in case of overlaps
 
 %     imagesc(t_mask, [-1 1])
 %     colormap(getColorMap);
@@ -70,8 +70,7 @@ else
     t_rot = [t1_rot, t2_rot];
     active_tr_ids = [1];
 
-    [karray_t, mask_active, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
-    t_mask = karray_t.getArrayBinaryMask(kgrid);
+    [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
 
 %     voxelPlot(double(t_mask))
 end
@@ -114,7 +113,7 @@ if kgrid.dim == 2
         end
     end
 
-    imagesc(b_mask + t_mask, [-1 1])
+    imagesc(b_mask + t_mask_ps, [-1 1])
     colormap(getColorMap);
     title("Setup")
 else
@@ -145,7 +144,7 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
-    voxelPlot(double(t_mask + b_mask))
+    voxelPlot(double(t_mask_ps + b_mask))
 end
 
 % Create desired signal
@@ -157,14 +156,14 @@ b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
 b_des_pl(find(b_mask)) = b_des;
 
 % set simulation input options
-input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask, 'RecordMovie', false};
+input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
 if do_time_reversal
-    tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask, false, input_args);
+    tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask_ps, false, input_args);
     tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
-    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 else
     tr = [];
 end
@@ -173,7 +172,7 @@ end
 
 % Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, 'mask_active', mask_active);
+A = obtain_linear_propagator(t_mask_ps, f0, medium.sound_speed, kgrid.dx, set_current_A, 'mask_active', active_ids);
 
 % Solve inverse problem
 tic
@@ -208,7 +207,7 @@ opts.customx0 = ip.p;
 ip.t_solve = toc;
 
 % Evaluate obtained phase terms in forward simulation
-ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask, sensor_mask, true, input_args, 'karray_t', karray_t);
+ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 
 %% Save Results in mat-file
 if save_results
@@ -218,7 +217,7 @@ if save_results
         ip.A = []; % A might be very large...
     end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask", "mask_active", "mask2el_delayFiles", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
+        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "mask2el_delayFiles", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
         "only_focus_opt", "input_args");
 end
 

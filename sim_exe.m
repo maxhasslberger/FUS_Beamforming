@@ -15,13 +15,14 @@ end
 
 %% Source
 
-source.p_mask = source_mask;
 source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
 if isempty(karray_t)
+    source.p_mask = source_mask;
     source.p = source_signal;
 else
-    source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal); % TODO: Upscale signal!
-    source.p = source_signal;
+    source.p_mask = karray_t.getArrayBinaryMask(kgrid);
+    source.p = karray_t.getDistributedSourceSignal(kgrid, source_signal);
+%     source.p = source_signal;
 end
 
 %% Sensor
