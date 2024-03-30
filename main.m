@@ -68,10 +68,9 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-    t_pos = t1_pos;
-    t_rot = t1_rot;
+    active_tr_ids = [1];
 
-    [karray_t, el2mask_ids, mask2el_ids] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot);
+    [karray_t, el2mask_ids, mask2el_ids] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
 
 %     voxelPlot(double(t_mask))
@@ -166,7 +165,7 @@ end
 
 % Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, 'mask2el_ids', mask2el_ids, 'tr_ids', (1:size(t_pos, 2)));
+A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, 'mask2el_ids', mask2el_ids, 'tr_ids', active_tr_ids);
 
 % Solve inverse problem
 tic

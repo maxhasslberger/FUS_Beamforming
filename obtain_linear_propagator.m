@@ -1,7 +1,7 @@
 function A = obtain_linear_propagator(t_mask, f0, sound_speed, dx, set_current_A, varargin)
 
 mask2el_ids = [];
-tr_ids = [];
+active_tr_ids = [];
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -9,7 +9,7 @@ if ~isempty(varargin)
             case 'mask2el_ids'
                 mask2el_ids = varargin{arg_idx+1};
             case 'tr_ids'
-                tr_ids = varargin{arg_idx+1};
+                active_tr_ids = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -54,11 +54,11 @@ else
 end
 
 % Only use subset of available transducers
-if ~isempty(mask2el_ids) && ~isempty(tr_ids)
-    if numel(tr_ids) < size(A, 2)
+if ~isempty(mask2el_ids) && ~isempty(active_tr_ids)
+    if sum(t_mask(:)) < size(A, 2)
 
         % Obtain transducer element ids
-        mask2el_ids = mask2el_ids(:, tr_ids);
+        mask2el_ids = mask2el_ids(:, active_tr_ids);
         mask2el_ids = sort(mask2el_ids(:));
         
         % Update A
