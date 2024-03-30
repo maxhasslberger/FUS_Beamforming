@@ -4,7 +4,7 @@ close all;
 %% Init
 
 f0 = 500e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
     grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
@@ -16,7 +16,7 @@ end
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
 set_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-do_time_reversal = false;
+do_time_reversal = true;
 save_results = true;
 
 %% Define Transducer Geometry
@@ -26,6 +26,7 @@ if kgrid.dim == 2
     t1_pos = [-45, 20]' * 1e-3; % m
     t2_pos = [-20, -45]' * 1e-3; % m
     t_pos = [t1_pos, t2_pos];
+    t_rot = [];
 
     el1_offset = round((t1_pos(1) - kgrid.x_vec(1)) / kgrid.dx); % grid points
     el2_offset = round((t2_pos(2) - kgrid.y_vec(1)) / kgrid.dy); % grid points
@@ -92,9 +93,9 @@ if kgrid.dim == 2
     else
 
         % Points
-        point_pos_m.x = [-0.03, -0.01]; % m
-        point_pos_m.y = [0.0, 0.025]; % m
-        amp_in = [100, 200]' * 1e3; % Pa
+        point_pos_m.x = [10, -10] * 1e-3; % m
+        point_pos_m.y = [0, 35] * 1e-3; % m
+        amp_in = [200, 200]' * 1e3; % Pa
 
         point_pos.x = round((point_pos_m.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
         point_pos.y = round((point_pos_m.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
@@ -220,7 +221,13 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', 'z_coord', point_pos.z(1));
+if kgrid.dim == 2
+    varargin = {};
+else
+    varargin = {'z_coord', point_pos.z(1)};
+end
+
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
@@ -236,24 +243,24 @@ if only_focus_opt
 
     if kgrid.dim == 2
         for point = 1:length(point_pos.x)
-%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
+            b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point))];
         end
     else
         for point = 1:length(point_pos.x)
-%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
+            b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
         end
     end
     
     fprintf("\nInput Amplitudes (kPa):\n")
     disp(amp_in' * 1e-3)
-%     fprintf("\nTime Reversal Total Amplitudes (kPa):\n")
-%     disp(abs(b_tr_points) * 1e-3)
+    fprintf("\nTime Reversal Total Amplitudes (kPa):\n")
+    disp(abs(b_tr_points) * 1e-3)
     fprintf("\nInverse Problem Total Amplitudes (kPa):\n")
     disp(abs(b_ip_points) * 1e-3)
-%     fprintf("\nTime Reversal Phase Angles (deg):\n")
-%     disp(angle(b_tr_points) / pi * 180)
+    fprintf("\nTime Reversal Phase Angles (deg):\n")
+    disp(angle(b_tr_points) / pi * 180)
     fprintf("\nInverse Problem Phase Angles (deg):\n")
     disp(angle(b_ip_points) / pi * 180)
 end
