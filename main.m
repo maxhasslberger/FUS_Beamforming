@@ -51,8 +51,8 @@ if kgrid.dim == 2
     end
     
     karray_t = [];
-    el2mask_ids = [];
-    mask2el_ids = [];
+    mask_active = [];
+    mask2el_delayFiles = [];
     t_mask = t_mask > 0; % Return to logical in case of overlaps
 
 %     imagesc(t_mask, [-1 1])
@@ -68,10 +68,9 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-%     t_pos = t1_pos;
-%     t_rot = t1_rot;
+    active_tr_ids = [1];
 
-    [karray_t, el2mask_ids, mask2el_ids] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot);
+    [karray_t, mask_active, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
     t_mask = karray_t.getArrayBinaryMask(kgrid);
 
 %     voxelPlot(double(t_mask))
@@ -114,6 +113,7 @@ if kgrid.dim == 2
 
     imagesc(b_mask + t_mask, [-1 1])
     colormap(getColorMap);
+    title("Setup")
 else
     only_focus_opt = true;
 
@@ -164,9 +164,9 @@ end
 
 %% Inverse Problem
 
-% Obtain propagation operator
+% Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A); % -> acousticFieldPropagator (Green's functions)
+A = obtain_linear_propagator(t_mask, f0, medium.sound_speed, kgrid.dx, set_current_A, 'mask_active', mask_active);
 
 % Solve inverse problem
 tic
@@ -211,7 +211,7 @@ if save_results
         ip.A = []; % A might be very large...
     end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask", "el2mask_ids", "mask2el_ids", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
+        "f0", "kgrid", "b_mask", "t_mask", "mask_active", "mask2el_delayFiles", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
         "only_focus_opt", "input_args");
 end
 
@@ -227,7 +227,7 @@ else
     varargin = {'z_coord', point_pos.z(1)};
 end
 
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin);
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin{:});
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
