@@ -46,7 +46,7 @@ rem_el = rem_el(:, active_tr_ids);
 % Add one array element after another
 for i = 1:length(elementAll_pos)
 
-    karray_t_ps.addDiscElement(round(elementAll_pos(:, i), 3), 1e-10, zeros(1, 3));
+    karray_t_ps.addDiscElement(elementAll_pos(:, i), 1e-10, zeros(1, 3));
     karray_t.addRectElement(elementAll_pos(:, i), el_sz(1), el_sz(2), t_rot_per_el(:, i));
 
 %     mask = karray_t_ps.getArrayBinaryMask(kgrid);

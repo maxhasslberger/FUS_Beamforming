@@ -19,8 +19,6 @@ if final_sim
         amp = reshape(amp, Nx, Ny, Nz);
         phase = reshape(phase, Nx, Ny, Nz);
     end
-else
-%     amp = max(amp) * ones(length(amp), 1); % Same amplitude for each element
 end
 
 p = amp .* exp(1j*phase);

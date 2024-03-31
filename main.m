@@ -15,8 +15,10 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
-set_current_A = "A_3D_2Trs_sparse"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-do_time_reversal = false;
+use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+
+get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = true;
 
 %% Define Transducer Geometry
@@ -59,7 +61,11 @@ if kgrid.dim == 2
 %     colormap(getColorMap);
 else
     % Planar Array
-    t_name = "std";
+    if use_greens_fctn
+        t_name = "std";
+    else
+        t_name = "std_orig";
+    end
     sparsity_name = "sparsity_ids";
     t1_pos = [-55, 20, 0]' * 1e-3; % m
     t1_rot = [-90, 0, 90]'; % deg
@@ -68,7 +74,7 @@ else
 
     t_pos = [t1_pos, t2_pos];
     t_rot = [t1_rot, t2_rot];
-    active_tr_ids = [1];
+    active_tr_ids = [1, 2];
 
     [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
 
@@ -172,7 +178,8 @@ end
 
 % Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(t_mask_ps, f0, medium.sound_speed, kgrid.dx, set_current_A, 'mask_active', active_ids);
+A = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
+    'active_ids', active_ids);
 
 % Solve inverse problem
 tic
