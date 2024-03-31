@@ -52,10 +52,19 @@ for i = 1:length(elementAll_pos)
 %     mask = karray_t_ps.getArrayBinaryMask(kgrid);
 %     voxelPlot(double(mask))
 end
+
 t_mask_ps = karray_t_ps.getArrayBinaryMask(kgrid);
+
 % voxelPlot(double(t_mask_ps))
 
+% t_mask = karray_t.getArrayBinaryMask(kgrid);
+% voxelPlot(double(t_mask))
+
+% figure
+% sliceViewer(karray_t.getArrayGridWeights(kgrid))
+
 end
+
 
 function [elementAll_pos, el2mask_ids, mask2el_ids] = el2mask_indexing(elementAll_pos_orig, n_arr_elements)
 
