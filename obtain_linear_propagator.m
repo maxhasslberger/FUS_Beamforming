@@ -28,14 +28,14 @@ if islogical(get_current_A)
 
             % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:length(el_ids)
+                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
+
                 amp_in = zeros(size(t_mask));
                 amp_in(el_ids(i)) = 1;
 
                 a_coli = single(acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed));
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
-
-                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
             end
         
         else
@@ -45,11 +45,12 @@ if islogical(get_current_A)
 
             % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:karray_t.number_elements
+                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
+
                 a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, [], sensor_mask, true, input_args, 'karray_t', karray_t));
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
 
-                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
                 input = circshift(input, 1); % Move unitary excitation by 1 element
             end
         end
