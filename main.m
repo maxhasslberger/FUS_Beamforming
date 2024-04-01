@@ -3,7 +3,7 @@ close all;
 
 %% Init
 
-f0 = 500e3; % Hz - transducer frequency
+f0 = 470e3; % Hz - transducer frequency
 n_dim = 3;
 dx_factor = 1;
 if n_dim == 2
@@ -127,8 +127,8 @@ else
 
     % Focal points - rel. to transducer surface
     point_pos_m.x = [75] * 1e-3; % m
-    point_pos_m.y = [-20] * 1e-3; % m
-    point_pos_m.z = [10] * 1e-3; % m
+    point_pos_m.y = [0] * 1e-3; % m
+    point_pos_m.z = [0] * 1e-3; % m
     amp_in = [100]' * 1e3; % Pa
 
     point_pos.x = point_pos_m.x + t_pos(1, 1);

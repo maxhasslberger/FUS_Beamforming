@@ -34,6 +34,8 @@ if islogical(get_current_A)
                 a_coli = single(acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed));
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
+
+                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
             end
         
         else
@@ -47,6 +49,7 @@ if islogical(get_current_A)
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
 
+                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
                 input = circshift(input, 1); % Move unitary excitation by 1 element
             end
         end
