@@ -35,14 +35,19 @@ end
 
 % plot the pressure field 
 figure;
-% imagesc(p_data * 1e-3);
-imagesc((kgrid.y_vec - t_pos(2, 1)) * 1e3, (kgrid.x_vec - t_pos(1, 1)) * 1e3, p_data * 1e-3); % relative to transducer 1 face (center)
+
+plot_vecy = kgrid.y_vec(1):kgrid.dy:kgrid.y_vec(end);
+plot_vecx = kgrid.x_vec(1):kgrid.dx:kgrid.x_vec(end);
+
+imagesc((plot_vecy- t_pos(2, 1)) * 1e3, (plot_vecx - t_pos(1, 1)) * 1e3, p_data * 1e-3); % relative to transducer 1 face (center)
+
 colormap('turbo');
 xlabel('y (mm)');
 ylabel('x (mm)');
 axis image;
 % clim([0 30000])
 title(plot_title);
+
 c = colorbar;
 c.Label.String = 'Pressure (kPa)';
 
