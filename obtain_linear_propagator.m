@@ -53,7 +53,7 @@ if islogical(get_current_A)
                 el_x = karray_t.elements{i};
                 karray_tmp.addRectElement(el_x.position, el_x.length, el_x.width, el_x.orientation);
 
-                a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, [], sensor_mask, true, input_args, 'karray_t', karray_t));
+                a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, [], sensor_mask, true, input_args, 'karray_t', karray_tmp));
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
 
