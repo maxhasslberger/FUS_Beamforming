@@ -28,7 +28,7 @@ if islogical(get_current_A)
 
             % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:length(el_ids)
-                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
+                disp("Offline Simulation " + string(i) + "/" + string(size(A, 2)))
 
                 amp_in = zeros(size(t_mask));
                 amp_in(el_ids(i)) = 1;
@@ -48,7 +48,7 @@ if islogical(get_current_A)
 
             % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:karray_t.number_elements
-                disp("Offline Simulation " + string(i) + "/" + string(karray_t.number_elements))
+                disp("Offline Simulation " + string(i) + "/" + string(size(A, 2)))
 
                 el_x = karray_t.elements{i};
                 karray_tmp.addRectElement(el_x.position, el_x.length, el_x.width, el_x.orientation);
