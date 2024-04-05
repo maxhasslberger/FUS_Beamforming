@@ -36,8 +36,8 @@ end
 % plot the pressure field 
 figure;
 
-plot_vecy = kgrid.y_vec(1):kgrid.dy:kgrid.y_vec(end);
-plot_vecx = kgrid.x_vec(1):kgrid.dx:kgrid.x_vec(end);
+plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
+plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
 
 imagesc((plot_vecy- t_pos(2, 1)) * 1e3, (plot_vecx - t_pos(1, 1)) * 1e3, p_data * 1e-3); % relative to transducer 1 face (center)
 

@@ -213,6 +213,8 @@ opts.customx0 = ip.p;
 
 ip.t_solve = toc;
 
+% ip.p = max(abs(ip.p)) * exp(1j * angle(ip.p)); % All elements with same amplitude
+
 % Evaluate obtained phase terms in forward simulation
 ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 
