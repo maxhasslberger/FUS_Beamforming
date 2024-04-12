@@ -11,7 +11,7 @@ if n_dim == 2
 else
     grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
 end
-[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
+[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor, 'dx', 1e-3);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 only_focus_opt = true; % Optimize only focal spots or entire grid
