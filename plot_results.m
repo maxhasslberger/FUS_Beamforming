@@ -48,7 +48,7 @@ if ~isempty(t1_filename)
     t1_img = niftiread(t1_filename);
 
     ax1 = axes;
-    imagesc(ax1, t1_img(:, :, z_coord), [50,500]);
+    imagesc(ax1, imrotate(squeeze(t1_img(:, z_coord, :)), 90), [50,500]);
     hold all;
     ax2 = axes;
     im2 = imagesc(ax2, p_data * 1e-3);
