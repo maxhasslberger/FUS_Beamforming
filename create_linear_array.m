@@ -1,14 +1,14 @@
-function t_mask = create_linear_array(kgrid, num_elements, plane_offset, center_offset, spacing, rotate)
-
+function t_mask = create_linear_array(kgrid, num_elements, x_offset, y_offset, spacing, rotate90)
+% TODO: Use karray class (-> arbitrary rotation)
 if kgrid.dim == 2
     
     t_mask = zeros(kgrid.Nx, kgrid.Ny);
-    start_index = round(kgrid.Ny/2 - round(num_elements/2) * spacing + 1 + center_offset);
-    t_mask(plane_offset, start_index:spacing:start_index + num_elements * spacing - 1) = 1;
-    if rotate
-        t_mask = rot90(t_mask);
-        grid_corr = 1;
-        t_mask = [t_mask(grid_corr+1:end, :); zeros(grid_corr, size(t_mask, 2))];
+    if ~rotate90
+        start_index = round(-round(num_elements/2) * spacing + 1 + y_offset);
+        t_mask(x_offset, start_index:spacing:start_index + num_elements * spacing - 1) = 1;
+    else
+        start_index = round(-round(num_elements/2) * spacing + 1 + x_offset);
+        t_mask(start_index:spacing:start_index + num_elements * spacing - 1, y_offset) = 1;
     end
 else
     error("Not supported at the moment")

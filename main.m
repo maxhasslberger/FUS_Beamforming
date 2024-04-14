@@ -2,63 +2,62 @@ clear;
 close all;
 
 %% Init
-
 f0 = 470e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx_factor = 1;
 if n_dim == 2
-    grid_size = [100, 100] * 1e-3; % m in [x, y] respectively
+    grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
     grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
 end
 [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor, 'dx', 1e-3);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
-only_focus_opt = true; % Optimize only focal spots or entire grid
-use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+% Scan init
+t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
+t1w_offset = [96, 127, 126]; % Offset to Scan center
 
-get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+% Simulation config
+only_focus_opt = true; % Optimize only focal spots or entire grid
+use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+
+get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
-save_results = true;
+save_results = false;
 
 %% Define Transducer Geometry
 
 if kgrid.dim == 2
     % Linear array
-    t1_pos = [-45, 20]' * 1e-3; % m
-    t2_pos = [-20, -45]' * 1e-3; % m
-    t_pos = [t1_pos, t2_pos];
+    t1_pos = [-63, -2]';
+    t2_pos = [73, -2]';
+    t3_pos = [0, 68]';
+    t_pos = [t1_pos, t2_pos, t3_pos];
     t_rot = [];
 
-    el1_offset = round((t1_pos(1) - kgrid.x_vec(1)) / kgrid.dx); % grid points
-    el2_offset = round((t2_pos(2) - kgrid.y_vec(1)) / kgrid.dy); % grid points
-    shift1 = round(t1_pos(2) / kgrid.dx); % m -> tangential shift in grid points
-    shift2 = round(t2_pos(1) / kgrid.dx); % m -> tangential shift in grid points
-    if only_focus_opt
-        num_elements = 50;
-        spacing = ceil(1e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
 
-        t_mask_ps = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
-    else
-        num_elements = 25;
-        spacing = ceil(2e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
+    el1_offset = round(t1w_offset(1) + t1_pos(1)); % grid points
+    el2_offset = round(t1w_offset(1) + t2_pos(1)); % grid points
+    el3_offset = round(t1w_offset(1) + t3_pos(1)); % grid points
+    shift1 = round(t1w_offset(3) + t1_pos(2)); % m -> tangential shift in grid points
+    shift2 = round(t1w_offset(3) + t2_pos(2)); % m -> tangential shift in grid points
+    shift3 = round(t1w_offset(3) + t3_pos(2)); % m -> tangential shift in grid points
 
-        t_mask_ps = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
-        t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, true); % Second (orthogonal) linear array
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el1_offset), shift1, spacing, false); % Second (antiparallel) linear array
-        % t_mask = t_mask + create_linear_array(kgrid, num_elements, round(kgrid.Nx - el2_offset), shift2, spacing, true); % Third (orthogonal) linear array
-    end
+    num_elements = 50;
+    spacing = ceil(1e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
+
+    t_mask_ps = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
+    t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, false); % Second (antiparallel) linear array
+    t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el3_offset, shift3, spacing, true); % Third (orthogonal) linear array
     
+
     karray_t = [];
     active_ids = [];
     mask2el_delayFiles = [];
     t_mask_ps = t_mask_ps > 0; % Return to logical in case of overlaps
 
-%     imagesc(t_mask, [-1 1])
-%     colormap(getColorMap);
+    imagesc(t_mask_ps, [-1 1])
+    colormap(getColorMap);
 else
     % Planar Array
     if use_greens_fctn
@@ -97,15 +96,15 @@ if kgrid.dim == 2
     else
 
         % Focal points - rel. to transducer surface
-        point_pos_m.x = [55, 35] * 1e-3; % m
-        point_pos_m.y = [-20, 15] * 1e-3; % m
+        point_pos_m.x = [-16];
+        point_pos_m.y = [-27];
         amp_in = [200, 200]' * 1e3; % Pa
 
-        point_pos.x = point_pos_m.x + t_pos(1, 1);
-        point_pos.y = point_pos_m.y + t_pos(2, 1);
+        point_pos.x = round(t1w_offset(1) + point_pos_m.x);
+        point_pos.y = round(t1w_offset(3) + point_pos_m.y);
 
-        point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
-        point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
+%         point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
+%         point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
     
         % Assign amplitude acc. to closest position
         idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
@@ -119,7 +118,7 @@ if kgrid.dim == 2
         end
     end
 
-    imagesc(b_mask + t_mask_ps, [-1 1])
+    imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
     colormap(getColorMap);
     title("Setup")
 else
@@ -232,17 +231,17 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal');
+    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal', t1w_filename, t1w_offset);
 end
 
 %% IP Results
 if kgrid.dim == 2
     varargin = {};
 else
-    varargin = {'z_coord', point_pos.z(1)};
+    varargin = {'slice', point_pos.z(1)};
 end
 
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', varargin{:});
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, t1w_offset, varargin{:});
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")

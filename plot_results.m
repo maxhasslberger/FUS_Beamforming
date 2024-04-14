@@ -1,4 +1,4 @@
-function plot_results(kgrid, excitation, data, t_pos, plot_title, varargin)
+function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, t1_offset, varargin)
 
 %% Plot magnitude and phase of array elements
 figure;
@@ -13,17 +13,14 @@ xlabel('Element #')
 ylabel('Phase (deg)')
 
 %% Plot the pressure field 
-
-z_coord = round(kgrid.Nx/2); % Has to be overwritten
-t1_filename = [];
+slice_coord = 32e-3;
+slice = round(t1_offset(2) + slice_coord / kgrid.dy); % Has to be overwritten
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
-            case 'z_coord'
-                z_coord = varargin{arg_idx+1};
-            case 't1_filename'
-                t1_filename = varargin{arg_idx+1};
+            case 'slice'
+                slice = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -33,7 +30,7 @@ end
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    p_data = abs(data(:,:,z_coord));
+    p_data = abs(data(:,:,slice));
     % Video or similar?...
 end
 
@@ -48,10 +45,10 @@ if ~isempty(t1_filename)
     t1_img = niftiread(t1_filename);
 
     ax1 = axes;
-    imagesc(ax1, imrotate(squeeze(t1_img(:, z_coord, :)), 90), [50,500]);
+    imagesc(ax1, imrotate(squeeze(t1_img(:, slice, :)), 90), [50,500]);
     hold all;
     ax2 = axes;
-    im2 = imagesc(ax2, p_data * 1e-3);
+    im2 = imagesc(ax2, imrotate(p_data * 1e-3, 90));
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
