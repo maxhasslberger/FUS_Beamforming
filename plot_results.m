@@ -1,7 +1,8 @@
-function plot_results(kgrid, excitation, data, t_pos, plot_title, varargin)
+function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, t1w_offset, varargin)
 
 %% Plot magnitude and phase of array elements
-figure;
+f = figure;
+f.Position = [700 100 650 350];
 subplot(2, 1, 1)
 plot(abs(excitation * 1e-3))
 title(plot_title);
@@ -13,32 +14,31 @@ xlabel('Element #')
 ylabel('Phase (deg)')
 
 %% Plot the pressure field 
-
-z_coord = round(kgrid.Nx/2); % Has to be overwritten
-t1_filename = [];
+slice_coord = 32;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
-            case 'z_coord'
-                z_coord = varargin{arg_idx+1};
-            case 't1_filename'
-                t1_filename = varargin{arg_idx+1};
+            case 'slice'
+                slice_coord = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
     end
 end
 
+slice = round(t1w_offset(2) + slice_coord);
+
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    p_data = abs(data(:,:,z_coord));
+    p_data = abs(data(:,:,slice));
     % Video or similar?...
 end
 
-
-figure;
+p_sz = size(p_data);
+f = figure;
+f.Position = [1400 100 484 512];
 
 plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
 plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
@@ -47,11 +47,22 @@ plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
 if ~isempty(t1_filename)
     t1_img = niftiread(t1_filename);
 
+    t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
+    if p_sz ~= t1w_sz
+        [X, Y] = meshgrid(1:t1w_sz(1), 1:t1w_sz(2));
+        [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));
+        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice, :)))', Xq, Yq, "linear");
+        t1w_plot = t1w_plot';
+    else
+        t1w_plot = squeeze(t1_img(:, slice, :));
+    end
+
+
     ax1 = axes;
-    imagesc(ax1, imrotate(squeeze(t1_img(:, z_coord, :)), 90), [50,500]);
+    imagesc(ax1, imrotate(t1w_plot, 90), [50,500]);
     hold all;
     ax2 = axes;
-    im2 = imagesc(ax2, p_data * 1e-3);
+    im2 = imagesc(ax2, imrotate(p_data * 1e-3, 90));
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
