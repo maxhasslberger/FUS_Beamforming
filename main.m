@@ -265,7 +265,7 @@ if only_focus_opt
     disp(abs(b_ip_points) * 1e-3)
 %     fprintf("\nTime Reversal Phase Angles (deg):\n")
 %     disp(angle(b_tr_points) / pi * 180)
-    fprintf("\nInverse Problem Phase Angles (deg):\n")
-    disp(angle(b_ip_points) / pi * 180)
+%     fprintf("\nInverse Problem Phase Angles (deg):\n")
+%     disp(angle(b_ip_points) / pi * 180)
 end
 
