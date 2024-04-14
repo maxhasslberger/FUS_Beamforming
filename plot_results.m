@@ -1,4 +1,4 @@
-function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, t1_offset, varargin)
+function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, t1w_offset, varargin)
 
 %% Plot magnitude and phase of array elements
 figure;
@@ -13,8 +13,8 @@ xlabel('Element #')
 ylabel('Phase (deg)')
 
 %% Plot the pressure field 
-slice_coord = 32e-3;
-slice = round(t1_offset(2) + slice_coord / kgrid.dy); % Has to be overwritten
+slice_coord = 32;
+slice = round(t1w_offset(2) + slice_coord); % Has to be overwritten
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -44,8 +44,20 @@ plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
 if ~isempty(t1_filename)
     t1_img = niftiread(t1_filename);
 
+    t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
+    p_sz = size(p_data);
+    if p_sz ~= t1w_sz
+        [X, Y] = meshgrid(1:t1w_sz(1), 1:t1w_sz(2));
+        [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));
+        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice, :)))', Xq, Yq, "linear");
+        t1w_plot = t1w_plot';
+    else
+        t1w_plot = squeeze(t1_img(:, slice, :));
+    end
+
+
     ax1 = axes;
-    imagesc(ax1, imrotate(squeeze(t1_img(:, slice, :)), 90), [50,500]);
+    imagesc(ax1, imrotate(t1w_plot, 90), [50,500]);
     hold all;
     ax2 = axes;
     im2 = imagesc(ax2, imrotate(p_data * 1e-3, 90));

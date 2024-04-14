@@ -2,15 +2,15 @@ clear;
 close all;
 
 %% Init
-f0 = 470e3; % Hz - transducer frequency
+f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 1;
+dx_factor = 2;
 if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
     grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
 end
-[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor, 'dx', 1e-3);
+[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 % Scan init
@@ -33,22 +33,18 @@ if kgrid.dim == 2
     t2_pos = [73, -2]';
     t3_pos = [0, 68]';
     t_pos = [t1_pos, t2_pos, t3_pos];
-    t_rot = [];
-
-
-    el1_offset = round(t1w_offset(1) + t1_pos(1)); % grid points
-    el2_offset = round(t1w_offset(1) + t2_pos(1)); % grid points
-    el3_offset = round(t1w_offset(1) + t3_pos(1)); % grid points
-    shift1 = round(t1w_offset(3) + t1_pos(2)); % m -> tangential shift in grid points
-    shift2 = round(t1w_offset(3) + t2_pos(2)); % m -> tangential shift in grid points
-    shift3 = round(t1w_offset(3) + t3_pos(2)); % m -> tangential shift in grid points
+    t_rot = [false, false, true];
 
     num_elements = 50;
-    spacing = ceil(1e-3 / kgrid.dx * dx_factor); % m -> grid points between elements
+    spacing = ceil(dx_factor);
 
-    t_mask_ps = create_linear_array(kgrid, num_elements, el1_offset, shift1, spacing, false);
-    t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el2_offset, shift2, spacing, false); % Second (antiparallel) linear array
-    t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el3_offset, shift3, spacing, true); % Third (orthogonal) linear array
+    t_mask_ps = zeros(kgrid.Nx, kgrid.Ny);
+    for i = 1:length(t_rot)
+        el_offset = round((t1w_offset(1) + t_pos(1, i)) * dx_factor); % grid points
+        shift = round((t1w_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
+    
+        t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
+    end
     
 
     karray_t = [];
@@ -83,35 +79,31 @@ end
 %% Define (intracranial) Beamforming Pattern
 
 if kgrid.dim == 2
+
+    % Focal points - rel. to transducer surface
+    point_pos_m.x = [-16, 23];
+    point_pos_m.y = [-27, -26];
+    amp_in = [200, 200]' * 1e3; % Pa
+
+    point_pos.x = round((t1w_offset(1) + point_pos_m.x) * dx_factor);
+    point_pos.y = round((t1w_offset(3) + point_pos_m.y) * dx_factor);
+
+    % Assign amplitude acc. to closest position
+    idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
+    [~, order] = sort(idx);
+    amp_in = amp_in(order);
+
+    b_mask = zeros(kgrid.Nx, kgrid.Ny);
     
     if ~only_focus_opt
 
-        % Ring
-        b_mask = makeDisc(kgrid.Nx, kgrid.Ny, round(0.7 * kgrid.Nx), round(0.7 * kgrid.Ny), round(0.2 * kgrid.Nx), false) ...
-            - makeDisc(kgrid.Nx, kgrid.Ny, round(0.7 * kgrid.Nx), round(0.7 * kgrid.Ny), round(0.15 * kgrid.Nx), false);
-        amp_in = 30000 * ones(sum(b_mask(:)), 1);
+        % Stimulate Disc pattern
+        for i = 1:length(point_pos.x)
+            b_mask = b_mask + makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.025 * kgrid.Nx), false);
+            amp_in = amp_in(i) * ones(sum(b_mask(:)), 1);
+        end
 
-        point_pos_m = [];
-        point_pos = [];
     else
-
-        % Focal points - rel. to transducer surface
-        point_pos_m.x = [-16];
-        point_pos_m.y = [-27];
-        amp_in = [200, 200]' * 1e3; % Pa
-
-        point_pos.x = round(t1w_offset(1) + point_pos_m.x);
-        point_pos.y = round(t1w_offset(3) + point_pos_m.y);
-
-%         point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
-%         point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
-    
-        % Assign amplitude acc. to closest position
-        idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
-        [~, order] = sort(idx);
-        amp_in = amp_in(order);
-    
-        b_mask = zeros(kgrid.Nx, kgrid.Ny);
 
         for point = 1:length(point_pos.x)
             b_mask(point_pos.x(point), point_pos.y(point)) = 1;
