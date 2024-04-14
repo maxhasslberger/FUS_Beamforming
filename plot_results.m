@@ -1,7 +1,8 @@
 function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, t1w_offset, varargin)
 
 %% Plot magnitude and phase of array elements
-figure;
+f = figure;
+f.Position = [700 100 650 350];
 subplot(2, 1, 1)
 plot(abs(excitation * 1e-3))
 title(plot_title);
@@ -14,18 +15,19 @@ ylabel('Phase (deg)')
 
 %% Plot the pressure field 
 slice_coord = 32;
-slice = round(t1w_offset(2) + slice_coord); % Has to be overwritten
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
             case 'slice'
-                slice = varargin{arg_idx+1};
+                slice_coord = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
     end
 end
+
+slice = round(t1w_offset(2) + slice_coord);
 
 if kgrid.dim == 2
     p_data = abs(data);
@@ -34,8 +36,9 @@ else
     % Video or similar?...
 end
 
-
-figure;
+p_sz = size(p_data);
+f = figure;
+f.Position = [1400 100 484 512];
 
 plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
 plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
@@ -45,7 +48,6 @@ if ~isempty(t1_filename)
     t1_img = niftiread(t1_filename);
 
     t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
-    p_sz = size(p_data);
     if p_sz ~= t1w_sz
         [X, Y] = meshgrid(1:t1w_sz(1), 1:t1w_sz(2));
         [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));

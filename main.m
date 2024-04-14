@@ -4,7 +4,7 @@ close all;
 %% Init
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 2;
+dx_factor = 1;
 if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
@@ -21,7 +21,7 @@ t1w_offset = [96, 127, 126]; % Offset to Scan center
 only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
@@ -82,6 +82,7 @@ if kgrid.dim == 2
 
     % Focal points - rel. to transducer surface
     point_pos_m.x = [-16, 23];
+    point_pos.slice = 32;
     point_pos_m.y = [-27, -26];
     amp_in = [200, 200]' * 1e3; % Pa
 
@@ -207,7 +208,10 @@ ip.t_solve = toc;
 % ip.p = max(abs(ip.p)) * exp(1j * angle(ip.p)); % All elements with same amplitude
 
 % Evaluate obtained phase terms in forward simulation
-ip.b = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
+% ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
+
+ip.b = A * ip.p;
+ip.b = reshape(ip.b, size(kgrid.k));
 
 %% Save Results in mat-file
 if save_results
@@ -227,13 +231,7 @@ if do_time_reversal
 end
 
 %% IP Results
-if kgrid.dim == 2
-    varargin = {};
-else
-    varargin = {'slice', point_pos.z(1)};
-end
-
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, t1w_offset, varargin{:});
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, t1w_offset, 'slice', point_pos.slice);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
