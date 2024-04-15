@@ -30,10 +30,10 @@ save_results = false;
 if kgrid.dim == 2
     % Linear array
     t1_pos = [-63, -2]';
-    t2_pos = [73, -2]';
-    t3_pos = [0, 68]';
-    t_pos = [t1_pos, t2_pos, t3_pos];
-    t_rot = [false, false, true];
+    t2_pos = [0, 68]';
+    t3_pos = [73, -2]';
+    t_pos = [t1_pos, t2_pos];
+    t_rot = [false, true];
 
     num_elements = 50;
     spacing = ceil(dx_factor);
@@ -52,8 +52,8 @@ if kgrid.dim == 2
     mask2el_delayFiles = [];
     t_mask_ps = t_mask_ps > 0; % Return to logical in case of overlaps
 
-    imagesc(t_mask_ps, [-1 1])
-    colormap(getColorMap);
+%     imagesc(t_mask_ps, [-1 1])
+%     colormap(getColorMap);
 else
     % Planar Array
     if use_greens_fctn
@@ -111,6 +111,8 @@ if kgrid.dim == 2
         end
     end
 
+    f = figure;
+    f.Position = [700 485 484 512];
     imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
     colormap(getColorMap);
     title("Setup")

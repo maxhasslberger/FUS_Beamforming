@@ -2,7 +2,7 @@ function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, t
 
 %% Plot magnitude and phase of array elements
 f = figure;
-f.Position = [700 100 650 350];
+f.Position = [700 50 650 350];
 subplot(2, 1, 1)
 plot(abs(excitation * 1e-3))
 title(plot_title);
@@ -38,7 +38,7 @@ end
 
 p_sz = size(p_data);
 f = figure;
-f.Position = [1400 100 484 512];
+f.Position = [1400 50 484 512];
 
 plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
 plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;

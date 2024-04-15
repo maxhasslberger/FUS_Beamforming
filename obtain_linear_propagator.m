@@ -65,11 +65,15 @@ if islogical(get_current_A)
         save(fullfile("Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
         
     else
+        disp("Loading precomputed Propagation Matrix...")
         A = load(fullfile("Lin_Prop_Matrices", "A_current.mat")).A;
+        disp("Propagation Matrix loaded successfully!")
     end
 
 else
+    disp("Loading precomputed Propagation Matrix...")
     A = load(fullfile("Lin_Prop_Matrices", string(get_current_A) + ".mat")).A;
+    disp("Propagation Matrix loaded successfully!")
 end
 
 % Only use subset of available transducers
