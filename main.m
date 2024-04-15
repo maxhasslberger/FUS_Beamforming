@@ -32,8 +32,8 @@ if kgrid.dim == 2
     t1_pos = [-63, -2]';
     t2_pos = [0, 68]';
     t3_pos = [73, -2]';
-    t_pos = [t1_pos, t2_pos];
-    t_rot = [false, true];
+    t_pos = [t1_pos, t2_pos, t3_pos];
+    t_rot = [false, true, false];
 
     num_elements = 50;
     spacing = ceil(dx_factor);
