@@ -15,7 +15,7 @@ end
 
 % Scan init
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
-t1w_offset = [96, 127, 126]; % Offset to Scan center
+t1w_offset = [96, 127, 126] + 1; % Offset to Scan center
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
