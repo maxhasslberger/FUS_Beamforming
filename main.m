@@ -175,41 +175,45 @@ A = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_m
 
 % Solve inverse problem
 tic
+obs_ids = find(b_mask);
 if only_focus_opt
     % Preserve sonicated points only
-    obs_ids = find(b_mask);
     ip.A = A(obs_ids, :);
     b_ip_des = b_des;
 
-    ip.sq_beta = 0;%0.1; % constraint scaling factor
+%     ip.sq_beta = 0;%0.1; % constraint scaling factor
 else
     % Take entire observation grid into account
     ip.A = A;
     b_ip_des = b_des_pl;
-    ip.sq_beta = 0;%100; % constraint scaling factor
+
+%     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
 ip.p = pinv(ip.A) * b_ip_des; % Initial solution cosidering phases
 
-ip.u = max(abs(ip.p)) * ones(size(ip.p)); % universal transducer amplitude
-
-% Apply constraints (same transducer amplitude among elements)
-ip.A = [ip.A; ip.sq_beta * eye(length(ip.p))];
-b_ip_des = [b_ip_des; ip.sq_beta * ip.u];
+% ip.u = max(abs(ip.p)) * ones(size(ip.p)); % universal transducer amplitude
+% 
+% % Apply constraints (same transducer amplitude among elements)
+% ip.A = [ip.A; ip.sq_beta * eye(length(ip.p))];
+% b_ip_des = [b_ip_des; ip.sq_beta * ip.u];
 
 % Solve phase retrieval problem
 opts = struct;
 opts.initMethod = 'custom';
 opts.customx0 = ip.p;
-[ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts);
+
+[ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
+
+ip.p = solvePhasesOnly(A(obs_ids, :), A(~obs_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
 
 ip.t_solve = toc;
 
 % ip.p = max(abs(ip.p)) * exp(1j * angle(ip.p)); % All elements with same amplitude
 
 % Evaluate obtained phase terms in forward simulation
-% ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 
+% ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
 
