@@ -50,18 +50,21 @@ if ~isempty(t1_filename)
         [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));
         t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice, :)))', Xq, Yq, "linear");
         t1w_plot = t1w_plot';
-
-        plot_vecy = Yq(:, 1)';
-        plot_vecx = Xq(1, :);
     else
         t1w_plot = squeeze(t1_img(:, slice, :));
-        plot_vecy = 1:t1w_sz(2);
-        plot_vecx = 1:t1w_sz(1);
     end
+
+    % Get Ticks
+    plot_dy = kgrid.dy * 1e3;
+    plot_dx = kgrid.dx * 1e3;
+
+    plot_vecy = plot_dy:plot_dy:t1w_sz(2);
+    plot_vecx = plot_dx:plot_dx:t1w_sz(1);
 
     plot_vecy = plot_vecy - t1w_offset(3);
     plot_vecx = plot_vecx - t1w_offset(1);
 
+    % Plot
     ax1 = axes;
     imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(t1w_plot, -90)), [50,500]);
     hold all;
