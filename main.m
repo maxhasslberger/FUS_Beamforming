@@ -14,8 +14,8 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 % Scan init
-t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
-t1w_offset = [96, 127, 126] + 1; % Offset to Scan center
+t1w_filename = []; % fullfile('Scans', 'dummy_t1w.nii');
+plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
@@ -40,8 +40,8 @@ if kgrid.dim == 2
 
     t_mask_ps = zeros(kgrid.Nx, kgrid.Ny);
     for i = 1:length(t_rot)
-        el_offset = round((t1w_offset(1) + t_pos(1, i)) * dx_factor); % grid points
-        shift = round((t1w_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
+        el_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
+        shift = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
     
         t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
     end
@@ -86,8 +86,8 @@ if kgrid.dim == 2
     point_pos_m.y = [-27, -26];
     amp_in = [200, 200]' * 1e3; % Pa
 
-    point_pos.x = round((t1w_offset(1) + point_pos_m.x) * dx_factor);
-    point_pos.y = round((t1w_offset(3) + point_pos_m.y) * dx_factor);
+    point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
+    point_pos.y = round((plot_offset(3) + point_pos_m.y) * dx_factor);
 
     % Assign amplitude acc. to closest position
     idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
@@ -207,7 +207,7 @@ opts.customx0 = ip.p;
 
 [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-ip.p = solvePhasesOnly(A(obs_ids, :), A(~obs_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
+% ip.p = solvePhasesOnly(A(obs_ids, :), A(~obs_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
 
 ip.t_solve = toc;
 
@@ -233,18 +233,18 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal', t1w_filename, t1w_offset);
+    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal', t1w_filename, plot_offset, dx_factor);
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, t1w_offset, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, plot_offset, dx_factor, 'slice', point_pos.slice);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
-fprintf("\nDesired Transducer Amplitude (kPa):\n")
-disp(ip.u(1) * 1e-3)
-fprintf("\nTransducer Amplitude mean deviation (Pa):\n")
-disp(mean(abs(abs(ip.p) - ip.u)))
+% fprintf("\nDesired Transducer Amplitude (kPa):\n")
+% disp(ip.u(1) * 1e-3)
+% fprintf("\nTransducer Amplitude mean deviation (Pa):\n")
+% disp(mean(abs(abs(ip.p) - ip.u)))
 
 % Evaluation of each defined point
 if only_focus_opt

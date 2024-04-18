@@ -1,4 +1,4 @@
-function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, t1w_offset, varargin)
+function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, plot_offset, dx_factor, varargin)
 
 %% Plot magnitude and phase of array elements
 f = figure;
@@ -27,7 +27,7 @@ if ~isempty(varargin)
     end
 end
 
-slice = round(t1w_offset(2) + slice_coord);
+slice = round(plot_offset(2) + slice_coord);
 
 if kgrid.dim == 2
     p_data = abs(data);
@@ -39,6 +39,16 @@ end
 p_sz = size(p_data);
 f = figure;
 f.Position = [1400 50 484 512];
+
+% Get Ticks
+plot_dy = kgrid.dy * 1e3;
+plot_dx = kgrid.dx * 1e3;
+
+plot_vecy = plot_dy:plot_dy:kgrid.Ny / dx_factor;
+plot_vecx = plot_dx:plot_dx:kgrid.Nx / dx_factor;
+
+plot_vecy = plot_vecy - plot_offset(3);
+plot_vecx = plot_vecx - plot_offset(1);
 
 % Include a t1w scan
 if ~isempty(t1_filename)
@@ -53,16 +63,6 @@ if ~isempty(t1_filename)
     else
         t1w_plot = squeeze(t1_img(:, slice, :));
     end
-
-    % Get Ticks
-    plot_dy = kgrid.dy * 1e3;
-    plot_dx = kgrid.dx * 1e3;
-
-    plot_vecy = plot_dy:plot_dy:t1w_sz(2);
-    plot_vecx = plot_dx:plot_dx:t1w_sz(1);
-
-    plot_vecy = plot_vecy - t1w_offset(3);
-    plot_vecx = plot_vecx - t1w_offset(1);
 
     % Plot
     ax1 = axes;
@@ -83,10 +83,10 @@ if ~isempty(t1_filename)
 
 else
 
-    plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
-    plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
-
-    imagesc((plot_vecy- t_pos(2, 1)) * 1e3, (plot_vecx - t_pos(1, 1)) * 1e3, p_data * 1e-3); % relative to transducer 1 face (center)
+%     plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
+%     plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
+    ax = axes;
+    imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
     
     colormap('turbo');
     xlabel('y (mm)');
@@ -95,8 +95,13 @@ else
     % clim([0 30000])
     title(plot_title);
     
-    c = colorbar;
-    c.Label.String = 'Pressure (kPa)';
+%     c = colorbar;
+%     c.Label.String = 'Pressure (kPa)';
+
+    set(ax,'Position',[.17 .11 .685 .815]);
+    cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
+    xlabel(cb, 'Pressure (kPa)');
+    set(ax, 'ydir', 'normal')
 end
 
 end
