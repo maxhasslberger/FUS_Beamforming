@@ -4,7 +4,7 @@ close all;
 %% Init
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 1;
+dx_factor = 2;
 if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
@@ -18,9 +18,13 @@ plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 slice_idx = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
 
-[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor, 'ct_scan', ct_filename, ...
+[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
     'slice_idx', round(plot_offset(2) + slice_idx), 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
+
+if ~isempty(dx_scan)
+    dx_factor = dx_scan / kgrid.dx;
+end
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
@@ -120,6 +124,7 @@ if kgrid.dim == 2
     f.Position = [700 485 484 512];
     imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
     colormap(getColorMap);
+    imagesc(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)))
     title("Setup")
 else
     only_focus_opt = true;
@@ -130,7 +135,7 @@ else
     point_pos_m.z = [0] * 1e-3; % m
     amp_in = [100]' * 1e3; % Pa
 
-    point_pos.x = point_pos_m.x + t_pos(1, 1); % TODO: Adapt to dx_scan! (transducer position as well)
+    point_pos.x = point_pos_m.x + t_pos(1, 1);
     point_pos.y = point_pos_m.y + t_pos(2, 1);
     point_pos.z = point_pos_m.z + t_pos(3, 1);
 

@@ -2,10 +2,9 @@ function [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, varargin)
 
 n_dim = 2;
 ct_filename = [];
-dx_frac = 1.0;
-dx = 0;
+dx_factor = 1.0;
 slice_idx = 1;
-dx_scan = 1e-3;
+dx_scan = [];
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -15,9 +14,7 @@ if ~isempty(varargin)
             case 'ct_scan'
                 ct_filename = varargin{arg_idx+1};
             case 'dx_factor'
-                dx_frac = varargin{arg_idx+1};
-            case 'dx'
-                dx = varargin{arg_idx+1};
+                dx_factor = varargin{arg_idx+1};
             case 'slice_idx'
                 slice_idx = varargin{arg_idx+1};
             case 'dx_scan'
@@ -47,10 +44,8 @@ cfl = 0.1;
 
 %% Define grid
 % Grid size
-if dx == 0
-    dx = c0 / f0 / ppw;
-    dx = dx * dx_frac;
-end
+dx = c0 / f0 / ppw;
+dx = dx / dx_factor;
 
 Nx = round(grid_size(1)/dx);
 Ny = round(grid_size(2)/dx);
