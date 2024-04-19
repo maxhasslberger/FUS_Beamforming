@@ -5,6 +5,7 @@ ct_filename = [];
 dx_frac = 1.0;
 dx = 0;
 slice_idx = 1;
+dx_scan = 1e-3;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -19,6 +20,8 @@ if ~isempty(varargin)
                 dx = varargin{arg_idx+1};
             case 'slice_idx'
                 slice_idx = varargin{arg_idx+1};
+            case 'dx_scan'
+                dx_scan = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -62,7 +65,7 @@ elseif n_dim == 3
     kgrid = kWaveGrid(Nx, dx, Ny, dx, Nz, dx);
     add_z = kgrid.z_size.^2; % -> t_end
 
-    slice_idx = 1:kgrid.Ny;
+    slice_idx = 1:round(grid_size(2) / dx_scan);
 end
 
 % Time
@@ -98,13 +101,22 @@ if ~isempty(ct_filename)
 
     skull = squeeze(skull(:, slice_idx, :));
 
+    % Interpolate to adapt to grid size
+    skull_sz = size(skull);
+    grid_dim = size(kgrid.k);
+    if skull_sz ~= grid_dim
+        [X, Y] = meshgrid(1:skull_sz(1), 1:skull_sz(2));
+        [Xq, Yq] = meshgrid(linspace(1, skull_sz(1), grid_dim(1)), linspace(1, skull_sz(2), grid_dim(2)));
+        skull = interp2(X, Y, skull', Xq, Yq, "linear")'; % TODO: 3D variant
+    end
+
     % assign medium properties for skull
-    medium.density = rho_min + (rho_max - rho0) * ...
+    medium.alpha_coeff = alpha_coeff_min + (alpha_coeff_max - alpha_coeff_min) * ...
+                        (1 - (skull - hu_min) / (hu_max - hu_min)) .^ 0.5;
+    medium.density = rho0 + (rho_max - rho0) * ...
                     (skull - 0) / (hu_max - 0);
     medium.sound_speed = c0 + (c_max - c0) * ...
                         (medium.density - rho0) / (rho_max - rho0);
-    medium.alpha_coeff = alpha_coeff_min + (alpha_coeff_max - alpha_coeff_min) * ...
-                        (1 - (skull - hu_min) / (hu_max - hu_min)).^0.5;
     
     % Non-skull modeled as water
     medium.sound_speed(skull == 0) = c0;

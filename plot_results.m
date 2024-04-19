@@ -56,10 +56,10 @@ if ~isempty(t1_filename)
 
     t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
     if p_sz ~= t1w_sz
+        % Interpolate to adapt to grid size
         [X, Y] = meshgrid(1:t1w_sz(1), 1:t1w_sz(2));
         [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));
-        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice, :)))', Xq, Yq, "linear");
-        t1w_plot = t1w_plot';
+        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice, :)))', Xq, Yq, "linear")';
     else
         t1w_plot = squeeze(t1_img(:, slice, :));
     end

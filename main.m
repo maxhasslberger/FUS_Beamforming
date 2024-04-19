@@ -16,8 +16,10 @@ t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 slice_idx = 32; % Observed slice in t1w/ct scan
+dx_scan = 1e-3; % m - Scan resolution
 
-[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor, 'ct_scan', ct_filename, 'slice_idx', slice_idx);
+[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor, 'ct_scan', ct_filename, ...
+    'slice_idx', round(plot_offset(2) + slice_idx), 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 % Simulation config
@@ -128,7 +130,7 @@ else
     point_pos_m.z = [0] * 1e-3; % m
     amp_in = [100]' * 1e3; % Pa
 
-    point_pos.x = point_pos_m.x + t_pos(1, 1);
+    point_pos.x = point_pos_m.x + t_pos(1, 1); % TODO: Adapt to dx_scan! (transducer position as well)
     point_pos.y = point_pos_m.y + t_pos(2, 1);
     point_pos.z = point_pos_m.z + t_pos(3, 1);
 
