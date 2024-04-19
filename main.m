@@ -10,12 +10,15 @@ if n_dim == 2
 else
     grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
 end
-[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor);
-[sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 % Scan init
-t1w_filename = []; % fullfile('Scans', 'dummy_t1w.nii');
+t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
+ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
+slice_idx = 32; % Observed slice in t1w/ct scan
+
+[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', 1 / dx_factor, 'ct_scan', ct_filename, 'slice_idx', slice_idx);
+[sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
@@ -82,7 +85,7 @@ if kgrid.dim == 2
 
     % Focal points - rel. to transducer surface
     point_pos_m.x = [-16, 23];
-    point_pos.slice = 32;
+    point_pos.slice = slice_idx;
     point_pos_m.y = [-27, -26];
     amp_in = [200, 200]' * 1e3; % Pa
 
