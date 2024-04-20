@@ -30,7 +30,7 @@ end
 only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
@@ -215,9 +215,9 @@ opts = struct;
 opts.initMethod = 'custom';
 opts.customx0 = ip.p;
 
-[ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
+% [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-% ip.p = solvePhasesOnly(A(obs_ids, :), A(~obs_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
+ip.p = solvePhasesOnly(A(obs_ids, :), A(~obs_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
 
 ip.t_solve = toc;
 
