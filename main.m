@@ -154,7 +154,7 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
-    voxelPlot(double(t_mask_ps + b_mask))
+    sliceViewer(double(t_mask_ps + b_mask), 'SliceNumber', point_pos.z)
 end
 
 % Create desired signal

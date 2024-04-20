@@ -78,7 +78,7 @@ kgrid.setTime(Nt, dt);
 % kgrid.makeTime(medium.sound_speed);
 
 %% Define medium
-if ~isempty(ct_filename)
+if ~isempty(ct_filename) && n_dim == 2
 
     hu_min = 300;
     hu_max = 2000;
