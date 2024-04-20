@@ -17,15 +17,15 @@ if islogical(get_current_A)
 
     if ~get_current_A
     
-%         use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed);
         if use_greens_fctn
+
+            use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed);
         
             el_ids = find(t_mask);
 %             el2mask_ids = sort(el2mask_ids); % Mapping mask -> element index
 %             el_ids = el_ids(el2mask_ids);
 
             phase_in = 0;
-            input = 1.0;
             A = single(zeros(kgrid.total_grid_points, numel(el_ids)));
 
             input = zeros(length(el_ids), 1);
@@ -34,16 +34,18 @@ if islogical(get_current_A)
             % Excite one element at a time and obtain one column (observation) after the other
             for i = 1:length(el_ids)
                 disp("Offline Simulation " + string(i) + "/" + string(size(A, 2)))
+                
+                if use_greens_fctn
+                    amp_in = zeros(size(t_mask));
+                    amp_in(el_ids(i)) = 1;
+                    a_coli = single(acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed));
+                else
+                    a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, t_mask, sensor_mask, true, input_args)); % TODO: Test and confirm
+                    input = circshift(input, 1); % Move unitary excitation by 1 element
+                end
 
-                amp_in = zeros(size(t_mask));
-                amp_in(el_ids(i)) = 1;
-
-%                 a_coli = single(acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed));
-                a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, t_mask, sensor_mask, true, input_args)); % TODO: Test and confirm
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
-
-                input = circshift(input, 1); % Move unitary excitation by 1 element
             end
         
         else

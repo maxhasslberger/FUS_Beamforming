@@ -13,7 +13,7 @@ end
 
 % Scan init
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
-ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
+ct_filename = [];%fullfile('Scans', 'dummy_pseudoCT.nii');
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 slice_idx = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
