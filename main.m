@@ -38,9 +38,9 @@ save_results = false;
 
 if kgrid.dim == 2
     % Linear array
-    t1_pos = [-63, -2]';
-    t2_pos = [0, 68]';
-    t3_pos = [73, -2]';
+    t1_pos = [-70, -2]';
+    t2_pos = [0, 83]';
+    t3_pos = [77, -2]';
     t_pos = [t1_pos, t2_pos, t3_pos];
     t_rot = [false, true, false];
 
@@ -123,7 +123,7 @@ if kgrid.dim == 2
     f = figure;
     f.Position = [700 485 484 512];
 %     imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
-    colormap(getColorMap);
+%     colormap(getColorMap);
     imagesc(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90))
     title("Setup")
 else
