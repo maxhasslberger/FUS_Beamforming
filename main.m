@@ -4,7 +4,7 @@ close all;
 %% Init
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 2;
+dx_factor = 1;
 if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
@@ -122,9 +122,9 @@ if kgrid.dim == 2
 
     f = figure;
     f.Position = [700 485 484 512];
-    imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
+%     imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
     colormap(getColorMap);
-    imagesc(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)))
+    imagesc(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90))
     title("Setup")
 else
     only_focus_opt = true;
