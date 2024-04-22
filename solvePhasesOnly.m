@@ -18,7 +18,8 @@ end
 fun = @(p)cost_fctn(p, A1_r, A1_i, b1);
 nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2);
 
-options = optimoptions('fmincon','Display','iter', 'ConstraintTolerance', 1e-6,'Algorithm','active-set'); % interior-point, sqp, trust-region-reflective, active-set
+options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
+    'Algorithm','active-set'); % interior-point, sqp, trust-region-reflective, active-set
 
 % Define initial solution
 p_lin = pinv(A1) * b1;

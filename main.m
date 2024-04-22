@@ -27,7 +27,7 @@ if ~isempty(dx_scan)
 end
 
 % Simulation config
-only_focus_opt = true; % Optimize only focal spots or entire grid
+only_focus_opt = false; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
@@ -193,11 +193,17 @@ if only_focus_opt
     ip.A = A(obs_ids, :);
     b_ip_des = b_des;
 
+    activeA_ids = 1:size(ip.A, 1);
+
 %     ip.sq_beta = 0;%0.1; % constraint scaling factor
 else
     % Take entire observation grid into account
     ip.A = A;
     b_ip_des = b_des_pl;
+
+    activeA_ids = zeros(1, size(A, 1));
+    activeA_ids(obs_ids) = 1;
+    activeA_ids = logical(activeA_ids);
 
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
@@ -217,7 +223,7 @@ opts.customx0 = ip.p;
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-ip.p = solvePhasesOnly(A(obs_ids, :), A(~obs_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
+ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
 
 ip.t_solve = toc;
 
