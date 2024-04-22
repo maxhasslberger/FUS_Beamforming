@@ -14,7 +14,6 @@ function [c,ceq] = unitdisk(p, A2_r, A2_i, b2)
 
 c = (p_0 * sqrt((A2_r * x_r - A2_i * x_i).^2 + (A2_i * x_r + A2_r * x_i)) - b2);
 ceq = [];
-c = double(c);
 
 end
 

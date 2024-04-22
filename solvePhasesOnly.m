@@ -1,6 +1,8 @@
 
 function p = solvePhasesOnly(A1, A2, b1, b2)
 
+A1 = double(A1);
+A2 = double(A2);
 % Obtain sub matrices
 A1_r = real(A1);
 A1_i = imag(A1);
@@ -16,6 +18,8 @@ end
 fun = @(p)cost_fctn(p, A1_r, A1_i, b1);
 nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2);
 
+options = optimoptions('fmincon','Display','iter', 'ConstraintTolerance', 1e-6,'Algorithm','active-set'); % interior-point, sqp, trust-region-reflective, active-set
+
 % Define initial solution
 p_lin = pinv(A1) * b1;
 
@@ -24,7 +28,7 @@ p_start(1) = mean(abs(p_lin));
 p_start(2:ceil(end/2)) = real(p_lin);
 p_start(ceil(end/2) + 1:end) = imag(p_lin);
 
-[p_opt, fval, exitflag, output] = fmincon(fun, double(p_start), [], [], [], [], [], [], nonlcon);
+[p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);
 
 
 p = p_opt(1) * exp(1j * atan2(p_opt(ceil(end/2) + 1:end), p_opt(2:ceil(end/2))));
@@ -34,10 +38,10 @@ end
 
 function val = cost_fctn(p, A1_r, A1_i, b1)
 
-[x_r, x_i, p_0] = getElements(p); % get rid of this fctn?
+[x_r, x_i, p_0] = getElements(p);
+
 
 val = sum((p_0 * sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i)) - b1).^2);
-val = double(val);
 
 end
 
