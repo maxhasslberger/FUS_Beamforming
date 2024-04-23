@@ -76,7 +76,7 @@ opts.customx0 = ip.p;
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_des, max(b_des) / 10); % Amplitude fixed
+ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_des, max(b_des) / 10, true); % Amplitude fixed
 
 ip.t_solve = toc;
 
