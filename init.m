@@ -1,0 +1,178 @@
+function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
+    use_greens_fctn, active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, input_args] = ...
+    init(f0, n_dim, dx_factor, varargin)
+
+% Scan init
+ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
+plot_offset = [96, 127, 126] + 1; % Offset to Scan center
+slice_idx = 32; % Observed slice in t1w/ct scan
+dx_scan = 1e-3; % m - Scan resolution
+
+if ~isempty(varargin)
+    for arg_idx = 1:2:length(varargin)
+        switch varargin{arg_idx}
+            case 'ct_scan'
+                ct_filename = varargin{arg_idx+1};
+            case 'slice_idx'
+                slice_idx = varargin{arg_idx+1};
+            case 'dx_scan'
+                dx_scan = varargin{arg_idx+1};
+            otherwise
+                error('Unknown optional input.');
+        end
+    end
+end
+
+if n_dim == 2
+    grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
+else
+    grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
+end
+
+[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
+    'slice_idx', round(plot_offset(2) + slice_idx), 'dx_scan', dx_scan);
+[sensor, sensor_mask] = init_sensor(kgrid, ppp);
+
+if ~isempty(dx_scan)
+    dx_factor = dx_scan / kgrid.dx;
+end
+
+% Simulation config
+only_focus_opt = true; % Optimize only focal spots or entire grid
+use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+
+%% Define Transducer Geometry
+
+if kgrid.dim == 2
+    % Linear array
+    t1_pos = [-70, -2]';
+    t2_pos = [0, 83]';
+    t3_pos = [77, -2]';
+    t_pos = [t1_pos, t2_pos, t3_pos];
+    t_rot = [false, true, false];
+
+    num_elements = 50;
+    spacing = ceil(dx_factor);
+
+    t_mask_ps = zeros(kgrid.Nx, kgrid.Ny);
+    for i = 1:length(t_rot)
+        el_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
+        shift = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
+    
+        t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
+    end
+    
+
+    karray_t = [];
+    active_ids = [];
+    mask2el_delayFiles = [];
+    t_mask_ps = t_mask_ps > 0; % Return to logical in case of overlaps
+
+%     imagesc(t_mask_ps, [-1 1])
+%     colormap(getColorMap);
+else
+    % Planar Array
+    if use_greens_fctn
+        t_name = "std";
+    else
+        t_name = "std_orig";
+    end
+    sparsity_name = "sparsity_ids";
+    t1_pos = [-55, 20, 0]' * 1e-3; % m
+    t1_rot = [-90, 0, 90]'; % deg
+    t2_pos = [20, -55, 0]' * 1e-3; % m
+    t2_rot = [-90, 0, 180]'; % deg
+
+    t_pos = [t1_pos, t2_pos];
+    t_rot = [t1_rot, t2_rot];
+    active_tr_ids = [1, 2];
+
+    [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
+
+%     voxelPlot(double(t_mask))
+end
+
+%% Define (intracranial) Beamforming Pattern
+
+if kgrid.dim == 2
+
+    % Focal points - rel. to transducer surface
+    point_pos_m.x = [-16, 23];
+    point_pos.slice = slice_idx;
+    point_pos_m.y = [-27, -26];
+    amp_in = [200, 200]' * 1e3; % Pa
+
+    point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
+    point_pos.y = round((plot_offset(3) + point_pos_m.y) * dx_factor);
+
+    % Assign amplitude acc. to closest position
+    idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
+    [~, order] = sort(idx);
+    amp_in = amp_in(order);
+
+    b_mask = zeros(kgrid.Nx, kgrid.Ny);
+    
+    if ~only_focus_opt
+
+        % Stimulate Disc pattern
+        for i = 1:length(point_pos.x)
+            b_mask = b_mask + makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.025 * kgrid.Nx), false);
+            amp_in = amp_in(i) * ones(sum(b_mask(:)), 1);
+        end
+
+    else
+
+        for point = 1:length(point_pos.x)
+            b_mask(point_pos.x(point), point_pos.y(point)) = 1;
+        end
+    end
+
+    f = figure;
+    f.Position = [700 485 484 512];
+%     imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
+%     colormap(getColorMap);
+    imagesc(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90))
+    title("Setup")
+else
+    only_focus_opt = true;
+
+    % Focal points - rel. to transducer surface
+    point_pos_m.x = [75] * 1e-3; % m
+    point_pos_m.y = [0] * 1e-3; % m
+    point_pos_m.z = [0] * 1e-3; % m
+    amp_in = [100]' * 1e3; % Pa
+
+    point_pos.x = point_pos_m.x + t_pos(1, 1);
+    point_pos.y = point_pos_m.y + t_pos(2, 1);
+    point_pos.z = point_pos_m.z + t_pos(3, 1);
+
+    point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
+    point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
+    point_pos.z = round((point_pos.z - kgrid.z_vec(1)) / kgrid.dz); % grid points
+
+    % Assign amplitude acc. to closest position
+    idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_pos.x, point_pos.y, point_pos.z);
+    [~, order] = sort(idx);
+    amp_in = amp_in(order);
+
+    b_mask = zeros(kgrid.Nx, kgrid.Ny, kgrid.Nz);
+
+    for point = 1:length(point_pos.x)
+        b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
+    end
+
+    sliceViewer(double(t_mask_ps + b_mask), 'SliceNumber', point_pos.z)
+end
+
+% Create desired signal
+phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
+
+b_des = amp_in .* exp(1j*phase); % only observed elements
+
+b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
+b_des_pl(find(b_mask)) = b_des;
+
+% set simulation input options
+input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
+
+end
