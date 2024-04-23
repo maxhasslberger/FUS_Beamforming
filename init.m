@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    use_greens_fctn, active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, input_args] = ...
+    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -7,6 +7,10 @@ ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 slice_idx = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
+
+% Simulation config
+only_focus_opt = true; % Optimize only focal spots or entire grid
+use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -17,6 +21,10 @@ if ~isempty(varargin)
                 slice_idx = varargin{arg_idx+1};
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
+            case 'only_focus_opt'
+                only_focus_opt = varargin{arg_idx+1};
+            case 'use_greens_fctn'
+                use_greens_fctn = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -36,10 +44,6 @@ end
 if ~isempty(dx_scan)
     dx_factor = dx_scan / kgrid.dx;
 end
-
-% Simulation config
-only_focus_opt = true; % Optimize only focal spots or entire grid
-use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 %% Define Transducer Geometry
 

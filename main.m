@@ -9,14 +9,17 @@ dx_factor = 1;
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = [];
 
-[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    use_greens_fctn, active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, input_args] = ...
-    init(f0, n_dim, dx_factor, 'ct_scan', ct_filename);
-
 % Simulation config
+only_focus_opt = true; % Optimize only focal spots or entire grid
+use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+
 get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
+
+[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
+    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, input_args] = ...
+    init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
