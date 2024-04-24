@@ -7,13 +7,14 @@ n_dim = 2;
 dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
-ct_filename = [];
+ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
+% ct_filename = [];
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
