@@ -85,7 +85,7 @@ ip.t_solve = toc;
 
 % Evaluate obtained phase terms in forward simulation
 
-% ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
+ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
 
@@ -108,6 +108,8 @@ end
 
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, plot_offset, dx_factor, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b_gt, t_pos, 'Inverse Problem', t1w_filename, plot_offset, dx_factor, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, abs(ip.b_gt - ip.b), t_pos, 'Inverse Problem', t1w_filename, plot_offset, dx_factor, 'slice', point_pos.slice);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
@@ -120,11 +122,13 @@ disp("Time until solver converged: " + string(ip.t_solve) + " s")
 if only_focus_opt
     b_tr_points = [];
     b_ip_points = [];
+    b_ip_points2 = [];
 
     if kgrid.dim == 2
         for point = 1:length(point_pos.x)
 %             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point))];
+            b_ip_points2 = [b_ip_points2, ip.b_gt(point_pos.x(point), point_pos.y(point))];
         end
     else
         for point = 1:length(point_pos.x)
@@ -139,9 +143,11 @@ if only_focus_opt
 %     disp(abs(b_tr_points) * 1e-3)
     fprintf("\nInverse Problem Total Amplitudes (kPa):\n")
     disp(abs(b_ip_points) * 1e-3)
+    disp(abs(b_ip_points2) * 1e-3)
 %     fprintf("\nTime Reversal Phase Angles (deg):\n")
 %     disp(angle(b_tr_points) / pi * 180)
-%     fprintf("\nInverse Problem Phase Angles (deg):\n")
-%     disp(angle(b_ip_points) / pi * 180)
+    fprintf("\nInverse Problem Phase Angles (deg):\n")
+    disp(angle(b_ip_points) / pi * 180)
+    disp(angle(b_ip_points2) / pi * 180)
 end
 
