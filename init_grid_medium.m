@@ -78,7 +78,7 @@ kgrid.setTime(Nt, dt);
 % kgrid.makeTime(medium.sound_speed);
 
 %% Define medium
-if ~isempty(ct_filename) && n_dim == 2
+if ~isempty(ct_filename)
 
     hu_min = 300;
     hu_max = 2000;
@@ -94,15 +94,23 @@ if ~isempty(ct_filename) && n_dim == 2
     skull(skull < hu_min) = 0; % only use HU for skull acoustic properties
     skull(skull > hu_max) = hu_max;
 
-    skull = squeeze(skull(:, slice_idx, :));
+    if n_dim == 2
+        skull = squeeze(skull(:, slice_idx, :));
+    end
 
     % Interpolate to adapt to grid size
     skull_sz = size(skull);
     grid_dim = size(kgrid.k);
-    if skull_sz ~= grid_dim
-        [X, Y] = meshgrid(1:skull_sz(1), 1:skull_sz(2));
-        [Xq, Yq] = meshgrid(linspace(1, skull_sz(1), grid_dim(1)), linspace(1, skull_sz(2), grid_dim(2)));
-        skull = interp2(X, Y, skull', Xq, Yq, "linear")'; % TODO: 3D variant
+    if ~isequal(skull_sz, grid_dim)
+        if n_dim == 2
+            [X, Y] = meshgrid(1:skull_sz(1), 1:skull_sz(2));
+            [Xq, Yq] = meshgrid(linspace(1, skull_sz(1), grid_dim(1)), linspace(1, skull_sz(2), grid_dim(2)));
+            skull = interp2(X, Y, skull', Xq, Yq, "linear")';
+        else
+            [X, Y, Z] = meshgrid(1:skull_sz(1), 1:skull_sz(2), 1:skull_sz(3));
+            [Xq, Yq, Zq] = meshgrid(linspace(1, skull_sz(1), grid_dim(1)), linspace(1, skull_sz(2), grid_dim(2)), linspace(1, skull_sz(3), grid_dim(3)));
+            skull = permute(interp3(X, Y, Z, permute(skull, [2 1 3]), Xq, Yq, Zq, "linear"), [2 1 3]);
+        end
     end
 
     % assign medium properties for skull
