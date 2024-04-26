@@ -34,7 +34,11 @@ end
 if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
-    grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
+    if isempty(ct_filename)
+        grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
+    else
+        grid_size = [192, 256, 256] * 1e-3; % m in [x, y, z] respectively
+    end
 end
 
 [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
@@ -141,18 +145,22 @@ else
     only_focus_opt = true;
 
     % Focal points - rel. to transducer surface
-    point_pos_m.x = [75] * 1e-3; % m
-    point_pos_m.y = [0] * 1e-3; % m
-    point_pos_m.z = [0] * 1e-3; % m
+    point_pos_m.x = [-16] * 1e-3; % m
+    point_pos_m.y = [32] * 1e-3; % m
+    point_pos_m.z = [27] * 1e-3; % m
     amp_in = [100]' * 1e3; % Pa
 
-    point_pos.x = point_pos_m.x + t_pos(1, 1);
-    point_pos.y = point_pos_m.y + t_pos(2, 1);
-    point_pos.z = point_pos_m.z + t_pos(3, 1);
+    point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
+    point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
+    point_pos.z = round((plot_offset(3) + point_pos_m.z) * dx_factor);
 
-    point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
-    point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
-    point_pos.z = round((point_pos.z - kgrid.z_vec(1)) / kgrid.dz); % grid points
+%     point_pos.x = point_pos_m.x + t_pos(1, 1);
+%     point_pos.y = point_pos_m.y + t_pos(2, 1);
+%     point_pos.z = point_pos_m.z + t_pos(3, 1);
+% 
+%     point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
+%     point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
+%     point_pos.z = round((point_pos.z - kgrid.z_vec(1)) / kgrid.dz); % grid points
 
     % Assign amplitude acc. to closest position
     idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_pos.x, point_pos.y, point_pos.z);
@@ -164,8 +172,8 @@ else
     for point = 1:length(point_pos.x)
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
-
-    sliceViewer(double(t_mask_ps + b_mask), 'SliceNumber', point_pos.z)
+    % TODO: Fix + Adapt for other frequencies (not 500 kHz)
+    sliceViewer(double(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90)), 'SliceNumber', point_pos.y, 'SliceDirection', 'Y')
 end
 
 % Create desired signal
