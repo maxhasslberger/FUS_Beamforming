@@ -17,7 +17,7 @@ if islogical(get_current_A)
 
     if ~get_current_A
     
-        if use_greens_fctn
+        if isempty(active_ids)
 
             use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed);
         
