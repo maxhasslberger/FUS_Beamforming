@@ -2,8 +2,8 @@ clear;
 close all;
 
 %% Init
-f0 = 500e3; % Hz - transducer frequency
-n_dim = 2;
+f0 = 470e3; % Hz - transducer frequency
+n_dim = 3;
 dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');

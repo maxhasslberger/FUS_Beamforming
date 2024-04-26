@@ -165,7 +165,7 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
-    sliceViewer(double(t_mask_ps + b_mask), 'SliceNumber', point_pos.z)
+    sliceViewer(double(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90)), 'SliceNumber', point_pos.z)
 end
 
 % Create desired signal
