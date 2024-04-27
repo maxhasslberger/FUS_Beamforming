@@ -89,17 +89,17 @@ else
     end
     sparsity_name = "sparsity_ids";
 %     t1_pos = [-55, 20, 0]' * 1e-3; % m
-    t1_pos = [-75, 20, 0]' * 1e-3; % m
+    t1_pos = [-75, 30, 0]' * 1e-3; % m
     t1_rot = [-90, 0, 90]'; % deg
 %     t2_pos = [20, -55, 0]' * 1e-3; % m
-    t2_pos = [80, 20, 0]' * 1e-3; % m
+    t2_pos = [80, 30, 0]' * 1e-3; % m
 %     t2_rot = [-90, 0, 180]'; % deg
     t2_rot = [-90, 0, -90]'; % deg
 
     t_pos = [t1_pos, t2_pos];
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
     t_rot = [t1_rot, t2_rot];
-    active_tr_ids = [1, 2];
+    active_tr_ids = [1];
 
     [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
 
@@ -178,7 +178,7 @@ else
     for point = 1:length(point_pos.x)
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
-    
+
     sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Y')
 
 end

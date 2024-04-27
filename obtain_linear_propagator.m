@@ -66,6 +66,7 @@ if islogical(get_current_A)
                 A(:, i) = a_coli;
 
                 karray_tmp.removeElement(1);
+                % TODO: Save matrix after every n iterations!
 %                 input = circshift(input, 1); % Move unitary excitation by 1 element
             end
         end
