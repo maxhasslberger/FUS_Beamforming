@@ -26,7 +26,7 @@ if islogical(get_current_A)
 %             el_ids = el_ids(el2mask_ids);
 
             phase_in = 0;
-            A = single(zeros(kgrid.total_grid_points, numel(el_ids)));
+            A = zeros(kgrid.total_grid_points, numel(el_ids), 'single');
 
             input = zeros(length(el_ids), 1);
             input(1) = 1;
@@ -49,7 +49,7 @@ if islogical(get_current_A)
             end
         
         else
-            A = single(zeros(kgrid.total_grid_points, karray_t.number_elements));
+            A = zeros(kgrid.total_grid_points, karray_t.number_elements, 'single');
 
             input = 1.0;
             karray_tmp = kWaveArray();
@@ -66,6 +66,7 @@ if islogical(get_current_A)
                 A(:, i) = a_coli;
 
                 karray_tmp.removeElement(1);
+                % TODO: Save matrix after every n iterations!
 %                 input = circshift(input, 1); % Move unitary excitation by 1 element
             end
         end

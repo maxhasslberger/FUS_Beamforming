@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, input_args] = ...
+    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, dx_factor, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -45,6 +45,8 @@ end
     'slice_idx', round(plot_offset(2) + slice_idx), 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
+
+
 if ~isempty(dx_scan)
     dx_factor = dx_scan / kgrid.dx;
 end
@@ -86,14 +88,18 @@ else
         t_name = "std_orig";
     end
     sparsity_name = "sparsity_ids";
-    t1_pos = [-55, 20, 0]' * 1e-3; % m
+%     t1_pos = [-55, 20, 0]' * 1e-3; % m
+    t1_pos = [-75, 30, 0]' * 1e-3; % m
     t1_rot = [-90, 0, 90]'; % deg
-    t2_pos = [20, -55, 0]' * 1e-3; % m
-    t2_rot = [-90, 0, 180]'; % deg
+%     t2_pos = [20, -55, 0]' * 1e-3; % m
+    t2_pos = [80, 30, 0]' * 1e-3; % m
+%     t2_rot = [-90, 0, 180]'; % deg
+    t2_rot = [-90, 0, -90]'; % deg
 
     t_pos = [t1_pos, t2_pos];
+    % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
     t_rot = [t1_rot, t2_rot];
-    active_tr_ids = [1, 2];
+    active_tr_ids = [1];
 
     [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
 
@@ -145,10 +151,10 @@ else
     only_focus_opt = true;
 
     % Focal points - rel. to transducer surface
-    point_pos_m.x = [-16] * 1e-3; % m
-    point_pos_m.y = [32] * 1e-3; % m
-    point_pos_m.z = [27] * 1e-3; % m
-    amp_in = [100]' * 1e3; % Pa
+    point_pos_m.x = [-16, 23];
+    point_pos_m.y = [32, 32];
+    point_pos_m.z = [-27, -26];
+    amp_in = [300, 300]' * 1e3; % Pa
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
     point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
@@ -172,8 +178,9 @@ else
     for point = 1:length(point_pos.x)
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
-    % TODO: Fix + Adapt for other frequencies (not 500 kHz)
-    sliceViewer(double(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90)), 'SliceNumber', point_pos.y, 'SliceDirection', 'Y')
+
+    sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Y')
+
 end
 
 % Create desired signal
