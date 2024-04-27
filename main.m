@@ -2,9 +2,10 @@ clear;
 close all;
 
 %% Init
-f0 = 470e3; % Hz - transducer frequency
-n_dim = 3;
-dx_factor = 1;
+f0 = 500e3; % Hz - transducer frequency
+n_dim = 2;
+dx_factor = 1; % TODO: Optimize (finer) dx to reduce comp. demand
+plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
@@ -14,12 +15,17 @@ ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_AP = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
-[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, dx_factor, input_args] = ...
+[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ... % contd
+    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, dx_factor, grid_size, input_args] = ...
+    init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+
+[kgridP, mediumP, sensorP, sensor_maskP, b_desP, b_des_pl, b_mask, t_mask_psP, karray_tP, ~, ...
+    active_idsP, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, dx_factor, grid_size, ~] = ...
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,6 +80,7 @@ ip.p = pinv(ip.A) * b_ip_des; % Initial solution cosidering phases
 opts = struct;
 opts.initMethod = 'custom';
 opts.customx0 = ip.p;
+% ip.p = max(abs(ip.p)) * exp(1j * angle(ip.p)); % All elements with same amplitude
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
@@ -81,12 +88,12 @@ ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_des, max(b
 
 ip.t_solve = toc;
 
-% ip.p = max(abs(ip.p)) * exp(1j * angle(ip.p)); % All elements with same amplitude
 
 % Evaluate obtained phase terms in forward simulation
-
-ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
-ip.b = A * ip.p;
+AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_args, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
+    'active_ids', active_idsP);
+% ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
+ip.b = AP * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
 
 %% Save Results in mat-file
@@ -103,13 +110,13 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal', t1w_filename, plot_offset, dx_factor);
+    plot_results(kgrid, tr.p, tr.b, t_pos, 'Time Reversal', t1w_filename, plot_offset, grid_size);
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, plot_offset, dx_factor, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p, ip.b_gt, t_pos, 'Inverse Problem', t1w_filename, plot_offset, dx_factor, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p, abs(ip.b_gt - ip.b), t_pos, 'Inverse Problem', t1w_filename, plot_offset, dx_factor, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b, t_pos, 'Inverse Problem', t1w_filename, plot_offset, grid_size, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b_gt, t_pos, 'Inverse Problem', t1w_filename, plot_offset, grid_size, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, abs(ip.b_gt - ip.b), t_pos, 'Inverse Problem', t1w_filename, plot_offset, grid_size, 'slice', point_pos.slice);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
