@@ -1,4 +1,4 @@
-function plot_results(kgrid, excitation, data, t_pos, plot_title, t1_filename, plot_offset, grid_size, varargin)
+function plot_results(kgrid, excitation, data, plot_title, t1_filename, plot_offset, grid_size, varargin)
 
 %% Plot magnitude and phase of array elements
 f = figure;
