@@ -92,7 +92,8 @@ ip.t_solve = toc;
 % Evaluate obtained phase terms in forward simulation
 AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
     'active_ids', active_idsP);
-% ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
+
+ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 ip.b = AP * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
 
