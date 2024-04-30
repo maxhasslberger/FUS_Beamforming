@@ -1,4 +1,4 @@
-function plot_results(kgrid, excitation, data, plot_title, t1_filename, plot_offset, grid_size, varargin)
+function plot_results(kgrid, excitation, data, plot_title, t1_filename, plot_offset, grid_size, dx_factor, varargin)
 
 %% Plot magnitude and phase of array elements
 f = figure;
@@ -30,12 +30,12 @@ if ~isempty(varargin)
     end
 end
 
-slice = round(plot_offset(2) + slice_coord);
+slice = round((plot_offset(2) + slice_coord) * dx_factor);
 
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    p_data = abs(data(:,:,slice));
+    p_data = squeeze(abs(data(:,slice,:)));
     % Video or similar?...
 end
 
