@@ -25,7 +25,7 @@ save_results = false;
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
-    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, plot_dx_factor, ~] = ...
+    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, plot_dx_factor, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,7 +90,7 @@ ip.t_solve = toc;
 
 
 % Evaluate obtained phase terms in forward simulation
-AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_args, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
+AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
     'active_ids', active_idsP);
 % ip.b_gt = sim_exe(kgrid, medium, sensor, f0, ip.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 ip.b = AP * ip.p;
