@@ -5,7 +5,7 @@ close all;
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
 dx_factor = 1; % TODO: Optimize (finer) dx to reduce comp. demand
-plot_dx_factor = 1;
+plot_dx_factor = 3;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
@@ -16,7 +16,7 @@ only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 get_current_A = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-get_current_AP = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
+get_current_AP = false; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
