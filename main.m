@@ -21,11 +21,11 @@ do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, input_args] = ...
+    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
-    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, ~] = ...
+    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, plot_dx_factor, ~] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,13 +110,13 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgrid, tr.p, tr.b, 'Time Reversal', t1w_filename, plot_offset, grid_size);
+    plot_results(kgrid, tr.p, tr.b, 'Time Reversal', t1w_filename, plot_offset, grid_size, plot_dx_factor);
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p, ip.b_gt, 'Inverse Problem', t1w_filename, plot_offset, grid_size, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p, abs(ip.b_gt - ip.b), 'Inverse Problem', t1w_filename, plot_offset, grid_size, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b_gt, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, abs(ip.b_gt - ip.b), 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
