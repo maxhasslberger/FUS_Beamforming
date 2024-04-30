@@ -30,11 +30,12 @@ if ~isempty(varargin)
     end
 end
 
-slice = round((plot_offset(2) + slice_coord) * dx_factor);
+slice_scan = round(plot_offset(2) + slice_coord);
 
 if kgrid.dim == 2
     p_data = abs(data);
 else
+    slice = slice_scan * dx_factor;
     p_data = squeeze(abs(data(:,slice,:)));
     % Video or similar?...
 end
@@ -62,9 +63,9 @@ if ~isempty(t1_filename)
         % Interpolate to adapt to grid size
         [X, Y] = meshgrid(1:t1w_sz(1), 1:t1w_sz(2));
         [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));
-        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice, :)))', Xq, Yq, "linear")';
+        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice_scan, :)))', Xq, Yq, "linear")';
     else
-        t1w_plot = squeeze(t1_img(:, slice, :));
+        t1w_plot = squeeze(t1_img(:, slice_scan, :));
     end
 
     % Plot

@@ -40,7 +40,7 @@ if islogical(get_current_A)
                     amp_in(el_ids(i)) = 1;
                     a_coli = single(acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed));
                 else
-                    a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, t_mask, sensor_mask, true, input_args)); % TODO: Test and confirm
+                    a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, t_mask, sensor_mask, true, input_args)); % TODO: Bug fix nan for dx_factor > 2
                     input = circshift(input, 1); % Move unitary excitation by 1 element
                 end
 
