@@ -4,7 +4,7 @@ close all;
 %% Init
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
-dx_factor = 1; % TODO: Optimize (finer) dx to reduce comp. demand
+dx_factor = 1; % TODO: Optimize (finer) dx to reduce comp. demand -> PML?
 plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
@@ -90,11 +90,13 @@ ip.t_solve = toc;
 
 
 % Evaluate obtained phase terms in forward simulation
-AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
-    'active_ids', active_idsP);
+if plot_dx_factor ~= 1
+    A = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
+        'active_ids', active_idsP); % Obtain high resolution A
+end
 
 ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
-ip.b = AP * ip.p;
+ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgridP.k));
 
 %% Save Results in mat-file
