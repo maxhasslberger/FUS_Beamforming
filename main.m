@@ -116,12 +116,12 @@ end
 
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
-
 plot_results(kgrid, ip.p, ip.b_gt, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p, abs(ip.b_gt - ip.b), 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
 
+err = abs(ip.b) - abs(ip.b_gt);
+plot_results(kgrid, ip.p, err, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
 figure
-histogram(abs(ip.b(:)) - abs(ip.b_gt(:)))
+histogram(err(:))
 xlabel("Pressure Deviation (Pa)")
 
 % Metrics evaluation
