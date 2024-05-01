@@ -81,7 +81,7 @@ if ~isempty(t1_filename)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
     xlabel(cb2, 'Pressure (kPa)');
-    title(ax1,'Acoustic Pressure Amplitude')
+    title(ax1, plot_title)
     set(ax1, 'ydir', 'normal')
     set(ax2, 'ydir', 'normal')
 

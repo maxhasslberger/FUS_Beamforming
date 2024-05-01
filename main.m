@@ -5,7 +5,7 @@ close all;
 f0 = 500e3; % Hz - transducer frequency
 n_dim = 2;
 dx_factor = 1; % TODO: Optimize (finer) dx to reduce comp. demand
-plot_dx_factor = 3;
+plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
@@ -16,7 +16,7 @@ only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 get_current_A = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-get_current_AP = false; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
+get_current_AP = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
@@ -116,10 +116,10 @@ end
 
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p, ip.b_gt, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b_gt, 'Ground Truth', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
 
 err = abs(ip.b) - abs(ip.b_gt);
-plot_results(kgrid, ip.p, err, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, err, 'Difference', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
 figure
 histogram(err(:))
 xlabel("Pressure Deviation (Pa)")
