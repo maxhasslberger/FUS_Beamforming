@@ -54,7 +54,7 @@ else
 end
 
 
-val = sum((p_0 * sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i)) - b1).^2);
+val = sum((p_0 * sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1).^2);
 
 end
 

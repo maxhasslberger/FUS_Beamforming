@@ -6,7 +6,7 @@ else
     [x_r, x_i, p_0] = getElements_phase(p);
 end
 
-c = (p_0 * sqrt((A2_r * x_r - A2_i * x_i).^2 + (A2_i * x_r + A2_r * x_i)) - b2);
+c = (p_0 * sqrt((A2_r * x_r - A2_i * x_i).^2 + (A2_i * x_r + A2_r * x_i).^2) - b2);
 ceq = [];
 
 end
