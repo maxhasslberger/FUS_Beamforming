@@ -18,23 +18,29 @@ end
 p_lin = pinv(A1) * b1;
 
 if via_abs
+    % Define initial vector
     p_start = zeros(length(p_lin) * 2 + 1, 1);
     amp_fac = 0.0;
     p_start(1) = mean(abs(p_lin));
 
     p_start(2:ceil(end/2)) = real(p_lin);
-    p_start(ceil(end/2) + 1:end) = imag(p_lin); % TODO: Numerical error bc of div by 0?
+    p_start(ceil(end/2) + 1:end) = imag(p_lin);
+
+    % Cost fctn and constraints
+    fun = @(p)cost_fctn(p, A1_r, A1_i, b1);
+    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac);
 else
+    % Define initial vector
     p_start = zeros(length(p_lin) + 1, 1);
     amp_fac = mean(abs(p_lin));
     p_start(1) = 1.0;
 
-    p_start(2:end) = angle(p_lin); % TODO: Numerical precision bc of first element...
-end
+    p_start(2:end) = angle(p_lin);
 
-% Cost fctn and constraints
-fun = @(p)cost_fctn(p, A1_r, A1_i, b1, via_abs, amp_fac);
-nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs);
+    % Cost fctn and constraints
+    fun = @(p)cost_fctn2(p, A1, b1, amp_fac);
+    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac);
+end
 
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
     'Algorithm','active-set'); % interior-point, sqp, trust-region-reflective, active-set
@@ -53,15 +59,16 @@ end
 end
 
 
-function val = cost_fctn(p, A1_r, A1_i, b1, via_abs, amp_fac)
+function val = cost_fctn(p, A1_r, A1_i, b1)
 
-if via_abs
-    [x_r, x_i, p_0] = getElements_abs(p);
-    val = sum((p_0 * sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1).^2);
-else
-%     [x_r, x_i, p_0] = getElements_phase(p);
-    val = sum((p(1) * amp_fac * abs((A1_r + 1j * A1_i) * exp(1j*p(2:end))) - b1).^2);
+[x_r, x_i, p_0] = getElements_abs(p);
+val = sum((p_0 * sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1).^2);
+
 end
+
+function val = cost_fctn2(p, A1, b1, amp_fac)
+
+val = sum((p(1) * amp_fac * abs(A1 * exp(1j*p(2:end))) - b1).^2);
 
 end
 
@@ -76,13 +83,3 @@ x_r = p_r ./ sqrt(p_r.^2 + p_i.^2);
 x_i = p_i ./ sqrt(p_r.^2 + p_i.^2);
 
 end
-
-% function [x_r, x_i, p_0] = getElements_phase(p)
-% 
-% phase_vec = exp(1j * p(2:end));
-% p_0 = p(1);
-% 
-% x_r = real(phase_vec);
-% x_i = imag(phase_vec);
-% 
-% end
