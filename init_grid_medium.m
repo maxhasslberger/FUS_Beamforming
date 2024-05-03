@@ -40,7 +40,7 @@ medium.alpha_power = 1.43; % Robertson et al., PMB 2017
 % medium.BonA = 6; % Non-linearity
 
 ppw = 3; % >= 2
-cfl = 0.1;
+cfl = 0.3;
 
 %% Define grid
 % Grid size
@@ -62,20 +62,6 @@ elseif n_dim == 3
 
     slice_idx = 1:round(grid_size(2) / dx_scan);
 end
-
-% Time
-ppp = round(ppw / cfl); % points per temporal period
-dt = 1 / (ppp * f0); % <= dx/c_max
-
-% calculate the number of time steps to reach steady state
-t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / c0; 
-
-Nt = round(t_end / dt);
-kgrid.setTime(Nt, dt);
-
-% t_end = 70e-6; % s
-% kgrid.makeTime(medium.sound_speed, [], t_end);
-% kgrid.makeTime(medium.sound_speed);
 
 %% Define medium
 if ~isempty(ct_filename)
@@ -125,11 +111,29 @@ if ~isempty(ct_filename)
     medium.sound_speed(skull == 0) = c0;
     medium.density(skull == 0) = rho0;
     medium.alpha_coeff(skull == 0) = alpha_coeff_water;
+
+    dt = cfl * dx / c_max;
 else
     % define the homogeneous space (water)
     medium.sound_speed = c0; % * ones(Nx, Ny);
     medium.density = rho0; % * ones(Nx, Ny);
     medium.alpha_coeff = alpha_coeff_water; % dB/(MHz^y cm)
+
+    dt = cfl * dx / c0;
 end
+
+% Time
+ppp = round(ppw / cfl); % points per temporal period
+% dt = 1 / (ppp * f0 * dx_factor);
+
+% calculate the number of time steps to reach steady state - usually sufficient even under the presence of the skull
+t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / c0; 
+
+Nt = round(t_end / dt);
+kgrid.setTime(Nt, dt);
+
+% t_end = 70e-6; % s
+% kgrid.makeTime(medium.sound_speed, [], t_end);
+% kgrid.makeTime(medium.sound_speed);
 
 end
