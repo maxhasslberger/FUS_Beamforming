@@ -16,15 +16,15 @@ only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 get_current_A = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-get_current_AP = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
+get_current_AP = false; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
-[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
+[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
     active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
-[kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
+[kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
     active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, plot_dx_factor, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
@@ -65,6 +65,8 @@ else
     activeA_ids(obs_ids) = 1;
     activeA_ids = logical(activeA_ids);
 
+    [ip.A, b_ip_des, activeA_ids] = limit_space(ip.A, b_ip_des, activeA_ids, space_limits, plot_offset, dx_factor, medium.sound_speed);
+
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
@@ -84,13 +86,14 @@ opts.customx0 = ip.p;
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_des, max(b_des) / 10, true); % Amplitude fixed
+ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, true); % Amplitude fixed
 
 ip.t_solve = toc;
 
 
 % Evaluate obtained phase terms in forward simulation
 if plot_dx_factor ~= 1
+    clear A;
     A = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
         'active_ids', active_idsP); % Obtain high resolution A
 end

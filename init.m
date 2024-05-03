@@ -1,4 +1,4 @@
-function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
+function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
     active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
@@ -46,7 +46,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
-    grid_size = [grid_size(1), grid_size(3)];
+    grid_size = [grid_size(1), grid_size(3)]; % for 2D plots
 end
 
 if ~isempty(dx_scan)
@@ -136,11 +136,14 @@ if kgrid.dim == 2
             amp_in = amp_in(i) * ones(sum(b_mask(:)), 1);
         end
 
+        space_limits = [-67, 71; -74, 86];
     else
 
         for point = 1:length(point_pos.x)
             b_mask(point_pos.x(point), point_pos.y(point)) = 1;
         end
+
+        space_limits = [];
     end
 
     f = figure;
@@ -151,6 +154,7 @@ if kgrid.dim == 2
     title("Setup")
 else
     only_focus_opt = true;
+    space_limits = [];
 
     % Focal points - rel. to transducer surface
     point_pos_m.x = [-16, 23];

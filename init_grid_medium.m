@@ -4,7 +4,7 @@ n_dim = 2;
 ct_filename = [];
 dx_factor = 1.0;
 slice_idx = 1;
-dx_scan = [];
+dx_scan = 1e-3;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
