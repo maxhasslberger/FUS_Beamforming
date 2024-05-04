@@ -103,8 +103,8 @@ ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgridP.k));
 
 %% Save Results in mat-file
+current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
 if save_results
-    current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
     res_filename = "results";
     if ~only_focus_opt
         ip.A = []; % A might be very large...
@@ -116,15 +116,15 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', t1w_filename, plot_offset, grid_size, plot_dx_factor);
+    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime);
 end
 
 %% IP Results
-plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
-plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
 
 err = abs(ip.b) - abs(ip.b_gt);
-plot_results(kgridP, ip.p, err, 'Difference', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, err, 'Difference', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
 figure
 histogram(err(:))
 xlabel("Pressure Deviation (Pa)")
