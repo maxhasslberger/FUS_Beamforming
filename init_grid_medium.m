@@ -40,7 +40,7 @@ medium.alpha_power = 1.43; % Robertson et al., PMB 2017
 % medium.BonA = 6; % Non-linearity
 
 ppw = 3; % >= 2
-cfl = 0.3;
+cfl = 0.1;
 
 %% Define grid
 % Grid size
@@ -123,8 +123,9 @@ else
 end
 
 % Time
-ppp = round(ppw / cfl); % points per temporal period
-% dt = 1 / (ppp * f0 * dx_factor);
+ppp = round(1 / (dt * f0)); % points per temporal period
+% ppp = round(ppw / cfl); % points per temporal period
+% dt = 1 / (ppp * f0);
 
 % calculate the number of time steps to reach steady state - usually sufficient even under the presence of the skull
 t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / c0; 
