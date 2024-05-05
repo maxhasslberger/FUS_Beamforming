@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
+    active_ids, mask2el_delayFiles, el_per_t, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -65,20 +65,25 @@ if kgrid.dim == 2
 
     num_elements = 50;
     spacing = ceil(dx_factor);
+    n_trs = length(t_rot);
 
-    t_mask_ps = zeros(kgrid.Nx, kgrid.Ny);
-    for i = 1:length(t_rot)
+    t_mask_ps = false(kgrid.Nx, kgrid.Ny);
+    t_ids = [];
+    for i = 1:n_trs
         el_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
         shift = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
     
-        t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
+        new_arr = create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
+        t_ids = [t_ids; find(new_arr)];
+        t_mask_ps = t_mask_ps | logical(new_arr);
     end
     
+    [~, el2mask_ids] = sort(t_ids);
+    [~, mask2el_delayFiles] = sort(el2mask_ids);
+    el_per_t = num_elements * ones(1, n_trs);
 
     karray_t = [];
     active_ids = [];
-    mask2el_delayFiles = [];
-    t_mask_ps = t_mask_ps > 0; % Return to logical in case of overlaps
 
 %     imagesc(t_mask_ps, [-1 1])
 %     colormap(getColorMap);
@@ -90,6 +95,7 @@ else
         t_name = "std_orig";
     end
     sparsity_name = "sparsity_ids";
+    num_elements = 128;
 %     t1_pos = [-55, 20, 0]' * 1e-3; % m
     t1_pos = [-75, 30, 0]' * 1e-3; % m
     t1_rot = [-90, 0, 90]'; % deg
@@ -104,6 +110,8 @@ else
     active_tr_ids = [1];
 
     [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
+
+    el_per_t = num_elements * ones(1, length(active_tr_ids));
 
 %     voxelPlot(double(t_mask))
 end

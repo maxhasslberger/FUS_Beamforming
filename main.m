@@ -15,17 +15,17 @@ ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 get_current_AP = false; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
+    active_ids, mask2el_delayFiles, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
-    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, plot_dx_factor, input_argsP] = ...
+    active_idsP, ~, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, plot_dx_factor, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,7 +86,7 @@ opts.customx0 = ip.p;
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, true); % Amplitude fixed
+ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el_delayFiles, el_per_t, true); % Amplitude fixed
 
 ip.t_solve = toc;
 
@@ -95,7 +95,7 @@ ip.t_solve = toc;
 if plot_dx_factor ~= 1
     clear A;
     A = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
-        'active_ids', active_idsP); % Obtain high resolution A
+        'active_ids', active_idsP); % Obtain high resolution A - Discard if no point sources!
 end
 
 ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
@@ -116,15 +116,15 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime);
+    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime);
 end
 
 %% IP Results
-plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
-plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
 
 err = abs(ip.b) - abs(ip.b_gt);
-plot_results(kgridP, ip.p, err, 'Difference', t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, err, 'Difference', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
 figure
 histogram(err(:))
 xlabel("Pressure Deviation (Pa)")
