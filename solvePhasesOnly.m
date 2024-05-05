@@ -39,7 +39,7 @@ if via_abs
 
     % Cost fctn and constraints
     fun = @(p)cost_fctn(p, A1_r, A1_i, b1, trx_ids);
-    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac);%%%%%%%%%%%%
+    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 else
     % Define initial vector
     p_start = zeros(length(p_lin) + n_amps, 1);
@@ -50,14 +50,14 @@ else
 
     % Cost fctn and constraints
     fun = @(p)cost_fctn2(p, A1, b1, amp_fac, trx_ids);
-    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac);
+    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 end
 
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
     'Algorithm','active-set'); % interior-point, sqp, trust-region-reflective, active-set
 options.MaxFunctionEvaluations = 1e5;
 
-nonlcon = [];
+
 [p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);
 
 
