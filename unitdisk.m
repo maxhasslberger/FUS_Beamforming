@@ -6,10 +6,10 @@ if via_abs
 else
     n_amps = length(trx_ids);
 
-    p_0 = zeros(size(A2, 2), 1);
+    p_0 = zeros(size(A2_r, 2), 1);
     p_0 = getAmpPerElement(p_0, p, trx_ids);
 
-    c = amp_fac * abs((A2_r + 1j * A2_i) * (p_0 .* exp(1j * p(n_amps:end)))) - b2;
+    c = amp_fac * abs((A2_r + 1j * A2_i) * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b2;
 end
 
 ceq = [];
