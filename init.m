@@ -1,5 +1,5 @@
-function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el_delayFiles, el_per_t, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
+function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
+    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -35,7 +35,7 @@ if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
     if isempty(ct_filename)
-        grid_size = [120, 120, 100] * 1e-3; % m in [x, y, z] respectively
+        grid_size = [140, 140, 100] * 1e-3; % m in [x, y, z] respectively
     else
         grid_size = [192, 256, 256] * 1e-3; % m in [x, y, z] respectively
     end
@@ -46,7 +46,8 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
-    grid_size = [grid_size(1), grid_size(3)]; % for 2D plots
+    grid_size = [grid_size(1), grid_size(3)];
+    plot_offset = [kgrid.Nx/2, kgrid.Ny/2, kgrid.Nz/2]; % Offset to Scan center
 end
 
 if ~isempty(dx_scan)
@@ -65,25 +66,20 @@ if kgrid.dim == 2
 
     num_elements = 50;
     spacing = ceil(dx_factor);
-    n_trs = length(t_rot);
 
-    t_mask_ps = false(kgrid.Nx, kgrid.Ny);
-    t_ids = [];
-    for i = 1:n_trs
+    t_mask_ps = zeros(kgrid.Nx, kgrid.Ny);
+    for i = 1:length(t_rot)
         el_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
         shift = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
     
-        new_arr = create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
-        t_ids = [t_ids; find(new_arr)];
-        t_mask_ps = t_mask_ps | logical(new_arr);
+        t_mask_ps = t_mask_ps + create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
     end
     
-    [~, el2mask_ids] = sort(t_ids);
-    [~, mask2el_delayFiles] = sort(el2mask_ids);
-    el_per_t = num_elements * ones(1, n_trs);
 
     karray_t = [];
     active_ids = [];
+    mask2el_delayFiles = [];
+    t_mask_ps = t_mask_ps > 0; % Return to logical in case of overlaps
 
 %     imagesc(t_mask_ps, [-1 1])
 %     colormap(getColorMap);
@@ -95,23 +91,20 @@ else
         t_name = "std_orig";
     end
     sparsity_name = "sparsity_ids";
-    num_elements = 128;
-%     t1_pos = [-55, 20, 0]' * 1e-3; % m
-    t1_pos = [-75, 30, 0]' * 1e-3; % m
+    t1_pos = [-65, 30, 0]' * 1e-3; % m
+%     t1_pos = [-75, 30, 0]' * 1e-3; % m
     t1_rot = [-90, 0, 90]'; % deg
-%     t2_pos = [20, -55, 0]' * 1e-3; % m
-    t2_pos = [80, 30, 0]' * 1e-3; % m
-%     t2_rot = [-90, 0, 180]'; % deg
-    t2_rot = [-90, 0, -90]'; % deg
+    t2_pos = [30, -65, 0]' * 1e-3; % m
+%     t2_pos = [80, 30, 0]' * 1e-3; % m
+    t2_rot = [-90, 0, 180]'; % deg
+%     t2_rot = [-90, 0, -90]'; % deg
 
     t_pos = [t1_pos, t2_pos];
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
     t_rot = [t1_rot, t2_rot];
-    active_tr_ids = [1];
+    active_tr_ids = [1, 2];
 
     [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
-
-    el_per_t = num_elements * ones(1, length(active_tr_ids));
 
 %     voxelPlot(double(t_mask))
 end
@@ -144,14 +137,11 @@ if kgrid.dim == 2
             amp_in = amp_in(i) * ones(sum(b_mask(:)), 1);
         end
 
-        space_limits = [-67, 71; -74, 86];
     else
 
         for point = 1:length(point_pos.x)
             b_mask(point_pos.x(point), point_pos.y(point)) = 1;
         end
-
-        space_limits = [];
     end
 
     f = figure;
@@ -162,13 +152,15 @@ if kgrid.dim == 2
     title("Setup")
 else
     only_focus_opt = true;
-    space_limits = [];
 
     % Focal points - rel. to transducer surface
-    point_pos_m.x = [-16, 23];
-    point_pos_m.y = [32, 32];
-    point_pos_m.z = [-27, -26];
-    amp_in = [300, 300]' * 1e3; % Pa
+%     point_pos_m.x = [-16, 23];
+%     point_pos_m.y = [32, 32];
+%     point_pos_m.z = [-27, -26];
+    point_pos_m.x = [1];
+    point_pos_m.y = [1];
+    point_pos_m.z = [1];
+    amp_in = [300]' * 1e3; % Pa
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
     point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
@@ -193,7 +185,7 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
-    sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Y')
+    sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Z')
 
 end
 
