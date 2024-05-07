@@ -77,9 +77,10 @@ ip.p = pinv(ip.A) * b_ip_des; % Initial solution cosidering phases
 % b_ip_des = [b_ip_des; ip.sq_beta * ip.u];
 
 % Solve phase retrieval problem
-opts = struct;
-opts.initMethod = 'custom';
-opts.customx0 = ip.p;
+
+% opts = struct;
+% opts.initMethod = 'custom';
+% opts.customx0 = ip.p;
 % ip.p = max(abs(ip.p)) * exp(1j * angle(ip.p)); % All elements with same amplitude
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
@@ -93,9 +94,12 @@ ip.t_solve = toc;
 AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
     'active_ids', active_idsP);
 
-ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
-ip.b = AP * ip.p;
+ip.b = A * ip.p;
+% ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = reshape(ip.b, size(kgridP.k));
+
+ip.b_gt = A * ip.p_gt;
+ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
 
 %% Save Results in mat-file
 if save_results
@@ -115,11 +119,12 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+% plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem2', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
 
-plot_results(kgrid, ip.p, ip.b_gt, 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p, abs(ip.b_gt - ip.b), 'Inverse Problem', t1w_filename, plot_offset, grid_size, plot_dx_factor, 'slice', point_pos.slice);
-
+err = abs(ip.b) - abs(ip.b_gt);
+plot_results(kgridP, ip.p - ip.p_gt, err, 'Difference', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
 figure
 histogram(abs(ip.b(:)) - abs(ip.b_gt(:)))
 xlabel("Pressure Deviation (Pa)")
