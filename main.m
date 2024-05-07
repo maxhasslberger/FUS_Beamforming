@@ -91,8 +91,11 @@ ip.t_solve = toc;
 
 
 % Evaluate obtained phase terms in forward simulation
-AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
-    'active_ids', active_idsP);
+if plot_dx_factor ~= 1
+    clear A;
+    A = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
+        'active_ids', active_idsP); % Obtain high resolution A - Discard if no point sources!
+end
 
 ip.b = A * ip.p;
 ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
