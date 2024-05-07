@@ -9,8 +9,8 @@ plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
-% t1_filename = [];
-% ct_filename = [];
+t1w_filename = [];
+ct_filename = [];
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
@@ -25,8 +25,8 @@ save_results = false;
     active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
-[kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
-    active_idsP, ~, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
+[kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
+    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
