@@ -9,6 +9,7 @@ plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
+% t1_filename = [];
 % ct_filename = [];
 
 % Simulation config
@@ -25,7 +26,7 @@ save_results = false;
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
-    active_idsP, ~, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, plot_dx_factor, input_argsP] = ...
+    active_idsP, ~, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,16 +122,16 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime);
+    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime);
 end
 
 %% IP Results
-plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
-plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem2', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
-% plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem2', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+% plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 
 err = abs(ip.b) - abs(ip.b_gt);
-plot_results(kgridP, ip.p - ip.p_gt, err, 'Difference', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, plot_dx_factor, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p - ip.p_gt, err, 'Difference', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 figure
 histogram(err(:))
 xlabel("Pressure Deviation (Pa)")
