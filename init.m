@@ -157,9 +157,9 @@ else
 %     point_pos_m.x = [-16, 23];
 %     point_pos_m.y = [32, 32];
 %     point_pos_m.z = [-27, -26];
-    point_pos_m.x = [1];
-    point_pos_m.y = [1];
-    point_pos_m.z = [1];
+    point_pos_m.x = [0] * 1e-3 / kgrid.dx;
+    point_pos_m.y = [0] * 1e-3 / kgrid.dx;
+    point_pos_m.z = [0] * 1e-3 / kgrid.dx;
     amp_in = [300]' * 1e3; % Pa
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
