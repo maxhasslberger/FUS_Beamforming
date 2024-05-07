@@ -1,8 +1,9 @@
-function plot_results(kgrid, excitation, data, plot_title, t1_filename, plot_offset, grid_size, dx_factor, varargin)
+function plot_results(kgrid, excitation, data, plot_title, mask2el, t1_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
 
+excitation = excitation(mask2el); % Sort acc to transducer id
 %% Plot magnitude and phase of array elements
-f = figure;
-f.Position = [700 50 650 350];
+f_param = figure;
+f_param.Position = [700 50 650 350];
 subplot(2, 1, 1)
 plot(abs(excitation * 1e-3))
 title(plot_title);
@@ -41,8 +42,8 @@ else
 end
 
 p_sz = size(p_data);
-f = figure;
-f.Position = [1400 50 484 512];
+f_data = figure;
+f_data.Position = [1400 50 484 512];
 
 % Get Ticks
 plot_dy = kgrid.dy;% * 1e3;
@@ -81,7 +82,7 @@ if ~isempty(t1_filename)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
     xlabel(cb2, 'Pressure (kPa)');
-    title(ax1,'Acoustic Pressure Amplitude')
+    title(ax1, plot_title)
     set(ax1, 'ydir', 'normal')
     set(ax2, 'ydir', 'normal')
 
@@ -106,6 +107,12 @@ else
     cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
     xlabel(cb, 'Pressure (kPa)');
     set(ax, 'ydir', 'normal')
+end
+
+if save_results
+    filename = fullfile("Results", current_datetime + "_" + plot_title);
+    export_fig(f_param, filename + "_param.pdf");
+    saveas(f_data, filename + "_data.pdf");
 end
 
 end
