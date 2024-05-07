@@ -21,12 +21,12 @@ get_current_AP = false; % Use precomputed propagation matrix - Only to plot resu
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
-[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el_delayFiles, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
+[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
+    active_ids, mask2el_delayFiles, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
     init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
-[kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
-    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
+[kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
+    active_idsP, ~, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,6 +66,8 @@ else
     activeA_ids(obs_ids) = 1;
     activeA_ids = logical(activeA_ids);
 
+    [ip.A, b_ip_des, activeA_ids] = limit_space(ip.A, b_ip_des, activeA_ids, space_limits, plot_offset, dx_factor, medium.sound_speed);
+
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
@@ -86,7 +88,8 @@ ip.p = pinv(ip.A) * b_ip_des; % Initial solution cosidering phases
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_des, max(b_des) / 10, true); % Amplitude fixed
+ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el_delayFiles, el_per_t, true); % Amplitude fixed
+ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el_delayFiles, el_per_t, false); % Amplitude fixed
 
 ip.t_solve = toc;
 
@@ -98,16 +101,16 @@ if plot_dx_factor ~= 1
         'active_ids', active_idsP); % Obtain high resolution A - Discard if no point sources!
 end
 
+% ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = A * ip.p;
-ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = reshape(ip.b, size(kgridP.k));
 
 ip.b_gt = A * ip.p_gt;
 ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
 
 %% Save Results in mat-file
+current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
 if save_results
-    current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
     res_filename = "results";
     if ~only_focus_opt
         ip.A = []; % A might be very large...
@@ -130,7 +133,7 @@ plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem2', mask2el_delayFiles, t
 err = abs(ip.b) - abs(ip.b_gt);
 plot_results(kgridP, ip.p - ip.p_gt, err, 'Difference', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 figure
-histogram(abs(ip.b(:)) - abs(ip.b_gt(:)))
+histogram(err(:))
 xlabel("Pressure Deviation (Pa)")
 
 % Metrics evaluation
