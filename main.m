@@ -95,7 +95,7 @@ AP = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_args
     'active_ids', active_idsP);
 
 ip.b = A * ip.p;
-% ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
+ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = reshape(ip.b, size(kgridP.k));
 
 ip.b_gt = A * ip.p_gt;
