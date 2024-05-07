@@ -91,6 +91,7 @@ else
         t_name = "std_orig";
     end
     sparsity_name = "sparsity_ids";
+    num_elements = 128;
     t1_pos = [-65, 30, 0]' * 1e-3; % m
 %     t1_pos = [-75, 30, 0]' * 1e-3; % m
     t1_rot = [-90, 0, 90]'; % deg
@@ -185,6 +186,7 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
+%     sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Y')
     sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.z(1), 'SliceDirection', 'Z')
 
 end
