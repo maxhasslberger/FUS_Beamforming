@@ -3,7 +3,7 @@ close all;
 
 %% Init
 f0 = 470e3; % Hz - transducer frequency
-n_dim = 2;
+n_dim = 3;
 dx_factor = 1; % TODO: Optimize (finer) dx to reduce comp. demand
 plot_dx_factor = 1;
 
