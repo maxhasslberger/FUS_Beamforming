@@ -35,7 +35,7 @@ if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
     if isempty(ct_filename)
-        grid_size = [140, 140, 100] * 1e-3; % m in [x, y, z] respectively
+        grid_size = [140, 100, 140] * 1e-3; % m in [x, y, z] respectively
     else
         grid_size = [192, 256, 256] * 1e-3; % m in [x, y, z] respectively
     end
@@ -97,13 +97,10 @@ else
     end
     sparsity_name = "sparsity_ids";
     num_elements = 128;
-    t1_pos = [-65, 30, 0]' * 1e-3; % m
-%     t1_pos = [-75, 30, 0]' * 1e-3; % m
-    t1_rot = [-90, 0, 90]'; % deg
-    t2_pos = [30, -65, 0]' * 1e-3; % m
-%     t2_pos = [80, 30, 0]' * 1e-3; % m
-    t2_rot = [-90, 0, 180]'; % deg
-%     t2_rot = [-90, 0, -90]'; % deg
+    t1_pos = [30, 0, 65]' * 1e-3; % m
+    t1_rot = [0, 0, 180]'; % deg
+    t2_pos = [-65, 0, -30]' * 1e-3; % m
+    t2_rot = [-90, 0, 90]'; % deg
 
     t_pos = [t1_pos, t2_pos];
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
@@ -197,10 +194,9 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
-    point_pos.slice = point_pos_m.z(1);
-%     sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Y')
-    sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.z(1), 'SliceDirection', 'Z')
-
+    point_pos.slice = point_pos_m.y(1);
+    sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Y')
+    
 end
 
 % Create desired signal
