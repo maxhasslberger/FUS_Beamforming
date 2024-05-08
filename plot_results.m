@@ -1,6 +1,6 @@
 function plot_results(kgrid, excitation, data, plot_title, mask2el, t1_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
 
-excitation = excitation(mask2el); % Sort acc to transducer id
+excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
 %% Plot magnitude and phase of array elements
 f_param = figure;
 f_param.Position = [700 50 650 350];
