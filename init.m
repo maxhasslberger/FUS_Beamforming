@@ -50,7 +50,9 @@ end
 
 if n_dim == 3
     grid_size = [grid_size(1), grid_size(3)];
-    plot_offset = [kgrid.Nx/2, kgrid.Ny/2, kgrid.Nz/2]; % Offset to Scan center
+    if isempty(t1w_filename)
+        plot_offset = [kgrid.Nx/2, kgrid.Ny/2, kgrid.Nz/2] / dx_factor; % Offset to center
+    end
 end
 
 if ~isempty(t1w_filename)

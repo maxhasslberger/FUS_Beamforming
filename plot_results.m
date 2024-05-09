@@ -2,12 +2,7 @@ function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename
 
 %% Optional Inputs
 slice_coord = 32;
-if ~isempty(t1w_filename)
-    dx_scan = 1e-3;
-else
-    dx_scan = kgrid.dx;
-    dx_factor = 1;
-end
+dx_scan = 1e-3;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -46,7 +41,7 @@ slice_scan = round(plot_offset(2) + slice_coord);
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    slice = floor(slice_scan * dx_factor);%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    slice = round((plot_offset(2) + slice_coord) * dx_factor);
     p_data = squeeze(abs(data(:,slice,:)));
     % Video or similar?...
 end
@@ -55,11 +50,11 @@ end
 plot_dy = kgrid.dy;% * 1e3;
 plot_dx = kgrid.dx;% * 1e3;
 
-plot_vecy = (plot_dy:plot_dy:grid_size(2)) / dx_scan;
-plot_vecx = (plot_dx:plot_dx:grid_size(1)) / dx_scan;
+plot_vecy = (plot_dy:plot_dy:grid_size(2)) / kgrid.dy;
+plot_vecx = (plot_dx:plot_dx:grid_size(1)) / kgrid.dx;
 
-plot_vecy = plot_vecy - plot_offset(3);
-plot_vecx = plot_vecx - plot_offset(1);
+plot_vecy = (plot_vecy / dx_factor - plot_offset(3)) / (kgrid.dy / dx_scan);
+plot_vecx = (plot_vecx / dx_factor - plot_offset(1)) / (kgrid.dx / dx_scan);
 
 p_sz = size(p_data);
 f_data = figure;
@@ -88,7 +83,7 @@ if ~isempty(t1w_filename)
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
-    colormap(ax2,'turbo')
+    colormap(ax2,'hot')
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
     xlabel(cb2, 'Pressure (kPa)');
@@ -103,7 +98,7 @@ else
     ax = axes;
     imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
     
-    colormap('turbo');
+    colormap('hot');
     xlabel('x (mm)');
     ylabel('z (mm)');
     axis image;
@@ -120,7 +115,7 @@ else
 end
 
 if kgrid.dim == 3
-    cmap = turbo();
+    cmap = hot();
     sliceViewer(double(flip(imrotate(data, 90), 1)), 'Colormap', cmap, 'SliceNumber', slice, 'SliceDirection', 'Y',"Parent",figure)
     cb3 = colorbar;
     xlabel(cb3, 'Pressure (kPa)');
