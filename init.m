@@ -3,7 +3,8 @@ function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
-ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
+t1w_filename = [];
+ct_filename = [];
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 slice_idx = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
@@ -52,7 +53,7 @@ if n_dim == 3
     plot_offset = [kgrid.Nx/2, kgrid.Ny/2, kgrid.Nz/2]; % Offset to Scan center
 end
 
-if ~isempty(dx_scan)
+if ~isempty(t1w_filename)
     dx_factor = dx_scan / kgrid.dx;
 end
 
@@ -113,7 +114,7 @@ else
 
     el_per_t = num_elements * ones(1, length(active_tr_ids));
 
-%     voxelPlot(double(t_mask))
+%     voxelPlot(double(t_mask_ps))
 end
 
 %% Define (intracranial) Beamforming Pattern

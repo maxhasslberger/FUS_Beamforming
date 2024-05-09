@@ -2,7 +2,12 @@ function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename
 
 %% Optional Inputs
 slice_coord = 32;
-dx_scan = 1e-3;
+if ~isempty(t1w_filename)
+    dx_scan = 1e-3;
+else
+    dx_scan = kgrid.dx;
+    dx_factor = 1;
+end
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -41,14 +46,10 @@ slice_scan = round(plot_offset(2) + slice_coord);
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    slice = slice_scan * dx_factor;
+    slice = floor(slice_scan * dx_factor);%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     p_data = squeeze(abs(data(:,slice,:)));
     % Video or similar?...
 end
-
-p_sz = size(p_data);
-f_data = figure;
-f_data.Position = [1400 50 484 512];
 
 % Get Ticks
 plot_dy = kgrid.dy;% * 1e3;
@@ -59,6 +60,10 @@ plot_vecx = (plot_dx:plot_dx:grid_size(1)) / dx_scan;
 
 plot_vecy = plot_vecy - plot_offset(3);
 plot_vecx = plot_vecx - plot_offset(1);
+
+p_sz = size(p_data);
+f_data = figure;
+f_data.Position = [1400 50 484 512];
 
 % Include a t1w scan
 if ~isempty(t1w_filename)
@@ -99,8 +104,8 @@ else
     imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
     
     colormap('turbo');
-    xlabel('y (mm)');
-    ylabel('x (mm)');
+    xlabel('x (mm)');
+    ylabel('z (mm)');
     axis image;
     % clim([0 30000])
     title(plot_title);
