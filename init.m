@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el_delayFiles, el_per_t, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -15,6 +15,8 @@ use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (a
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
+            case 't1_scan'
+                t1w_filename = varargin{arg_idx+1};
             case 'ct_scan'
                 ct_filename = varargin{arg_idx+1};
             case 'slice_idx'
@@ -80,7 +82,7 @@ if kgrid.dim == 2
     end
     
     [~, el2mask_ids] = sort(t_ids);
-    [~, mask2el_delayFiles] = sort(el2mask_ids);
+    [~, mask2el] = sort(el2mask_ids);
     el_per_t = num_elements * ones(1, n_trs);
 
     karray_t = [];
@@ -107,7 +109,7 @@ else
     t_rot = [t1_rot, t2_rot];
     active_tr_ids = [1, 2];
 
-    [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
+    [karray_t, t_mask_ps, active_ids, mask2el] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
 
     el_per_t = num_elements * ones(1, length(active_tr_ids));
 
@@ -152,12 +154,9 @@ if kgrid.dim == 2
         space_limits = [];
     end
 
-    f = figure;
-    f.Position = [700 485 484 512];
-%     imagesc(imrotate(b_mask + t_mask_ps, 90), [-1 1])
-%     colormap(getColorMap);
-    imagesc(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90))
-    title("Setup")
+    b_cross = b_mask;
+    b_cross(:, point_pos.y) = 1;
+    b_cross(point_pos.x, :) = 1;
 else
     only_focus_opt = true;
     space_limits = [];
@@ -195,9 +194,26 @@ else
     end
 
     point_pos.slice = point_pos_m.y(1);
-    sliceViewer(double(flip(imrotate(b_mask + t_mask_ps + medium.sound_speed / max(medium.sound_speed(:)), 90), 1)), 'SliceNumber', point_pos.y(1), 'SliceDirection', 'Y')
-    
+
+    b_cross = b_mask;
+    b_cross(point_pos.x, point_pos.y, :) = 1;
+    b_cross(point_pos.x, :, point_pos.z) = 1;
+    b_cross(:, point_pos.y, point_pos.z) = 1;
+
 end
+
+% Create preview plot
+if ~isscalar(medium.sound_speed)
+    plot_arg = medium.sound_speed / max(medium.sound_speed(:));
+    plot_arg = plot_arg - min(plot_arg(:));
+else
+    plot_arg = zeros(size(t_mask_ps));
+end
+
+plot_arg(logical(t_mask_ps)) = 0.5;
+plot_arg(logical(b_cross)) = 1.0;
+
+plot_results(kgrid, [], plot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
 
 % Create desired signal
 phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
@@ -205,7 +221,7 @@ phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
 b_des = amp_in .* exp(1j*phase); % only observed elements
 
 b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
-b_des_pl(find(b_mask)) = b_des;
+b_des_pl(logical(b_mask)) = b_des;
 
 % set simulation input options
 input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};

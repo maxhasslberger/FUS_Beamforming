@@ -1,20 +1,6 @@
-function plot_results(kgrid, excitation, data, plot_title, mask2el, t1_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
+function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
 
-excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
-%% Plot magnitude and phase of array elements
-f_param = figure;
-f_param.Position = [700 50 650 350];
-subplot(2, 1, 1)
-plot(abs(excitation * 1e-3))
-title(plot_title);
-ylabel('Amplitude (kPa)')
-
-subplot(2, 1, 2)
-plot(rad2deg(angle(excitation)))
-xlabel('Element #')
-ylabel('Phase (deg)')
-
-%% Plot the pressure field 
+%% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
 
@@ -30,6 +16,25 @@ if ~isempty(varargin)
         end
     end
 end
+
+%% Plot magnitude and phase of array elements
+if ~isempty(excitation)
+    excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
+    
+    f_param = figure;
+    f_param.Position = [700 50 650 350];
+    subplot(2, 1, 1)
+    plot(abs(excitation * 1e-3))
+    title(plot_title);
+    ylabel('Amplitude (kPa)')
+    
+    subplot(2, 1, 2)
+    plot(rad2deg(angle(excitation)))
+    xlabel('Element #')
+    ylabel('Phase (deg)')
+end
+
+%% Plot the pressure field 
 
 slice_scan = round(plot_offset(2) + slice_coord);
 
@@ -56,8 +61,8 @@ plot_vecy = plot_vecy - plot_offset(3);
 plot_vecx = plot_vecx - plot_offset(1);
 
 % Include a t1w scan
-if ~isempty(t1_filename)
-    t1_img = niftiread(t1_filename);
+if ~isempty(t1w_filename)
+    t1_img = niftiread(t1w_filename);
 
     t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
     if ~isequal(p_sz, t1w_sz)
@@ -107,6 +112,13 @@ else
     cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
     xlabel(cb, 'Pressure (kPa)');
     set(ax, 'ydir', 'normal')
+end
+
+if kgrid.dim == 3
+    cmap = turbo();
+    sliceViewer(double(flip(imrotate(data, 90), 1)), 'Colormap', cmap, 'SliceNumber', slice, 'SliceDirection', 'Y',"Parent",figure)
+    cb3 = colorbar;
+    xlabel(cb3, 'Pressure (kPa)');
 end
 
 if save_results

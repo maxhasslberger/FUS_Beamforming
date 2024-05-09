@@ -22,12 +22,12 @@ do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el_delayFiles, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
-    init(f0, n_dim, dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    active_ids, mask2el, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
+    init(f0, n_dim, dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
     active_idsP, ~, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
-    init(f0, n_dim, dx_factor * plot_dx_factor, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
@@ -88,8 +88,8 @@ ip.p = pinv(ip.A) * b_ip_des; % Initial solution cosidering phases
 
 % [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
-ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el_delayFiles, el_per_t, true); % Amplitude fixed
-ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el_delayFiles, el_per_t, false); % Amplitude fixed
+ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, true); % Amplitude fixed
+ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amplitude fixed
 
 ip.t_solve = toc;
 
@@ -116,22 +116,22 @@ if save_results
         ip.A = []; % A might be very large...
     end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "mask2el_delayFiles", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
+        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
         "only_focus_opt", "input_args");
 end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime);
+    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime);
 end
 
 %% IP Results
-plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
-plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem2', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem2', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 % plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 
 err = abs(ip.b) - abs(ip.b_gt);
-plot_results(kgridP, ip.p - ip.p_gt, err, 'Difference', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgridP, [], err, 'Difference', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 figure
 histogram(err(:))
 xlabel("Pressure Deviation (Pa)")
