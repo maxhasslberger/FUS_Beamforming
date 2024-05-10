@@ -44,14 +44,13 @@ else
 end
 
 % Get Ticks
-% plot_dy = kgrid.dy;% * 1e3;
-% plot_dx = kgrid.dx;% * 1e3;
 p_sz = size(p_data);
 
-% plot_vecy = (dx_scan:plot_dy:grid_size(2)+plot_dy) / dx_scan;
-% plot_vecx = (dx_scan:plot_dx:grid_size(1)+plot_dx) / dx_scan;
-plot_vecy = linspace(0, grid_size(2)-dx_scan, p_sz(2)) / dx_scan;
-plot_vecx = linspace(0, grid_size(1)-dx_scan, p_sz(1)) / dx_scan;
+plot_vecy = linspace(0, grid_size(2)-kgrid.dy, p_sz(2)) / dx_scan;
+plot_vecx = linspace(0, grid_size(1)-kgrid.dx, p_sz(1)) / dx_scan;
+
+plot_vecy = plot_vecy - plot_offset(3) + kgrid.dy / dx_scan;
+plot_vecx = plot_vecx - plot_offset(1) + kgrid.dx / dx_scan;
 
 f_data = figure;
 f_data.Position = [1400 50 484 512];
@@ -71,11 +70,6 @@ if ~isempty(t1w_filename)
         t1w_plot = squeeze(t1_img(:, slice_scan, :));
     end
 
-    % Apply Plot Offset
-    % plot_vecy = (plot_vecy / dx_factor - plot_offset(3)) / (kgrid.dy / dx_scan);
-    plot_vecy = plot_vecy - plot_offset(3) + 1;
-    plot_vecx = plot_vecx - plot_offset(1) + 1;
-
     % Plot
     ax1 = axes;
     imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(t1w_plot, -90)), [50,500]);
@@ -94,11 +88,6 @@ if ~isempty(t1w_filename)
     set(ax2, 'ydir', 'normal')
 
 else
-
-    % Apply Plot Offset
-%     plot_offset = grid_size / dx_scan / 2;
-    plot_vecy = plot_vecy - plot_offset(3) + 1;
-    plot_vecx = plot_vecx - plot_offset(1) + 1;
 
     ax = axes;
     imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
