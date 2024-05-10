@@ -39,6 +39,7 @@ if n_dim == 2
 else
     if isempty(ct_filename)
         grid_size = [140, 100, 140] * 1e-3; % m in [x, y, z] respectively
+%         grid_size = [192, 256, 256] * 1e-3; % m in [x, y, z] respectively
     else
         grid_size = [192, 256, 256] * 1e-3; % m in [x, y, z] respectively
     end
@@ -49,15 +50,16 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
-    grid_size = [grid_size(1), grid_size(3)];
     if isempty(t1w_filename)
-        plot_offset = [kgrid.Nx/2, kgrid.Ny/2, kgrid.Nz/2] / dx_factor; % Offset to center
+        plot_offset = grid_size / dx_scan / 2; % Offset to center
+%         dx_scan = kgrid.dx;
     end
+    grid_size = [grid_size(1), grid_size(3)];
 end
 
-if ~isempty(t1w_filename)
+% if ~isempty(t1w_filename)
     dx_factor = dx_scan / kgrid.dx;
-end
+% end
 
 %% Define Transducer Geometry
 
@@ -129,6 +131,11 @@ if kgrid.dim == 2
     point_pos_m.y = [-27, -26];
     amp_in = [200, 200]' * 1e3; % Pa
 
+    point_pos_m.x = [50, 0];
+    point_pos.slice = 10;
+    point_pos_m.y = [50, 0];
+    amp_in = [200, 200]' * 1e3; % Pa
+
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
     point_pos.y = round((plot_offset(3) + point_pos_m.y) * dx_factor);
 
@@ -168,14 +175,14 @@ else
 %     point_pos_m.x = [-16, 23];
 %     point_pos_m.y = [32, 32];
 %     point_pos_m.z = [-27, -26];
-    point_pos_m.x = [0] * 1e-3 / kgrid.dx;
-    point_pos_m.y = [0] * 1e-3 / kgrid.dx;
-    point_pos_m.z = [0] * 1e-3 / kgrid.dx;
-    amp_in = [300]' * 1e3; % Pa
+    point_pos_m.x = [50, 0] * 1e-3;
+    point_pos_m.y = [10, 10] * 1e-3;
+    point_pos_m.z = [50, 0] * 1e-3;
+    amp_in = [300, 300]' * 1e3; % Pa
 
-    point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
-    point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
-    point_pos.z = round((plot_offset(3) + point_pos_m.z) * dx_factor);
+    point_pos.x = round((plot_offset(1) * dx_factor + point_pos_m.x / kgrid.dx));
+    point_pos.y = round((plot_offset(2) * dx_factor + point_pos_m.y / kgrid.dx));
+    point_pos.z = round((plot_offset(3) * dx_factor + point_pos_m.z / kgrid.dx));
 
 %     point_pos.x = point_pos_m.x + t_pos(1, 1);
 %     point_pos.y = point_pos_m.y + t_pos(2, 1);
@@ -196,7 +203,7 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
-    point_pos.slice = point_pos_m.y(1);
+    point_pos.slice = point_pos_m.y(1) / dx_scan;
 
     b_cross = b_mask;
     b_cross(point_pos.x, point_pos.y, :) = 1;

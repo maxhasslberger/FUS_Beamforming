@@ -36,27 +36,23 @@ end
 
 %% Plot the pressure field 
 
-slice_scan = round(plot_offset(2) + slice_coord);
-
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    slice = round((plot_offset(2) + slice_coord) * dx_factor);
-    p_data = squeeze(abs(data(:,slice,:)));
-    % Video or similar?...
+    slice_p = round((plot_offset(2) + slice_coord) * dx_factor); % p space
+    p_data = squeeze(abs(data(:,slice_p,:)));
 end
 
 % Get Ticks
-plot_dy = kgrid.dy;% * 1e3;
-plot_dx = kgrid.dx;% * 1e3;
-
-plot_vecy = (plot_dy:plot_dy:grid_size(2)) / kgrid.dy;
-plot_vecx = (plot_dx:plot_dx:grid_size(1)) / kgrid.dx;
-
-plot_vecy = (plot_vecy / dx_factor - plot_offset(3)) / (kgrid.dy / dx_scan);
-plot_vecx = (plot_vecx / dx_factor - plot_offset(1)) / (kgrid.dx / dx_scan);
-
+% plot_dy = kgrid.dy;% * 1e3;
+% plot_dx = kgrid.dx;% * 1e3;
 p_sz = size(p_data);
+
+% plot_vecy = (dx_scan:plot_dy:grid_size(2)+plot_dy) / dx_scan;
+% plot_vecx = (dx_scan:plot_dx:grid_size(1)+plot_dx) / dx_scan;
+plot_vecy = linspace(0, grid_size(2)-dx_scan, p_sz(2)) / dx_scan;
+plot_vecx = linspace(0, grid_size(1)-dx_scan, p_sz(1)) / dx_scan;
+
 f_data = figure;
 f_data.Position = [1400 50 484 512];
 
@@ -64,6 +60,7 @@ f_data.Position = [1400 50 484 512];
 if ~isempty(t1w_filename)
     t1_img = niftiread(t1w_filename);
 
+    slice_scan = round(plot_offset(2) + slice_coord); % scan space
     t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
     if ~isequal(p_sz, t1w_sz)
         % Interpolate to adapt to grid size
@@ -73,6 +70,11 @@ if ~isempty(t1w_filename)
     else
         t1w_plot = squeeze(t1_img(:, slice_scan, :));
     end
+
+    % Apply Plot Offset
+    % plot_vecy = (plot_vecy / dx_factor - plot_offset(3)) / (kgrid.dy / dx_scan);
+    plot_vecy = plot_vecy - plot_offset(3) + 1;
+    plot_vecx = plot_vecx - plot_offset(1) + 1;
 
     % Plot
     ax1 = axes;
@@ -93,8 +95,11 @@ if ~isempty(t1w_filename)
 
 else
 
-%     plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
-%     plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
+    % Apply Plot Offset
+%     plot_offset = grid_size / dx_scan / 2;
+    plot_vecy = plot_vecy - plot_offset(3) + 1;
+    plot_vecx = plot_vecx - plot_offset(1) + 1;
+
     ax = axes;
     imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
     
@@ -116,7 +121,7 @@ end
 
 if kgrid.dim == 3
     cmap = hot();
-    sliceViewer(double(flip(imrotate(data, 90), 1)), 'Colormap', cmap, 'SliceNumber', slice, 'SliceDirection', 'Y',"Parent",figure)
+    sliceViewer(double(flip(imrotate(data, 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
     cb3 = colorbar;
     xlabel(cb3, 'Pressure (kPa)');
 end
