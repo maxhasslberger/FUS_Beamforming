@@ -197,9 +197,12 @@ else
     point_pos.slice = point_pos_m.y(1);
 
     b_cross = b_mask;
-    b_cross(point_pos.x, point_pos.y, :) = 1;
-    b_cross(point_pos.x, :, point_pos.z) = 1;
-    b_cross(:, point_pos.y, point_pos.z) = 1;
+    cross_pixRadius = 5;
+    for i = 1:length(point_pos.x)
+        b_cross(point_pos.x(i), point_pos.y(i), point_pos.z(i) - cross_pixRadius:point_pos.z(i) + cross_pixRadius) = 1;
+        b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius, point_pos.z(i)) = 1;
+        b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i), point_pos.z(i)) = 1;
+    end
 
 end
 
