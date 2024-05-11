@@ -4,7 +4,8 @@ close all;
 %% Init
 f0 = 470e3; % Hz - transducer frequency
 n_dim = 3;
-dx_factor = 1;
+dx = 1e-3;
+% dx = [];
 plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
@@ -20,6 +21,12 @@ get_current_A = false; % Use precomputed propagation matrix - can be logical or 
 get_current_AP = false; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
+
+if isempty(dx)
+    dx_factor = 1;
+else
+    dx_factor = (1500 / f0 / 3) / dx; % = (c0 / f0 / ppw) / dx
+end
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
