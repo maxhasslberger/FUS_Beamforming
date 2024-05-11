@@ -3,6 +3,7 @@ function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename
 %% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
+slice_dim = 2;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -11,6 +12,8 @@ if ~isempty(varargin)
                 slice_coord = varargin{arg_idx+1};
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
+            case 'slice_dim'
+                slice_dim = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end

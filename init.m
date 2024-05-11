@@ -64,7 +64,7 @@ dx_factor = dx_scan / kgrid.dx;
 %% Define Transducer Geometry
 
 if kgrid.dim == 2
-    % Linear array
+    % Transducer coordinates and alignment- in Scan coordinate system
     t1_pos = [-70, -2]'; % scan dims
     t2_pos = [0, 83]'; % scan dims
     t3_pos = [77, -2]'; % scan dims
@@ -102,14 +102,18 @@ else
     else
         t_name = "std_orig";
     end
+    t_name = "std_orig";
+
     sparsity_name = "sparsity_ids";
     num_elements = 128;
-    t1_pos = [30, 0, 65]' * 1e-3 + tr_offset_3D; % m
+
+    % Transducer coordinates and alignment- in Scan coordinate system
+    t1_pos = [30, 0, 65]';
     t1_rot = [0, 0, 180]'; % deg
-    t2_pos = [-65, 0, -30]' * 1e-3 + tr_offset_3D; % m
+    t2_pos = [-65, 0, -30]';
     t2_rot = [-90, 0, 90]'; % deg
 
-    t_pos = [t1_pos, t2_pos];
+    t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_3D;
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
     t_rot = [t1_rot, t2_rot];
     active_tr_ids = [1, 2];
@@ -125,7 +129,7 @@ end
 
 if kgrid.dim == 2
 
-    % Focal points - rel. to transducer surface
+    % Focal points - in Scan coordinate system
     point_pos_m.x = [-16, 23];
     point_pos.slice = slice_idx_2D;
     point_pos_m.y = [-27, -26];
@@ -166,26 +170,18 @@ else
     only_focus_opt = true;
     space_limits = [];
 
-    % Focal points - rel. to transducer surface
+    % Focal points - in Scan coordinate system
 %     point_pos_m.x = [-16, 23];
 %     point_pos_m.y = [32, 32];
 %     point_pos_m.z = [-27, -26];
-    point_pos_m.x = [50, 0] * 1e-3;
-    point_pos_m.y = [10, 10] * 1e-3;
-    point_pos_m.z = [50, 0] * 1e-3;
+    point_pos_m.x = [50, 0];
+    point_pos_m.y = [10, 10];
+    point_pos_m.z = [50, 0];
     amp_in = [300, 300]' * 1e3; % Pa
 
-    point_pos.x = round((plot_offset(1) * dx_factor + point_pos_m.x / kgrid.dx));
-    point_pos.y = round((plot_offset(2) * dx_factor + point_pos_m.y / kgrid.dx));
-    point_pos.z = round((plot_offset(3) * dx_factor + point_pos_m.z / kgrid.dx));
-
-%     point_pos.x = point_pos_m.x + t_pos(1, 1);
-%     point_pos.y = point_pos_m.y + t_pos(2, 1);
-%     point_pos.z = point_pos_m.z + t_pos(3, 1);
-% 
-%     point_pos.x = round((point_pos.x - kgrid.x_vec(1)) / kgrid.dx); % grid points
-%     point_pos.y = round((point_pos.y - kgrid.y_vec(1)) / kgrid.dy); % grid points
-%     point_pos.z = round((point_pos.z - kgrid.z_vec(1)) / kgrid.dz); % grid points
+    point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
+    point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
+    point_pos.z = round((plot_offset(3) + point_pos_m.z) * dx_factor);
 
     % Assign amplitude acc. to closest position
     idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_pos.x, point_pos.y, point_pos.z);
@@ -198,7 +194,7 @@ else
         b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
     end
 
-    point_pos.slice = point_pos_m.y(1) / dx_scan;
+    point_pos.slice = point_pos_m.y(1);
 
     b_cross = b_mask;
     b_cross(point_pos.x, point_pos.y, :) = 1;
