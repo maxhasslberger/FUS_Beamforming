@@ -6,7 +6,7 @@ function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps
 t1w_filename = [];
 ct_filename = [];
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
-slice_idx = 32; % Observed slice in t1w/ct scan
+slice_idx_2D = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
 
 % Simulation config
@@ -21,7 +21,7 @@ if ~isempty(varargin)
             case 'ct_scan'
                 ct_filename = varargin{arg_idx+1};
             case 'slice_idx'
-                slice_idx = varargin{arg_idx+1};
+                slice_idx_2D = varargin{arg_idx+1};
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
             case 'only_focus_opt'
@@ -46,7 +46,7 @@ else
 end
 
 [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
-    'slice_idx', round(plot_offset(2) + slice_idx), 'dx_scan', dx_scan);
+    'slice_idx', round(plot_offset(2) + slice_idx_2D), 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
@@ -54,20 +54,20 @@ if n_dim == 3
         plot_offset = grid_size / dx_scan / 2; % Offset to center
 %         dx_scan = kgrid.dx;
     end
+
+    tr_offset_3D = (plot_offset * dx_scan - grid_size / 2 - kgrid.dx)';
     grid_size = [grid_size(1), grid_size(3)];
 end
 
-% if ~isempty(t1w_filename)
-    dx_factor = dx_scan / kgrid.dx;
-% end
+dx_factor = dx_scan / kgrid.dx;
 
 %% Define Transducer Geometry
 
 if kgrid.dim == 2
     % Linear array
-    t1_pos = [-70, -2]';
-    t2_pos = [0, 83]';
-    t3_pos = [77, -2]';
+    t1_pos = [-70, -2]'; % scan dims
+    t2_pos = [0, 83]'; % scan dims
+    t3_pos = [77, -2]'; % scan dims
     t_pos = [t1_pos, t2_pos, t3_pos];
     t_rot = [false, true, false];
 
@@ -104,9 +104,9 @@ else
     end
     sparsity_name = "sparsity_ids";
     num_elements = 128;
-    t1_pos = [30, 0, 65]' * 1e-3; % m
+    t1_pos = [30, 0, 65]' * 1e-3 + tr_offset_3D; % m
     t1_rot = [0, 0, 180]'; % deg
-    t2_pos = [-65, 0, -30]' * 1e-3; % m
+    t2_pos = [-65, 0, -30]' * 1e-3 + tr_offset_3D; % m
     t2_rot = [-90, 0, 90]'; % deg
 
     t_pos = [t1_pos, t2_pos];
@@ -127,13 +127,8 @@ if kgrid.dim == 2
 
     % Focal points - rel. to transducer surface
     point_pos_m.x = [-16, 23];
-    point_pos.slice = slice_idx;
+    point_pos.slice = slice_idx_2D;
     point_pos_m.y = [-27, -26];
-    amp_in = [200, 200]' * 1e3; % Pa
-
-    point_pos_m.x = [50, 0];
-    point_pos.slice = 10;
-    point_pos_m.y = [50, 0];
     amp_in = [200, 200]' * 1e3; % Pa
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
