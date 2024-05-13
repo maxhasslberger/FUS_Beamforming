@@ -15,7 +15,7 @@ ct_filename = [];
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
-use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 get_current_AP = false; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
