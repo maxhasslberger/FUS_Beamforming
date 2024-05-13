@@ -126,6 +126,7 @@ else
 end
 
 %% Define (intracranial) Beamforming Pattern
+cross_pixRadius = 5;
 
 if kgrid.dim == 2
 
@@ -164,8 +165,10 @@ if kgrid.dim == 2
     end
 
     b_cross = b_mask;
-    b_cross(:, point_pos.y) = 1;
-    b_cross(point_pos.x, :) = 1;
+    for i = 1:length(point_pos.x)
+        b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
+        b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
+    end
 else
     only_focus_opt = true;
     space_limits = [];
@@ -197,7 +200,6 @@ else
     point_pos.slice = point_pos_m.y(1);
 
     b_cross = b_mask;
-    cross_pixRadius = 5;
     for i = 1:length(point_pos.x)
         b_cross(point_pos.x(i), point_pos.y(i), point_pos.z(i) - cross_pixRadius:point_pos.z(i) + cross_pixRadius) = 1;
         b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius, point_pos.z(i)) = 1;
