@@ -37,7 +37,7 @@ end
 if n_dim == 2
     grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
 else
-    if isempty(ct_filename)
+    if isempty(t1w_filename)
         grid_size = [140, 100, 140] * 1e-3; % m in [x, y, z] respectively
 %         grid_size = [192, 256, 256] * 1e-3; % m in [x, y, z] respectively
     else
@@ -102,16 +102,23 @@ else
     else
         t_name = "std_orig";
     end
-    t_name = "std_orig";
+%     t_name = "std_orig";
 
     sparsity_name = "sparsity_ids";
     num_elements = 128;
 
     % Transducer coordinates and alignment- in Scan coordinate system
-    t1_pos = [30, 0, 65]';
-    t1_rot = [0, 0, 180]'; % deg
-    t2_pos = [-65, 0, -30]';
-    t2_rot = [-90, 0, 90]'; % deg
+    if isempty(t1w_filename)
+        t1_pos = [30, 0, 65]';
+        t1_rot = [0, 0, 180]'; % deg
+        t2_pos = [-65, 0, -30]';
+        t2_rot = [-90, 0, 90]'; % deg
+    else
+        t1_pos = [47, 29, 79]';
+        t1_rot = [0, -30, 180]'; % deg
+        t2_pos = [-40, 29, 79]';
+        t2_rot = [0, 30, 180]'; % deg
+    end
 
     t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_3D;
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
@@ -174,13 +181,17 @@ else
     space_limits = [];
 
     % Focal points - in Scan coordinate system
-%     point_pos_m.x = [-16, 23];
-%     point_pos_m.y = [32, 32];
-%     point_pos_m.z = [-27, -26];
-    point_pos_m.x = [50, 0];
-    point_pos_m.y = [10, 10];
-    point_pos_m.z = [50, 0];
-    amp_in = [300, 300]' * 1e3; % Pa
+    if isempty(t1w_filename)
+        point_pos_m.x = [50, 0];
+        point_pos_m.y = [10, 10];
+        point_pos_m.z = [50, 0];
+        amp_in = [300, 300]' * 1e3; % Pa
+    else
+        point_pos_m.x = [-18, 18];
+        point_pos_m.y = [30, 28];
+        point_pos_m.z = [-27, -18];
+        amp_in = [300, 300]' * 1e3; % Pa
+    end
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
     point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
