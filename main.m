@@ -166,6 +166,7 @@ if only_focus_opt
         for point = 1:length(point_pos.x)
 %             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
             b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
+            b_ip_points2 = [b_ip_points2, ip.b_gt(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
         end
     end
     
