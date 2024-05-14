@@ -113,7 +113,7 @@ end
 
 if kgrid.dim == 3
     cmap = hot();
-    sliceViewer(double(flip(imrotate(data, 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
+    sliceViewer(double(flip(imrotate(abs(data), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
     cb3 = colorbar;
     xlabel(cb3, 'Pressure (kPa)');
 end
