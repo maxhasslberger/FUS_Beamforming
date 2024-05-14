@@ -46,14 +46,12 @@ else
     tr = [];
 end
 
-%% Inverse Problem
-
-% Obtain propagation operator -> acousticFieldPropagator (Green's functions)
+%% Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 A = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
     'active_ids', active_ids);
 
-% Solve inverse problem
+%% Solve Inverse Problem
 tic
 obs_ids = find(b_mask);
 if only_focus_opt
@@ -87,16 +85,14 @@ ip.p = pinv(ip.A) * b_ip_des; % Initial solution cosidering phases
 % b_ip_des = [b_ip_des; ip.sq_beta * ip.u];
 
 % Solve phase retrieval problem
+opts = struct;
+opts.initMethod = 'custom';
+opts.customx0 = ip.p;
 
-% opts = struct;
-% opts.initMethod = 'custom';
-% opts.customx0 = ip.p;
-% ip.p = max(abs(ip.p)) * exp(1j * angle(ip.p)); % All elements with same amplitude
-
-% [ip.p, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
+[ip.p_gt, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
 
 ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, true); % Amplitude fixed
-ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amplitude fixed
+% ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amplitude fixed
 
 ip.t_solve = toc;
 
