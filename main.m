@@ -48,8 +48,10 @@ end
 
 %% Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
-A = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
-    'active_ids', active_ids);
+if ~exist('A', 'var')
+    A = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
+        'active_ids', active_ids);
+end
 
 %% Solve Inverse Problem
 tic
@@ -133,11 +135,11 @@ plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_
 plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 % plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 
-err = abs(ip.b) - abs(ip.b_gt);
-plot_results(kgridP, [], err, 'Difference', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
-figure
-histogram(err(:))
-xlabel("Pressure Deviation (Pa)")
+% err = abs(ip.b) - abs(ip.b_gt);
+% plot_results(kgridP, [], err, 'Difference', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+% figure
+% histogram(err(:))
+% xlabel("Pressure Deviation (Pa)")
 
 % Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
