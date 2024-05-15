@@ -112,7 +112,7 @@ else
         t1_pos = [30, 0, 65]';
         t1_rot = [0, 0, 180]'; % deg
         t2_pos = [-65, 0, -30]';
-        t2_rot = [-90, 0, 90]'; % deg
+        t2_rot = [180, 90, 0]'; % deg
     else
         t1_pos = [47, 29, 79]';
         t1_rot = [0, -30, 180]'; % deg
@@ -184,7 +184,7 @@ else
     if isempty(t1w_filename)
         point_pos_m.x = [50, 0];
         point_pos_m.y = [10, 10];
-        point_pos_m.z = [50, 0];
+        point_pos_m.z = [-50, 0];
         amp_in = [300, 300]' * 1e3; % Pa
     else
         point_pos_m.x = [-18, 18];
