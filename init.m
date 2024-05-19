@@ -152,6 +152,7 @@ if kgrid.dim == 2
     amp_in = amp_in(order);
 
     b_mask = zeros(kgrid.Nx, kgrid.Ny);
+    b_cross = b_mask;
     
     if ~only_focus_opt
 
@@ -161,21 +162,19 @@ if kgrid.dim == 2
             amp_in = amp_in(i) * ones(sum(b_mask(:)), 1);
         end
 
+        b_cross = b_mask;
         space_limits = [-67, 71; -74, 86];
     else
 
-        for point = 1:length(point_pos.x)
-            b_mask(point_pos.x(point), point_pos.y(point)) = 1;
+        for i = 1:length(point_pos.x)
+            b_mask(point_pos.x(i), point_pos.y(i)) = 1;
+            b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
+            b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
         end
 
         space_limits = [];
     end
 
-    b_cross = b_mask;
-    for i = 1:length(point_pos.x)
-        b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
-        b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
-    end
 else
     only_focus_opt = true;
     space_limits = [];
