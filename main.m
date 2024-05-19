@@ -3,7 +3,7 @@ close all;
 
 %% Init
 f0 = 470e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx = 1e-3;
 % dx = [];
 plot_dx_factor = 1;
@@ -14,10 +14,10 @@ t1w_filename = [];
 ct_filename = [];
 
 % Simulation config
-only_focus_opt = true; % Optimize only focal spots or entire grid
-use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+only_focus_opt = false; % Optimize only focal spots or entire grid
+use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_3Trs"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 get_current_AP = false; % Use precomputed propagation matrix - Only to plot resulting acoustic profile
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
@@ -56,7 +56,7 @@ end
 %% Solve Inverse Problem
 tic
 obs_ids = find(b_mask);
-if only_focus_opt
+if true%only_focus_opt
     % Preserve sonicated points only
     ip.A = A(obs_ids, :);
     b_ip_des = b_des;
@@ -73,28 +73,19 @@ else
     activeA_ids(obs_ids) = 1;
     activeA_ids = logical(activeA_ids);
 
-    [ip.A, b_ip_des, activeA_ids] = limit_space(ip.A, b_ip_des, activeA_ids, space_limits, plot_offset, dx_factor, medium.sound_speed);
+%     [ip.A, b_ip_des, activeA_ids] = limit_space(ip.A, b_ip_des, activeA_ids, space_limits, plot_offset, dx_factor, medium.sound_speed);
 
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
-ip.p = pinv(ip.A) * b_ip_des; % Initial solution cosidering phases
+% p_init = pinv(ip.A(activeA_ids, :)) * b_ip_des(activeA_ids, :);
+beta_L2 = 0.1;
 
-% ip.u = max(abs(ip.p)) * ones(size(ip.p)); % universal transducer amplitude
-% 
-% % Apply constraints (same transducer amplitude among elements)
-% ip.A = [ip.A; ip.sq_beta * eye(length(ip.p))];
-% b_ip_des = [b_ip_des; ip.sq_beta * ip.u];
+ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, p_init, beta_L2); % var Amp
 
-% Solve phase retrieval problem
-opts = struct;
-opts.initMethod = 'custom';
-opts.customx0 = ip.p;
+ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, p_init, beta_L2, mask2el, el_per_t, true); % Amp fixed
 
-[ip.p_gt, outs, opts] = solvePhaseRetrieval(ip.A, ip.A', b_ip_des, [], opts); % var Amplitude
-
-ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, true); % Amplitude fixed
-% ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amplitude fixed
+% ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amp fixed
 
 ip.t_solve = toc;
 
