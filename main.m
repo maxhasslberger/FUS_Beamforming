@@ -148,37 +148,31 @@ disp("Time until solver converged: " + string(ip.t_solve) + " s")
 % fprintf("\nTransducer Amplitude mean deviation (Pa):\n")
 % disp(mean(abs(abs(ip.p) - ip.u)))
 
-% Evaluation of each defined point
-if only_focus_opt
-    b_tr_points = [];
-    b_ip_points = [];
-    b_ip_points2 = [];
+% Evaluation
+real_ip = abs(ip.A * ip.p);
+real_ip_gt = abs(ip.A * ip.p_gt);
 
-    if kgrid.dim == 2
-        for point = 1:length(point_pos.x)
-%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point))];
-            b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point))];
-            b_ip_points2 = [b_ip_points2, ip.b_gt(point_pos.x(point), point_pos.y(point))];
-        end
-    else
-        for point = 1:length(point_pos.x)
-%             b_tr_points = [b_tr_points, tr.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
-            b_ip_points = [b_ip_points, ip.b(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
-            b_ip_points2 = [b_ip_points2, ip.b_gt(point_pos.x(point), point_pos.y(point), point_pos.z(point))];
-        end
-    end
-    
-    fprintf("\nInput Amplitudes (kPa):\n")
-    disp(amp_in' * 1e-3)
-%     fprintf("\nTime Reversal Total Amplitudes (kPa):\n")
-%     disp(abs(b_tr_points) * 1e-3)
-    fprintf("\nInverse Problem Total Amplitudes (kPa):\n")
-    disp(abs(b_ip_points) * 1e-3)
-    disp(abs(b_ip_points2) * 1e-3)
-%     fprintf("\nTime Reversal Phase Angles (deg):\n")
-%     disp(angle(b_tr_points) / pi * 180)
-    fprintf("\nInverse Problem Phase Angles (deg):\n")
-    disp(angle(b_ip_points) / pi * 180)
-    disp(angle(b_ip_points2) / pi * 180)
-end
+err_ip = real_ip - b_ip_des;
+err_ip_gt = real_ip_gt - b_ip_des;
+
+mse_ip = sum(err_ip.^2) / length(b_ip_des);
+mse_ip_gt = sum(err_ip_gt.^2) / length(b_ip_des);
+
+maxDev_ip = max(abs(err_ip));
+maxDev_ip_gt = max(abs(err_ip_gt));
+
+fprintf("\nInput Amplitudes (kPa):\n")
+disp(b_ip_des' * 1e-3)
+
+fprintf("\nReal Amplitudes (kPa):\n")
+disp(real_ip' * 1e-3)
+disp(real_ip_gt' * 1e-3)
+
+fprintf("\nInverse Problem MSE:\n")
+disp(mse_ip)
+disp(mse_ip_gt)
+
+fprintf("\nInverse Problem Max Dev (kPa):\n")
+disp(maxDev_ip * 1e-3)
+disp(maxDev_ip_gt * 1e-3)
 
