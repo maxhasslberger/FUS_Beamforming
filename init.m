@@ -240,6 +240,6 @@ b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
 b_des_pl(logical(b_mask)) = b_des;
 
 % set simulation input options
-input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
+input_args = {'PMLSize', 10, 'PMLInside', true, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
 
 end
