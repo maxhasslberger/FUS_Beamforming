@@ -59,7 +59,7 @@ obs_ids = find(b_mask);
 if true%only_focus_opt
     % Preserve sonicated points only
     ip.A = A(obs_ids, :);
-    b_ip_des = b_des;
+    b_ip_des = b_des; % = b_des_pl(obs_ids)
 
     activeA_ids = 1:size(ip.A, 1);
 
@@ -78,13 +78,17 @@ else
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
+n_init_points = 2; % sonicated points for initial solution
+init_ids = get_farthest_ids(b_mask, n_init_points);
+p_init = pinv(A(init_ids, :)) * b_des_pl(init_ids, :);
 % p_init = pinv(ip.A(activeA_ids, :)) * b_ip_des(activeA_ids, :);
-beta_L2 = 0.1;
 
-ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, p_init, beta_L2); % var Amp
+beta_L2 = 0.1;
 
 ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, p_init, beta_L2, mask2el, el_per_t, true); % Amp fixed
 
+ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, p_init, beta_L2); % var Amp
+% ip.p_gt = p_init;
 % ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amp fixed
 
 ip.t_solve = toc;
