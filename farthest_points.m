@@ -1,16 +1,25 @@
-function indices = farthest_points(x, y, min_dist) % TODO: 3D
+function init_ids = farthest_points(grid_sz, stim_ids, min_dist) % TODO: 3D
 
-x = x(:);
-y = y(:);
+if length(grid_sz) == 2
+    [x, y] = ind2sub(grid_sz, stim_ids);
 
-% Compute pairwise distances using vectorized operations
-[X1, X2] = meshgrid(x, x);
-[Y1, Y2] = meshgrid(y, y);
-distances = sqrt((X1 - X2).^2 + (Y1 - Y2).^2);
+    % Compute pairwise distances using vectorized operations
+    [X1, X2] = meshgrid(x, x);
+    [Y1, Y2] = meshgrid(y, y);
+    distances = sqrt((X1 - X2).^2 + (Y1 - Y2).^2);
+else
+    [x, y, z] = ind2sub(grid_sz, stim_ids);
+
+    % Compute pairwise distances using vectorized operations
+    [X1, X2] = meshgrid(x, x);
+    [Y1, Y2] = meshgrid(y, y);
+    [Z1, Z2] = meshgrid(z, z);
+    distances = sqrt((X1 - X2).^2 + (Y1 - Y2).^2 + (Z1 - Z2).^2);
+end
 
 % Initialize the selected points with the first point
-indices = [];
-indices(1) = 1;
+init_ids = [];
+init_ids(1) = 1;
 selected = false(length(x), 1);
 selected(1) = true;
 
@@ -29,8 +38,14 @@ while true
     nextPoint = nonSelectedIndices(nextIndex);
 
     % Update the indices and selected array
-    indices(end+1) = nextPoint;
+    init_ids(end+1) = nextPoint;
     selected(nextPoint) = true;
+end
+
+if length(grid_sz) == 2
+    init_ids = sub2ind(grid_sz, x(init_ids), y(init_ids));
+else
+    init_ids = sub2ind(grid_sz, x(init_ids), y(init_ids), z(init_ids));
 end
 
 end
