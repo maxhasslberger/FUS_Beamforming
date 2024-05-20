@@ -1,22 +1,9 @@
-function plot_results(kgrid, excitation, data, plot_title, mask2el, t1_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
+function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
 
-excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
-%% Plot magnitude and phase of array elements
-f_param = figure;
-f_param.Position = [700 50 650 350];
-subplot(2, 1, 1)
-plot(abs(excitation * 1e-3))
-title(plot_title);
-ylabel('Amplitude (kPa)')
-
-subplot(2, 1, 2)
-plot(rad2deg(angle(excitation)))
-xlabel('Element #')
-ylabel('Phase (deg)')
-
-%% Plot the pressure field 
+%% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
+slice_dim = 2;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -25,40 +12,57 @@ if ~isempty(varargin)
                 slice_coord = varargin{arg_idx+1};
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
+            case 'slice_dim'
+                slice_dim = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
     end
 end
 
-slice_scan = round(plot_offset(2) + slice_coord);
+%% Plot magnitude and phase of array elements
+if ~isempty(excitation)
+    excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
+    
+    f_param = figure;
+    f_param.Position = [700 50 650 350];
+    subplot(2, 1, 1)
+    plot(abs(excitation * 1e-3))
+    title(plot_title);
+    ylabel('Amplitude (kPa)')
+    
+    subplot(2, 1, 2)
+    plot(rad2deg(angle(excitation)))
+    xlabel('Element #')
+    ylabel('Phase (deg)')
+end
+
+%% Plot the pressure field 
 
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    slice = slice_scan * dx_factor;
-    p_data = squeeze(abs(data(:,slice,:)));
-    % Video or similar?...
+    slice_p = round((plot_offset(2) + slice_coord) * dx_factor); % p space
+    p_data = squeeze(abs(data(:,slice_p,:)));
 end
 
+% Get Ticks
 p_sz = size(p_data);
+
+plot_vecy = linspace(0, grid_size(2)-kgrid.dy, p_sz(2)) / dx_scan;
+plot_vecx = linspace(0, grid_size(1)-kgrid.dx, p_sz(1)) / dx_scan;
+
+plot_vecy = plot_vecy - plot_offset(3) + kgrid.dy / dx_scan;
+plot_vecx = plot_vecx - plot_offset(1) + kgrid.dx / dx_scan;
+
 f_data = figure;
 f_data.Position = [1400 50 484 512];
 
-% Get Ticks
-plot_dy = kgrid.dy;% * 1e3;
-plot_dx = kgrid.dx;% * 1e3;
-
-plot_vecy = (plot_dy:plot_dy:grid_size(2)) / dx_scan;
-plot_vecx = (plot_dx:plot_dx:grid_size(1)) / dx_scan;
-
-plot_vecy = plot_vecy - plot_offset(3);
-plot_vecx = plot_vecx - plot_offset(1);
-
 % Include a t1w scan
-if ~isempty(t1_filename)
-    t1_img = niftiread(t1_filename);
+if ~isempty(t1w_filename)
+    t1_img = niftiread(t1w_filename);
 
+    slice_scan = round(plot_offset(2) + slice_coord); % scan space
     t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
     if ~isequal(p_sz, t1w_sz)
         % Interpolate to adapt to grid size
@@ -78,7 +82,7 @@ if ~isempty(t1_filename)
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
-    colormap(ax2,'turbo')
+    colormap(ax2,'hot')
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
     xlabel(cb2, 'Pressure (kPa)');
@@ -88,14 +92,12 @@ if ~isempty(t1_filename)
 
 else
 
-%     plot_vecy = kgrid.y_vec(1) + kgrid.dy:kgrid.dy:kgrid.y_vec(end) + kgrid.dy;
-%     plot_vecx = kgrid.x_vec(1) + kgrid.dx:kgrid.dx:kgrid.x_vec(end) + kgrid.dx;
     ax = axes;
     imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
     
-    colormap('turbo');
-    xlabel('y (mm)');
-    ylabel('x (mm)');
+    colormap('hot');
+    xlabel('x (mm)');
+    ylabel('z (mm)');
     axis image;
     % clim([0 30000])
     title(plot_title);
@@ -107,6 +109,13 @@ else
     cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
     xlabel(cb, 'Pressure (kPa)');
     set(ax, 'ydir', 'normal')
+end
+
+if kgrid.dim == 3
+    cmap = hot();
+    sliceViewer(double(flip(imrotate(abs(data), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
+    cb3 = colorbar;
+    xlabel(cb3, 'Pressure (kPa)');
 end
 
 if save_results
