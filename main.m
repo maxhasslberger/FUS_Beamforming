@@ -78,8 +78,7 @@ else
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
-n_init_points = 2; % sonicated points for initial solution
-init_ids = get_farthest_ids(b_mask, n_init_points);
+init_ids = get_farthest_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
 p_init = pinv(A(init_ids, :)) * b_des_pl(init_ids, :);
 % p_init = pinv(ip.A(activeA_ids, :)) * b_ip_des(activeA_ids, :);
 
@@ -116,7 +115,7 @@ if save_results
         ip.A = []; % A might be very large...
     end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
+        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "init_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
         "only_focus_opt", "input_args");
 end
 
