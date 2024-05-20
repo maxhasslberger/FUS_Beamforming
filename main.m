@@ -78,7 +78,7 @@ else
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
-init_ids = get_farthest_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
+init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
 p_init = pinv(A(init_ids, :)) * b_des_pl(init_ids, :);
 % p_init = pinv(ip.A(activeA_ids, :)) * b_ip_des(activeA_ids, :);
 

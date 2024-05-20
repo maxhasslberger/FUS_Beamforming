@@ -1,4 +1,4 @@
-function init_ids = get_farthest_ids(kgrid, lambda, b_mask)
+function init_ids = get_init_ids(kgrid, lambda, b_mask)
 
 stim_ids = find(b_mask);
 min_dist = 2 * lambda / kgrid.dx; % m -> pix; min distance between init points
