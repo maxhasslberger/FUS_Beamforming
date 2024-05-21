@@ -95,10 +95,10 @@ ip.t_solve = toc;
 %% Obtain Acoustic profile
 % ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = A * ip.p;
-ip.b = reshape(ip.b, size(kgridP.k));
+ip.b = reshape(ip.b, size(kgrid.k));
 
 ip.b_gt = A * ip.p_gt;
-ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
+ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
 
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
@@ -114,12 +114,12 @@ end
 
 %% TR Results
 if do_time_reversal
-    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime);
+    plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 end
 
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
-plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
 % plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 
 % err = abs(ip.b) - abs(ip.b_gt);
