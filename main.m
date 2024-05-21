@@ -29,7 +29,7 @@ else
 end
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, ~, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, dx_factor1, input_args] = ...
     init(f0, n_dim, dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
@@ -41,7 +41,7 @@ end
 if do_time_reversal
     tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask_ps, false, input_args);
     tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
-    tr.b = sim_exe(kgrid, medium, sensor, f0, tr.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
+    tr.b = sim_exe(kgridP, mediumP, sensorP, f0, tr.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 else
     tr = [];
 end
@@ -92,14 +92,7 @@ ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, p_init, beta_L2); % var Amp
 
 ip.t_solve = toc;
 
-
-% Evaluate obtained phase terms in forward simulation
-if plot_dx_factor ~= 1
-    clear A;
-    A = obtain_linear_propagator(kgridP, mediumP, sensorP, sensor_maskP, input_argsP, t_mask_psP, karray_tP, f0, get_current_AP, use_greens_fctn, ...
-        'active_ids', active_idsP); % Obtain high resolution A - Discard if no point sources!
-end
-
+%% Obtain Acoustic profile
 % ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgridP.k));
@@ -125,7 +118,7 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgridP, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
 plot_results(kgridP, ip.p_gt, ip.b_gt, 'Inverse Problem 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 % plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 
