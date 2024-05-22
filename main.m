@@ -78,11 +78,15 @@ else
 %     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
-init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
-p_init = pinv(A(init_ids, :)) * b_des_pl(init_ids, :);
-% p_init = pinv(ip.A(activeA_ids, :)) * b_ip_des(activeA_ids, :);
-
-beta_L2 = 0.1;
+if only_focus_opt % Adapt when prior if clause reset
+    init_ids = obs_ids;
+    p_init = pinv(ip.A(activeA_ids, :)) * b_ip_des(activeA_ids, :);
+    beta_L2 = 0.0;
+else
+    init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
+    p_init = pinv(A(init_ids, :)) * b_des_pl(init_ids, :);
+    beta_L2 = 0.1;
+end
 
 ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, p_init, beta_L2, mask2el, el_per_t, true); % Amp fixed
 
@@ -142,7 +146,7 @@ real_ip_gt = abs(ip.A * ip.p_gt);
 err_ip = real_ip - b_ip_des;
 err_ip_gt = real_ip_gt - b_ip_des;
 
-std_ip = std(err_ip);
+std_ip = std(err_ip); % TODO: std with target value as mean!
 std_ip_gt = std(err_ip_gt);
 
 maxDev_ip = max(abs(err_ip));
