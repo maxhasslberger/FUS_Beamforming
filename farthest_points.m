@@ -30,6 +30,9 @@ while true
 
     % Find the index of the farthest point that meets the minimum distance criterion
     [maxDist, nextIndex] = max(minDistToSelected);
+    if isempty(maxDist)
+        break;
+    end
     if maxDist < min_dist
         break;
     end
