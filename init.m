@@ -181,9 +181,9 @@ else
 
     % Focal points - in Scan coordinate system
     if isempty(t1w_filename)
-        point_pos_m.x = [50, 0];
+        point_pos_m.x = [30, 5];
         point_pos_m.y = [10, 10];
-        point_pos_m.z = [-50, 0];
+        point_pos_m.z = [-30, 0];
         amp_in = [300, 300]' * 1e3; % Pa
     else
         point_pos_m.x = [-18, 18];
