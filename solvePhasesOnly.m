@@ -27,6 +27,7 @@ for i = 1:n_amps
     shift = shift + el_per_t(i);
 end
 
+p_init = double(p_init);
 init_amp = mean(abs(p_init));
 
 if via_abs
