@@ -28,11 +28,11 @@ else
 end
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, amp_in, ~, ~, point_pos_m, ~, dx_factor1, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, ~, ~, point_pos_m, ~, dx_factor1, input_args] = ...
     init(f0, n_dim, dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
-    active_idsP, ~, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
+    active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,7 +111,7 @@ if save_results
         ip.A = []; % A might be very large...
     end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "init_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "amp_in", "point_pos", "point_pos_m", ...
+        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "init_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "b_ip_des", "point_pos", "point_pos_m", ...
         "only_focus_opt", "input_args");
 end
 
@@ -145,13 +145,13 @@ real_ip_gt = abs(ip.A * ip.p_gt);
 err_ip = real_ip - b_ip_des;
 err_ip_gt = real_ip_gt - b_ip_des;
 
-std_ip = std(err_ip); % TODO: std with target value as mean!
-std_ip_gt = std(err_ip_gt);
+std_ip = sqrt(sum(err_ip.^2) / length(err_ip));
+std_ip_gt = sqrt(sum(err_ip_gt.^2) / length(err_ip_gt));
 
 maxDev_ip = max(abs(err_ip));
 maxDev_ip_gt = max(abs(err_ip_gt));
 
-% fprintf("\nInput Amplitudes (kPa):\n")
+% fprintf("\nDesired Amplitudes (kPa):\n")
 % disp(b_ip_des' * 1e-3)
 % 
 % fprintf("\nReal Amplitudes (kPa):\n")
