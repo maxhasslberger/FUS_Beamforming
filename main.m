@@ -61,8 +61,6 @@ if true%only_focus_opt
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
     activeA_ids = 1:size(ip.A, 1);
-
-%     ip.sq_beta = 0;%0.1; % constraint scaling factor
 else
     % Take entire observation grid into account
     ip.A = A;
@@ -73,8 +71,6 @@ else
     activeA_ids = logical(activeA_ids);
 
 %     [ip.A, b_ip_des, activeA_ids] = limit_space(ip.A, b_ip_des, activeA_ids, space_limits, plot_offset, dx_factor, medium.sound_speed);
-
-%     ip.sq_beta = 0;%100; % constraint scaling factor
 end
 
 if only_focus_opt % Adapt when prior if clause reset
@@ -122,8 +118,8 @@ end
 
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
-% plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el_delayFiles, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p_gt, ip.b_gt, 'IP2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+% plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
 
 % err = abs(ip.b) - abs(ip.b_gt);
 % plot_results(kgridP, [], err, 'Difference', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
