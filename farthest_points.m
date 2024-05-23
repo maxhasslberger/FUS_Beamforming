@@ -1,4 +1,4 @@
-function init_ids = farthest_points(grid_sz, stim_ids, min_dist) % TODO: 3D
+function init_ids = farthest_points(grid_sz, stim_ids, min_dist, surface_indices)
 
 if length(grid_sz) == 2
     [x, y] = ind2sub(grid_sz, stim_ids);
@@ -17,32 +17,34 @@ else
     distances = sqrt((X1 - X2).^2 + (Y1 - Y2).^2 + (Z1 - Z2).^2);
 end
 
-% Initialize the selected points with the first point
+% Limit the selected points with the surface points
 init_ids = [];
-init_ids(1) = 1;
 selected = false(length(x), 1);
-selected(1) = true;
+selected(cat(2, surface_indices{:})) = true;
 
-% Iteratively select the farthest point
-while true
-    % Compute the minimum distance to the current set of selected points
-    minDistToSelected = min(distances(selected, ~selected), [], 1);
-
-    % Find the index of the farthest point that meets the minimum distance criterion
-    [maxDist, nextIndex] = max(minDistToSelected);
-    if isempty(maxDist)
-        break;
+for i = 1:length(surface_indices) % TODO: only consider one cluster per iteration (or make at least sure that there is one point per cluster...)
+    
+    % Iteratively select the farthest point
+    while true
+        % Compute the minimum distance to the current set of selected points
+        minDistToSelected = min(distances(selected, ~selected), [], 1);
+    
+        % Find the index of the farthest point that meets the minimum distance criterion
+        [maxDist, nextIndex] = max(minDistToSelected);
+        if isempty(maxDist)
+            break;
+        end
+        if maxDist < min_dist
+            break;
+        end
+    
+        nonSelectedIndices = find(~selected);
+        nextPoint = nonSelectedIndices(nextIndex);
+    
+        % Update the indices and selected array
+        init_ids(end+1) = nextPoint;
+        selected(nextPoint) = true;
     end
-    if maxDist < min_dist
-        break;
-    end
-
-    nonSelectedIndices = find(~selected);
-    nextPoint = nonSelectedIndices(nextIndex);
-
-    % Update the indices and selected array
-    init_ids(end+1) = nextPoint;
-    selected(nextPoint) = true;
 end
 
 if length(grid_sz) == 2
