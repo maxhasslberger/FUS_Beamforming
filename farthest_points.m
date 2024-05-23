@@ -1,4 +1,4 @@
-function init_ids = farthest_points(grid_sz, stim_ids, min_dist, surface_indices)
+function init_ids = farthest_points(grid_sz, stim_ids, min_dist, surface_indices, cluster_labels)
 
 if length(grid_sz) == 2
     [x, y] = ind2sub(grid_sz, stim_ids);
@@ -20,30 +20,45 @@ end
 % Limit the selected points with the surface points
 init_ids = [];
 selected = false(length(x), 1);
-selected(cat(2, surface_indices{:})) = true;
+selected(cat(2, surface_indices{:})) = true; % Exclude surfaces indices
 
-for i = 1:length(surface_indices) % TODO: only consider one cluster per iteration (or make at least sure that there is one point per cluster...)
+for i = 1:length(surface_indices)
+    selected_i = selected;
+    selected_i(cluster_labels ~= i) = true; % Exclude indices from other clusters
+
+    point_found = false;
     
     % Iteratively select the farthest point
     while true
         % Compute the minimum distance to the current set of selected points
-        minDistToSelected = min(distances(selected, ~selected), [], 1);
+        minDistToSelected = min(distances(selected_i, ~selected_i), [], 1);
     
         % Find the index of the farthest point that meets the minimum distance criterion
         [maxDist, nextIndex] = max(minDistToSelected);
         if isempty(maxDist)
+            if ~point_found
+                % take first index if no point found inside surface
+                init_ids(end+1) = find(~selected_i, 1);
+            end
             break;
         end
         if maxDist < min_dist
+            if ~point_found
+                % take the point found inside surface
+                nonSelectedIndices = find(~selected_i);
+                nextPoint = nonSelectedIndices(nextIndex);
+                init_ids(end+1) = nextPoint;
+            end
             break;
         end
     
-        nonSelectedIndices = find(~selected);
+        nonSelectedIndices = find(~selected_i);
         nextPoint = nonSelectedIndices(nextIndex);
     
         % Update the indices and selected array
         init_ids(end+1) = nextPoint;
-        selected(nextPoint) = true;
+        selected_i(nextPoint) = true;
+        point_found = true;
     end
 end
 

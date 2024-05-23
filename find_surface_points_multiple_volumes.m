@@ -1,4 +1,4 @@
-function surface_indices = find_surface_points_multiple_volumes(x, y, epsilon)
+function [surface_indices, labels] = find_surface_points_multiple_volumes(x, y, epsilon)
     % Input:
     % x - Row vector of x coordinates of the points
     % y - Column vector of y coordinates of the points
