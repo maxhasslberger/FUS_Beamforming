@@ -127,31 +127,54 @@ disp("Time until solver converged: " + string(ip.t_solve) + " s")
 % fprintf("\nTransducer Amplitude mean deviation (Pa):\n")
 % disp(mean(abs(abs(ip.p) - ip.u)))
 
-
 real_ip = abs(ip.A * ip.p);
 real_ip_gt = abs(ip.A * ip.p_gt);
 
-err_ip = real_ip - b_ip_des;
-err_ip_gt = real_ip_gt - b_ip_des;
+if only_focus_opt
+    err_ip = real_ip - b_ip_des;
+    err_ip_gt = real_ip_gt - b_ip_des;
+    
+    std_ip = sqrt(sum(err_ip.^2) / length(err_ip));
+    std_ip_gt = sqrt(sum(err_ip_gt.^2) / length(err_ip_gt));
+    
+    maxDev_ip = max(abs(err_ip));
+    maxDev_ip_gt = max(abs(err_ip_gt));
+    
+    % fprintf("\nDesired Amplitudes (kPa):\n")
+    % disp(b_ip_des' * 1e-3)
+    % 
+    % fprintf("\nReal Amplitudes (kPa):\n")
+    % disp(real_ip' * 1e-3)
+    % disp(real_ip_gt' * 1e-3)
+    
+    fprintf("\nInverse Problem STD (kPa):\n")
+    disp(std_ip * 1e-3)
+    disp(std_ip_gt * 1e-3)
+    
+    fprintf("\nInverse Problem Max Dev (kPa):\n")
+    disp(maxDev_ip * 1e-3)
+    disp(maxDev_ip_gt * 1e-3)
+else
+    offTar_real_ip = real_ip;
+    offTar_real_ip(obs_ids) = [];
+    offTar_real_ip_gt = real_ip_gt;
+    offTar_real_ip_gt(obs_ids) = [];
 
-std_ip = sqrt(sum(err_ip.^2) / length(err_ip));
-std_ip_gt = sqrt(sum(err_ip_gt.^2) / length(err_ip_gt));
+    tar_real_ip = real_ip(obs_ids);
+    tar_real_ip_gt = real_ip_gt(obs_ids);
 
-maxDev_ip = max(abs(err_ip));
-maxDev_ip_gt = max(abs(err_ip_gt));
+    init_real_ip = real_ip(init_ids);
+    init_real_ip_gt = real_ip_gt(init_ids);
 
-% fprintf("\nDesired Amplitudes (kPa):\n")
-% disp(b_ip_des' * 1e-3)
-% 
-% fprintf("\nReal Amplitudes (kPa):\n")
-% disp(real_ip' * 1e-3)
-% disp(real_ip_gt' * 1e-3)
+    fprintf("\nInverse Problem Init Points (kPa):\n")
+    disp(init_real_ip' * 1e-3)
+    disp(init_real_ip_gt' * 1e-3)
 
-fprintf("\nInverse Problem STD (kPa):\n")
-disp(std_ip * 1e-3)
-disp(std_ip_gt * 1e-3)
+    fprintf("\nInverse Problem Min Target Area (kPa):\n")
+    disp(min(tar_real_ip) * 1e-3)
+    disp(min(tar_real_ip_gt) * 1e-3)
 
-fprintf("\nInverse Problem Max Dev (kPa):\n")
-disp(maxDev_ip * 1e-3)
-disp(maxDev_ip_gt * 1e-3)
-
+    fprintf("\nInverse Problem Max Off-Target (kPa):\n")
+    disp(max(offTar_real_ip) * 1e-3)
+    disp(max(offTar_real_ip_gt) * 1e-3)
+end
