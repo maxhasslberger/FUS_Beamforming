@@ -24,7 +24,7 @@ end
 if ~isempty(excitation)
     excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
     
-    f_param = figure;
+    f_param = figure('color','w');
     f_param.Position = [700 50 650 350];
     subplot(2, 1, 1)
     plot(abs(excitation * 1e-3))
@@ -55,7 +55,7 @@ plot_vecx = linspace(0, grid_size(1)-kgrid.dx, p_sz(1)) / dx_scan;
 plot_vecy = plot_vecy - plot_offset(3) + kgrid.dy / dx_scan;
 plot_vecx = plot_vecx - plot_offset(1) + kgrid.dx / dx_scan;
 
-f_data = figure;
+f_data = figure('color','w');
 f_data.Position = [1400 50 484 512];
 
 % Include a t1w scan
@@ -113,9 +113,10 @@ end
 
 if kgrid.dim == 3
     cmap = hot();
-    sliceViewer(double(flip(imrotate(abs(data), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
+    sliceViewer(double(flip(imrotate(abs(data * 1e-3), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
     cb3 = colorbar;
     xlabel(cb3, 'Pressure (kPa)');
+    title(plot_title);
 end
 
 if save_results

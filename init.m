@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, amp_in, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -9,6 +9,8 @@ plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 slice_idx_2D = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
 
+sidelobe_tol = 10; % percent
+
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
@@ -16,6 +18,8 @@ use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (a
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
+            case 'sidelobe_tol'
+                sidelobe_tol = varargin{arg_idx+1};
             case 't1_scan'
                 t1w_filename = varargin{arg_idx+1};
             case 'ct_scan'
@@ -112,7 +116,7 @@ else
         t1_pos = [30, 0, 65]';
         t1_rot = [0, 0, 180]'; % deg
         t2_pos = [-65, 0, -30]';
-        t2_rot = [-90, 0, 90]'; % deg
+        t2_rot = [180, 90, 0]'; % deg
     else
         t1_pos = [47, 29, 79]';
         t1_rot = [0, -30, 180]'; % deg
@@ -152,6 +156,7 @@ if kgrid.dim == 2
     amp_in = amp_in(order);
 
     b_mask = zeros(kgrid.Nx, kgrid.Ny);
+    b_cross = b_mask;
     
     if ~only_focus_opt
 
@@ -161,30 +166,28 @@ if kgrid.dim == 2
             amp_in = amp_in(i) * ones(sum(b_mask(:)), 1);
         end
 
+        b_cross = b_mask;
         space_limits = [-67, 71; -74, 86];
     else
 
-        for point = 1:length(point_pos.x)
-            b_mask(point_pos.x(point), point_pos.y(point)) = 1;
+        for i = 1:length(point_pos.x)
+            b_mask(point_pos.x(i), point_pos.y(i)) = 1;
+            b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
+            b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
         end
 
         space_limits = [];
     end
 
-    b_cross = b_mask;
-    for i = 1:length(point_pos.x)
-        b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
-        b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
-    end
 else
     only_focus_opt = true;
     space_limits = [];
 
     % Focal points - in Scan coordinate system
     if isempty(t1w_filename)
-        point_pos_m.x = [50, 0];
+        point_pos_m.x = [30, 5];
         point_pos_m.y = [10, 10];
-        point_pos_m.z = [50, 0];
+        point_pos_m.z = [-30, 0];
         amp_in = [300, 300]' * 1e3; % Pa
     else
         point_pos_m.x = [-18, 18];
@@ -237,10 +240,11 @@ phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
 
 b_des = amp_in .* exp(1j*phase); % only observed elements
 
-b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
+b_max = max(abs(b_des));
+b_des_pl = sidelobe_tol/100 * b_max * ones(kgrid.Nx * kgrid.Ny, 1); % entire plane
 b_des_pl(logical(b_mask)) = b_des;
 
 % set simulation input options
-input_args = {'PMLSize', 'auto', 'PMLInside', false, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
+input_args = {'PMLSize', 10, 'PMLInside', true, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
 
 end
