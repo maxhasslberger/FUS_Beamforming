@@ -1,9 +1,6 @@
-function [A, b, activeA_ids] = limit_space(A, b, activeA_ids, space_limits, plot_offset, dx_factor, sound_speed)
+function opt_ids = limit_space(sound_speed)
 
 dim = numel(size(sound_speed));
-if dim == 2
-    plot_offset = [plot_offset(1), plot_offset(3)];
-end
 
 space_limits = round((repmat(plot_offset', [1, 2]) + space_limits) * dx_factor);
 space = zeros(size(sound_speed));
