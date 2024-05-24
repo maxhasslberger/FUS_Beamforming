@@ -57,13 +57,16 @@ end
 
 %% Solve Inverse Problem
 tic
-obs_ids = find(b_mask);
+
+obs_ids = reshape(logical(b_mask), numel(b_mask), 1);
+opt_ids = limit_space(medium.sound_speed);
+
 if only_focus_opt
     % Preserve sonicated points only
     ip.A = A(obs_ids, :);
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
-    init_ids = 1:size(ip.A, 1);
+    init_ids = true(ip.A, 1);
     beta_L2 = 0.0;
 else
     % Take entire observation grid into account
@@ -72,15 +75,12 @@ else
 
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
     beta_L2 = 0.0;
-
-    opt_ids = limit_space(medium.sound_speed);%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
-ip.p = solvePhasesOnly(ip.A, b_ip_des, p_init, init_ids, beta_L2, mask2el, el_per_t, true); % Amp fixed
-ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, p_init, init_ids, beta_L2); % var Amp
-% ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amp fixed, Meth2
+ip.p = solvePhasesOnly(ip.A, b_ip_des, opt_ids, p_init, init_ids, beta_L2, mask2el, el_per_t, true); % Amp fixed
+ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, opt_ids, p_init, init_ids, beta_L2); % var Amp
 
 ip.t_solve = toc;
 
@@ -156,9 +156,9 @@ if only_focus_opt
     disp(maxDev_ip_gt * 1e-3)
 else
     offTar_real_ip = real_ip;
-    offTar_real_ip(obs_ids) = [];
+    offTar_real_ip(obs_ids | ~opt_ids) = [];
     offTar_real_ip_gt = real_ip_gt;
-    offTar_real_ip_gt(obs_ids) = [];
+    offTar_real_ip_gt(obs_ids | ~opt_ids) = [];
 
     tar_real_ip = real_ip(obs_ids);
     tar_real_ip_gt = real_ip_gt(obs_ids);
@@ -177,4 +177,12 @@ else
     fprintf("\nInverse Problem Max Off-Target (kPa):\n")
     disp(max(offTar_real_ip) * 1e-3)
     disp(max(offTar_real_ip_gt) * 1e-3)
+
+    point_coord = [-16, -27];
+    point_val_ip = abs(ip.b(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
+    point_val_ip_gt = abs(ip.b_gt(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
+
+    fprintf("\nInverse Problem sel. Point Pressure (kPa):\n")
+    disp(max(point_val_ip) * 1e-3)
+    disp(max(point_val_ip_gt) * 1e-3)
 end

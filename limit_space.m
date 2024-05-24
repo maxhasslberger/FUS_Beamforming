@@ -1,4 +1,4 @@
-function opt_ids = limit_space(sound_speed)
+function logical_opt_ids = limit_space(sound_speed)
 
 dim = numel(size(sound_speed));
 c0 = min(sound_speed(:));
@@ -24,6 +24,8 @@ if dim == 2
     % Create a mask and obtain indices for the convex hull region
     convexHullMask = poly2mask(colSkull(k), rowSkull(k), size(sound_speed, 1), size(sound_speed, 2));
     opt_ids = find(convexHullMask);
+    logical_opt_ids = false(numel(sound_speed), 1);
+    logical_opt_ids(opt_ids) = true;
     
     % Visualize
     [row_opt, col_opt] = ind2sub(size(sound_speed), opt_ids);
@@ -31,7 +33,6 @@ if dim == 2
     figure;
     imagesc(sound_speed);
     colormap(gray);
-    colorbar;
     hold on;
     
     % Draw the convex hull around the skull
@@ -50,16 +51,16 @@ if dim == 2
     ylabel('Row Index');
     title('Density Matrix with Skull and Interior Region Encapsulated by Convex Hull');
     
-    % Display the results
-    disp('Row indices of pixels inside the convex hull:');
-    disp(row_opt);
-    disp('Column indices of pixels inside the convex hull:');
-    disp(col_opt);
-    
-    disp('Row indices of skull pixels:');
-    disp(rowSkull);
-    disp('Column indices of skull pixels:');
-    disp(colSkull);
+%     % Display the results
+%     disp('Row indices of pixels inside the convex hull:');
+%     disp(row_opt);
+%     disp('Column indices of pixels inside the convex hull:');
+%     disp(col_opt);
+%     
+%     disp('Row indices of skull pixels:');
+%     disp(rowSkull);
+%     disp('Column indices of skull pixels:');
+%     disp(colSkull);
 else
     % Find the row, column, and depth indices of the skull pixels
     [rowSkull, colSkull, depthSkull] = ind2sub(size(sound_speed), find(skullMask));
@@ -82,6 +83,8 @@ else
         convexHullMask(sub2ind(size(convexHullMask), skullPointCloud(k(:,1), 1), skullPointCloud(k(:,1), 2), skullPointCloud(k(:,1), 3))) = true;
     end
     opt_ids = find(convexHullMask);
+    logical_opt_ids = false(sum(size(sound_speed)), 1);
+    logical_opt_ids(opt_ids) = true;
     
     % Visualize
     % Find the linear indices of the interior and skull pixels
@@ -96,7 +99,6 @@ else
     figure;
     imagesc(sound_speed(:,:,sliceToShow));
     colormap(gray);
-    colorbar;
     hold on;
     
     % Draw the convex hull around the skull on the slice
@@ -115,20 +117,20 @@ else
     ylabel('Row Index');
     title('Density Matrix (Slice) with Skull and Interior Regions Encapsulated by Convex Hull');
     
-    % Display the results
-    disp('Row indices of pixels inside the convex hull:');
-    disp(row_opt);
-    disp('Column indices of pixels inside the convex hull:');
-    disp(col_opt);
-    disp('Depth indices of pixels inside the convex hull:');
-    disp(depth_opt);
-    
-    disp('Row indices of skull pixels:');
-    disp(rowSkull);
-    disp('Column indices of skull pixels:');
-    disp(colSkull);
-    disp('Depth indices of skull pixels:');
-    disp(depthSkull);
+%     % Display the results
+%     disp('Row indices of pixels inside the convex hull:');
+%     disp(row_opt);
+%     disp('Column indices of pixels inside the convex hull:');
+%     disp(col_opt);
+%     disp('Depth indices of pixels inside the convex hull:');
+%     disp(depth_opt);
+%     
+%     disp('Row indices of skull pixels:');
+%     disp(rowSkull);
+%     disp('Column indices of skull pixels:');
+%     disp(colSkull);
+%     disp('Depth indices of skull pixels:');
+%     disp(depthSkull);
 end
     
 

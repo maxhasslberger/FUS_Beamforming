@@ -1,4 +1,4 @@
-function init_ids = farthest_points(grid_sz, stim_ids, min_dist, surface_indices, cluster_labels)
+function logical_init_ids = farthest_points(grid_sz, stim_ids, min_dist, surface_indices, cluster_labels)
 
 if length(grid_sz) == 2
     [x, y] = ind2sub(grid_sz, stim_ids);
@@ -67,5 +67,8 @@ if length(grid_sz) == 2
 else
     init_ids = sub2ind(grid_sz, x(init_ids), y(init_ids), z(init_ids));
 end
+
+logical_init_ids = false(prod(grid_sz), 1);
+logical_init_ids(init_ids) = true;
 
 end

@@ -1,17 +1,8 @@
-function p = solvePhases_Amp(A, b, p_init, init_ids, beta_L2)
+function p = solvePhases_Amp(A, b, opt_ids, p_init, init_ids, beta_L2)
 
 % Separate A and b
-A1 = double(A(init_ids, :));
-A2 = double(A);
+[A1, A2, b1, b2, p_init] = prepare_opt_vars(A, b, p_init, opt_ids, init_ids);
 clear A;
-A2(init_ids, :) = [];
-
-b1 = double(b(init_ids));
-b2 = double(b);
-clear b;
-b2(init_ids) = [];
-
-p_init = double(p_init);
 
 % Add L2 regularization
 [A1, b1] = add_L2_reg(A1, b1, beta_L2);
