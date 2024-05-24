@@ -13,6 +13,8 @@ ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 t1w_filename = [];
 ct_filename = [];
 
+sidelobe_tol = 50; % percent of max amplitude
+
 % Simulation config
 only_focus_opt = false; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
@@ -29,7 +31,8 @@ end
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, ~, ~, point_pos_m, ~, dx_factor1, input_args] = ...
-    init(f0, n_dim, dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    init(f0, n_dim, dx_factor, ...
+    'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
     active_idsP, ~, ~, ~, ~, plot_offset, point_pos, ~, grid_size, dx_factorP, input_argsP] = ...
@@ -55,39 +58,29 @@ end
 %% Solve Inverse Problem
 tic
 obs_ids = find(b_mask);
-if true%only_focus_opt
+if only_focus_opt
     % Preserve sonicated points only
     ip.A = A(obs_ids, :);
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
-    activeA_ids = 1:size(ip.A, 1);
+    init_ids = 1:size(ip.A, 1);
+    beta_L2 = 0.0;
 else
     % Take entire observation grid into account
     ip.A = A;
     b_ip_des = b_des_pl;
 
-    activeA_ids = zeros(1, size(A, 1));
-    activeA_ids(obs_ids) = 1;
-    activeA_ids = logical(activeA_ids);
+    init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
+    beta_L2 = 0.0;
 
 %     [ip.A, b_ip_des, activeA_ids] = limit_space(ip.A, b_ip_des, activeA_ids, space_limits, plot_offset, dx_factor, medium.sound_speed);
 end
 
-if only_focus_opt % Adapt when prior if clause reset
-    init_ids = obs_ids;
-    p_init = pinv(ip.A(activeA_ids, :)) * b_ip_des(activeA_ids, :);
-    beta_L2 = 0.0;
-else
-    init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
-    p_init = pinv(A(init_ids, :)) * b_des_pl(init_ids, :);
-    beta_L2 = 0.1;
-end
+p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
-ip.p = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, p_init, beta_L2, mask2el, el_per_t, true); % Amp fixed
-
-ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, p_init, beta_L2); % var Amp
-% ip.p_gt = p_init;
-% ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amp fixed
+ip.p = solvePhasesOnly(ip.A, b_ip_des, p_init, init_ids, beta_L2, mask2el, el_per_t, true); % Amp fixed
+ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, p_init, init_ids, beta_L2); % var Amp
+% ip.p_gt = solvePhasesOnly(ip.A(activeA_ids, :), ip.A(~activeA_ids, :), b_ip_des(activeA_ids, :), max(b_ip_des) / 10, mask2el, el_per_t, false); % Amp fixed, Meth2
 
 ip.t_solve = toc;
 

@@ -9,6 +9,8 @@ plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 slice_idx_2D = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
 
+sidelobe_tol = 10; % percent
+
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
@@ -16,6 +18,8 @@ use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (a
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
+            case 'sidelobe_tol'
+                sidelobe_tol = varargin{arg_idx+1};
             case 't1_scan'
                 t1w_filename = varargin{arg_idx+1};
             case 'ct_scan'
@@ -236,7 +240,8 @@ phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
 
 b_des = amp_in .* exp(1j*phase); % only observed elements
 
-b_des_pl = zeros(kgrid.Nx * kgrid.Ny, 1); % entire plane
+b_max = max(abs(b_des));
+b_des_pl = sidelobe_tol/100 * b_max * ones(kgrid.Nx * kgrid.Ny, 1); % entire plane
 b_des_pl(logical(b_mask)) = b_des;
 
 % set simulation input options

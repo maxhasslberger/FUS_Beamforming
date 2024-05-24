@@ -1,8 +1,17 @@
+function p = solvePhasesOnly(A, b, p_init, init_ids, beta_L2, mask2el, el_per_t, via_abs)
 
-function p = solvePhasesOnly(A1, A2, b1, b2, p_init, beta_L2, mask2el, el_per_t, via_abs)
+% Separate A and b
+A1 = double(A(init_ids, :));
+A2 = double(A);
+clear A;
+A2(init_ids, :) = [];
 
-A1 = double(A1);
-A2 = double(A2);
+b1 = double(b(init_ids));
+b2 = double(b);
+clear b;
+b2(init_ids) = [];
+
+p_init = double(p_init);
 
 % Add L2 regularization
 [A1, b1] = add_L2_reg(A1, b1, beta_L2);
@@ -27,7 +36,6 @@ for i = 1:n_amps
     shift = shift + el_per_t(i);
 end
 
-p_init = double(p_init);
 init_amp = mean(abs(p_init));
 
 if via_abs
