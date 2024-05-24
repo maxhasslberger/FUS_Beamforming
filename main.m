@@ -10,8 +10,8 @@ plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
-t1w_filename = [];
-ct_filename = [];
+% t1w_filename = [];
+% ct_filename = [];
 
 sidelobe_tol = 50; % percent of max amplitude
 
@@ -19,7 +19,7 @@ sidelobe_tol = 50; % percent of max amplitude
 only_focus_opt = false; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = "A_2D_3Trs"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_3Trs_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
@@ -74,7 +74,7 @@ else
     b_ip_des = b_des_pl;
 
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
-    beta_L2 = 0.0;
+    beta_L2 = 0.1;
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
