@@ -73,7 +73,7 @@ else
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
     beta_L2 = 0.0;
 
-%     [ip.A, b_ip_des, activeA_ids] = limit_space(ip.A, b_ip_des, activeA_ids, space_limits, plot_offset, dx_factor, medium.sound_speed);
+    opt_ids = limit_space(medium.sound_speed);%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
