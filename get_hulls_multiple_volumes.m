@@ -1,4 +1,4 @@
-function [surface_indices, labels] = find_surface_points_multiple_volumes(epsilon, x, y, z)
+function [hull_ids, labels] = get_hulls_multiple_volumes(epsilon, x, y, z)
     % Input:
     % x - Row vector of x coordinates of the points
     % y - Column vector of y coordinates of the points
@@ -47,7 +47,7 @@ function [surface_indices, labels] = find_surface_points_multiple_volumes(epsilo
     unique_labels = unique(labels);
 
     % Initialize a cell array to hold surface indices of each cluster
-    surface_indices = cell(length(unique_labels), 1);
+    hull_ids = cell(length(unique_labels), 1);
 
     % Loop over each cluster and compute the convex hull
     for i = 1:length(unique_labels)
@@ -56,16 +56,16 @@ function [surface_indices, labels] = find_surface_points_multiple_volumes(epsilo
         cluster_points = data(labels == cluster_label, :);
 
         if size(cluster_points, 1) >= 3
-            hull_indices = convhull(cluster_points);
-            hull_indices = unique(hull_indices); % only memorize unique ids contained in convex hull
-            surface_indices{i} = cluster_indices(hull_indices)';
+            k = convhull(cluster_points);
+            k = unique(k); % only memorize unique ids contained in convex hull
+            hull_ids{i} = cluster_indices(k)';
         else
             % If less than 3 points, all points are part of the convex hull
-            surface_indices{i} = cluster_indices';
+            hull_ids{i} = cluster_indices';
         end
 
         % Sort the surface indices according to the original indices
-        surface_indices{i} = sort(surface_indices{i});
+        hull_ids{i} = sort(hull_ids{i});
     end
 end
 

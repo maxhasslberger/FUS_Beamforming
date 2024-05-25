@@ -1,4 +1,4 @@
-function logical_init_ids = farthest_points(grid_sz, stim_ids, min_dist, surface_indices, cluster_labels)
+function logical_init_ids = farthest_points(grid_sz, stim_ids, min_dist, hull_ids, cluster_labels)
 
 if length(grid_sz) == 2
     [x, y] = ind2sub(grid_sz, stim_ids);
@@ -20,9 +20,9 @@ end
 % Limit the selected points with the surface points
 init_ids = [];
 selected = false(length(x), 1);
-selected(cat(2, surface_indices{:})) = true; % Exclude surfaces indices
+selected(cat(2, hull_ids{:})) = true; % Exclude surfaces indices
 
-for i = 1:length(surface_indices)
+for i = 1:length(hull_ids)
     selected_i = selected;
     selected_i(cluster_labels ~= i) = true; % Exclude indices from other clusters
 
