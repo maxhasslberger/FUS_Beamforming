@@ -56,16 +56,8 @@ function [surface_indices, labels] = find_surface_points_multiple_volumes(epsilo
         cluster_points = data(labels == cluster_label, :);
 
         if size(cluster_points, 1) >= 3
-            if is3D %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Clean up and test 3D case (sliceViewer)
-                % Compute the convex hull for the 3D cluster
-                hull_indices = convhull(cluster_points(:, 1), cluster_points(:, 2), cluster_points(:, 3));
-                hull_indices = unique(hull_indices); % only memorize ids contained in convex hull
-%                 k = convhulln([cluster_points(:, 1), cluster_points(:, 2), cluster_points(:, 3)]);
-            else
-                % Compute the convex hull for the 2D cluster
-                hull_indices = convhull(cluster_points(:, 1), cluster_points(:, 2));
-                hull_indices = hull_indices(1:end-1); % Remove the duplicate closing point
-            end
+            hull_indices = convhull(cluster_points);
+            hull_indices = unique(hull_indices); % only memorize unique ids contained in convex hull
             surface_indices{i} = cluster_indices(hull_indices)';
         else
             % If less than 3 points, all points are part of the convex hull

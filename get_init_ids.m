@@ -15,7 +15,8 @@ init_ids = farthest_points(size(b_mask), stim_ids, min_dist, surface_ids, cluste
 b_mask(init_ids) = 5;
 for i = 1:length(surface_ids)
     [x, y] = ind2sub(size(b_mask), stim_ids);
-    b_mask(x(surface_ids{i}), y(surface_ids{i})) = 3; %%%%%%%%%%%%%%%%%%%%% Visualize surfaces
+    plot_surf_ids = sub2ind(size(b_mask), x(surface_ids{i}), y(surface_ids{i}));
+    b_mask(plot_surf_ids) = 3;
 end
 
 plot_results(kgrid, [], b_mask, 'Initial Points', [], [], [1 1 1], size(b_mask), 1, false, [])
