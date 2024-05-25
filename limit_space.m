@@ -4,7 +4,7 @@ dim = numel(size(sound_speed));
 c0 = min(sound_speed(:));
 
 if max(sound_speed(:)) == c0 % homogeneous medium
-    opt_ids = 1:numel(sound_speed);
+    logical_opt_ids = true(numel(sound_speed), 1);
     return;
 end
 
@@ -71,7 +71,8 @@ else
         skullPointCloud = [rowSkull, colSkull, depthSkull];
         
         % Compute the convex hull in 3D
-        k = convhulln(skullPointCloud);
+        k = convhull(rowSkull, colSkull, depthSkull);
+        k = unique(k); % only memorize ids contained in convex hull
     else
         k = [];
     end
@@ -80,7 +81,7 @@ else
     convexHullMask = false(size(sound_speed));
     if ~isempty(k)
         % Convert the convex hull indices to a binary mask
-        convexHullMask(sub2ind(size(convexHullMask), skullPointCloud(k(:,1), 1), skullPointCloud(k(:,1), 2), skullPointCloud(k(:,1), 3))) = true;
+        convexHullMask(sub2ind(size(convexHullMask), skullPointCloud(k, 1), skullPointCloud(k, 2), skullPointCloud(k, 3))) = true;
     end
     opt_ids = find(convexHullMask);
     logical_opt_ids = false(sum(size(sound_speed)), 1);
