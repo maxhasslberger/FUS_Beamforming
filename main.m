@@ -42,7 +42,8 @@ end
 %% Time Reversal
 if do_time_reversal
     tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask_ps, false, input_args);
-    tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
+    % tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
+    tr.p = conj(tr.p); % Var amplitude
     tr.b = sim_exe(kgridP, mediumP, sensorP, f0, tr.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 else
     tr = [];
@@ -66,7 +67,7 @@ if only_focus_opt
     ip.A = A(obs_ids, :);
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
-    init_ids = true(ip.A, 1);
+    init_ids = true(size(ip.A, 1), 1);
     beta_L2 = 0.0;
 else
     % Take entire observation grid into account
