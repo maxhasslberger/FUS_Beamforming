@@ -60,13 +60,13 @@ end
 tic
 
 obs_ids = reshape(logical(b_mask), numel(b_mask), 1);
-opt_ids = limit_space(medium.sound_speed);
 
 if only_focus_opt
     % Preserve sonicated points only
     ip.A = A(obs_ids, :);
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
+    opt_ids = 1;
     init_ids = true(size(ip.A, 1), 1);
     beta_L2 = 0.0;
 else
@@ -74,6 +74,7 @@ else
     ip.A = A;
     b_ip_des = b_des_pl;
 
+    opt_ids = limit_space(medium.sound_speed);
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
     beta_L2 = 0.0;
 end
