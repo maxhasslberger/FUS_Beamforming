@@ -68,7 +68,7 @@ if only_focus_opt
 
     opt_ids = 1;
     init_ids = true(size(ip.A, 1), 1);
-    beta_L2 = 0.0;
+    beta = [0.0, 0.0, 0.0];
 else
     % Take entire observation grid into account
     ip.A = A;
@@ -76,13 +76,13 @@ else
 
     opt_ids = limit_space(medium.sound_speed);
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
-    beta_L2 = 0.0;
+    beta = [0.0, 0.0, 0.0]; % L2_reg, zeroAmp_reg, volAmp_reg
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
-ip.p = solvePhasesOnly(ip.A, b_ip_des, opt_ids, p_init, init_ids, beta_L2, mask2el, el_per_t, true); % Amp fixed
-ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, opt_ids, p_init, init_ids, beta_L2); % var Amp
+ip.p = solvePhasesOnly(ip.A, b_ip_des, opt_ids, obs_ids, p_init, init_ids, beta, mask2el, el_per_t, true); % Amp fixed
+ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, opt_ids, obs_ids, p_init, init_ids, beta); % var Amp
 
 ip.t_solve = toc;
 

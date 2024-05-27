@@ -1,11 +1,13 @@
-function p = solvePhasesOnly(A, b, opt_ids, p_init, init_ids, beta_L2, mask2el, el_per_t, via_abs)
+function p = solvePhasesOnly(A, b, opt_ids, obs_ids, p_init, init_ids, beta, mask2el, el_per_t, via_abs)
 
 % Separate A and b
-[A1, A2, b1, b2, p_init] = prepare_opt_vars(A, b, p_init, opt_ids, init_ids);
+[A1, A2, b1, b2, b_zero, b_vol, p_init] = prepare_opt_vars(A, b, p_init, opt_ids, obs_ids, init_ids);
 clear A;
 
-% Add L2 regularization
-[A1, b1] = add_L2_reg(A1, b1, beta_L2);
+% Add regularization
+[A1, b1] = add_L2_reg(A1, b1, beta(1));
+[A1, b1] = add_zeroAmp_reg(A1, b1, b_zero, beta(2));
+[A1, b1] = add_volAmp_reg(A1, b1, b_vol, beta(3));
 
 % Obtain sub matrices
 A1_r = real(A1);
