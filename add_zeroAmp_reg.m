@@ -1,8 +1,8 @@
-function [A, b] = add_zeroAmp_reg(A, b, b_zero, beta)
+function [A, b] = add_zeroAmp_reg(A, b, A_zero, beta)
 
 if beta ~= 0.0
-    b = [b; sqrt(beta) * b_zero];
-    A = [A; zeros(length(b_zero), size(A, 2))];
+    b = [b; zeros(size(A_zero, 1), 1)];
+    A = [A; sqrt(beta) * A_zero];
 end
 
 end
