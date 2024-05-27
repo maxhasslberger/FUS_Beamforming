@@ -1,4 +1,4 @@
-function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, space_limits, ...
+function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
@@ -9,9 +9,9 @@ plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 dx_scan = 1e-3; % m - Scan resolution
 
 % Transducer and Foci init
-t1_pos = [-40, 79]; % scan dims
-t2_pos = [47, 79]; % scan dims
-t_rot = [30, -30]; % deg
+t1_pos = [-55, 60]; % scan dims
+t2_pos = [64, 60]; % scan dims
+t_rot = [45, -45]; % deg
 
 scan_focus_x = [-18, 18];
 slice_idx_2D = 30; % Observed slice in t1w/ct scan - Serves as focus plane as well
@@ -183,7 +183,6 @@ if kgrid.dim == 2
         end
 
         b_cross = b_mask;
-        space_limits = [-67, 71; -74, 86];
     else
 
         for i = 1:length(point_pos.x)
@@ -191,13 +190,10 @@ if kgrid.dim == 2
             b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
             b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
         end
-
-        space_limits = [];
     end
 
 else
     only_focus_opt = true;
-    space_limits = [];
 
     % Focal points - in Scan coordinate system
     if isempty(t1w_filename)
