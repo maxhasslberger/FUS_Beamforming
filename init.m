@@ -69,13 +69,18 @@ dx_factor = dx_scan / kgrid.dx;
 
 if kgrid.dim == 2
     % Transducer coordinates and alignment- in Scan coordinate system
-    t1_pos = [-70, -2]'; % scan dims
-    t2_pos = [0, 83]'; % scan dims
-    t3_pos = [77, -2]'; % scan dims
-    t_pos = [t1_pos, t2_pos, t3_pos];
-    t_rot = [false, true, false];
+%     t1_pos = [-70, -2]'; % scan dims
+%     t2_pos = [0, 83]'; % scan dims
+%     t3_pos = [77, -2]'; % scan dims
+%     t_rot = [0, 90, 0];
 
-    num_elements = 50;
+    t1_pos = [-40, 79]'; % scan dims
+    t2_pos = [47, 79]'; % scan dims
+    t_rot = [30, -30];
+
+    t_pos = [t1_pos, t2_pos];
+
+    num_elements = 40;
     spacing = ceil(dx_factor);
     n_trs = length(t_rot);
 
