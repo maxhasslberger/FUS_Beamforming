@@ -176,12 +176,25 @@ if kgrid.dim == 2
     
     if ~only_focus_opt
 
+        amp_vol = [];
+
         % Stimulate Disc pattern
         for i = 1:length(point_pos.x)
-            b_mask = b_mask + makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.025 * kgrid.Nx), false);
-            amp_in = amp_in(i) * ones(sum(b_mask(:)), 1);
+            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.025 * kgrid.Nx), false);
+            amp_vol = [amp_vol; amp_in(i) * ones(sum(disc(:)), 1)];
+            b_mask = b_mask + disc;
         end
 
+%         % Stimulate Ring pattern
+%         for i = 1:length(point_pos.x)
+%             ring = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false) ...
+%             - makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.02 * kgrid.Nx), false);
+% 
+%             amp_vol = [amp_vol; amp_in(i) * ones(sum(ring(:)), 1)];
+%             b_mask = b_mask + ring;
+%         end
+
+        amp_in = amp_vol;
         b_cross = b_mask;
     else
 
