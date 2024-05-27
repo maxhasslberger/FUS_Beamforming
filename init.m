@@ -6,8 +6,17 @@ function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps
 t1w_filename = [];
 ct_filename = [];
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
-slice_idx_2D = 32; % Observed slice in t1w/ct scan
 dx_scan = 1e-3; % m - Scan resolution
+
+% Transducer and Foci init
+t1_pos = [-40, 79]; % scan dims
+t2_pos = [47, 79]; % scan dims
+t_rot = [30, -30]; % deg
+
+scan_focus_x = [-18, 18];
+slice_idx_2D = 30; % Observed slice in t1w/ct scan - Serves as focus plane as well
+scan_focus_z = [-27, -18];
+des_pressures = [300, 300]; % kPa
 
 sidelobe_tol = 10; % percent
 
@@ -74,9 +83,9 @@ if kgrid.dim == 2
 %     t3_pos = [77, -2]'; % scan dims
 %     t_rot = [0, 90, 0];
 
-    t1_pos = [-40, 79]'; % scan dims
-    t2_pos = [47, 79]'; % scan dims
-    t_rot = [30, -30];
+    t1_pos = t1_pos'; % scan dims
+    t2_pos = t2_pos'; % scan dims
+    t_rot = t_rot';
 
     t_pos = [t1_pos, t2_pos];
 
@@ -85,19 +94,21 @@ if kgrid.dim == 2
     n_trs = length(t_rot);
 
     t_mask_ps = false(kgrid.Nx, kgrid.Ny);
+    el_per_t = zeros(1, n_trs);
     t_ids = [];
     for i = 1:n_trs
         el_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
         shift = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
     
         new_arr = create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
+
+        el_per_t(i) = sum(new_arr(:));
         t_ids = [t_ids; find(new_arr)];
         t_mask_ps = t_mask_ps | logical(new_arr);
     end
     
     [~, el2mask_ids] = sort(t_ids);
     [~, mask2el] = sort(el2mask_ids);
-    el_per_t = num_elements * ones(1, n_trs);
 
     karray_t = [];
     active_ids = [];
@@ -123,10 +134,10 @@ else
         t2_pos = [-65, 0, -30]';
         t2_rot = [180, 90, 0]'; % deg
     else
-        t1_pos = [47, 29, 79]';
-        t1_rot = [0, -30, 180]'; % deg
-        t2_pos = [-40, 29, 79]';
-        t2_rot = [0, 30, 180]'; % deg
+        t1_pos = [t1_pos(1), slice_idx_2D, t1_pos(2)]';
+        t1_rot = [0, t_rot(1), 180]'; % deg
+        t2_pos = [t2_pos(1), slice_idx_2D, t2_pos(2)]';
+        t2_rot = [0, t_rot(2), 180]'; % deg
     end
 
     t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_3D;
@@ -147,10 +158,10 @@ cross_pixRadius = 5;
 if kgrid.dim == 2
 
     % Focal points - in Scan coordinate system
-    point_pos_m.x = [-16, 23];
+    point_pos_m.x = scan_focus_x;
     point_pos.slice = slice_idx_2D;
-    point_pos_m.y = [-27, -26];
-    amp_in = [200, 200]' * 1e3; % Pa
+    point_pos_m.y = scan_focus_z;
+    amp_in = des_pressures' * 1e3; % Pa
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
     point_pos.y = round((plot_offset(3) + point_pos_m.y) * dx_factor);
@@ -193,12 +204,12 @@ else
         point_pos_m.x = [30, 5];
         point_pos_m.y = [10, 10];
         point_pos_m.z = [-30, 0];
-        amp_in = [300, 300]' * 1e3; % Pa
+        amp_in = des_pressures' * 1e3; % Pa
     else
-        point_pos_m.x = [-18, 18];
-        point_pos_m.y = [30, 28];
-        point_pos_m.z = [-27, -18];
-        amp_in = [300, 300]' * 1e3; % Pa
+        point_pos_m.x = scan_focus_x;
+        point_pos_m.y = [slice_idx_2D, slice_idx_2D];
+        point_pos_m.z = scan_focus_z;
+        amp_in = des_pressures' * 1e3; % Pa
     end
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);

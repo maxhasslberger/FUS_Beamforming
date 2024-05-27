@@ -19,7 +19,7 @@ sidelobe_tol = 50; % percent of max amplitude
 only_focus_opt = false; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = "A_2D_3Trs"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_2Trs"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
@@ -66,14 +66,16 @@ if only_focus_opt
     ip.A = A(obs_ids, :);
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
+    vol_ids = true(size(ip.A, 1), 1);
     opt_ids = 1;
-    init_ids = true(size(ip.A, 1), 1);
+    init_ids = vol_ids;
     beta = [0.0, 0.0, 0.0];
 else
     % Take entire observation grid into account
     ip.A = A;
     b_ip_des = b_des_pl;
 
+    vol_ids = obs_ids;
     opt_ids = limit_space(medium.sound_speed);
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
     beta = [0.0, 0.0, 0.0]; % L2_reg, zeroAmp_reg, volAmp_reg
@@ -81,8 +83,8 @@ end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
-ip.p = solvePhasesOnly(ip.A, b_ip_des, opt_ids, obs_ids, p_init, init_ids, beta, mask2el, el_per_t, true); % Amp fixed
-ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, opt_ids, obs_ids, p_init, init_ids, beta); % var Amp
+ip.p = solvePhasesOnly(ip.A, b_ip_des, opt_ids, vol_ids, p_init, init_ids, beta, mask2el, el_per_t, true); % Amp fixed
+ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, opt_ids, vol_ids, p_init, init_ids, beta); % var Amp
 
 ip.t_solve = toc;
 
@@ -158,12 +160,12 @@ if only_focus_opt
     disp(maxDev_ip_gt * 1e-3)
 else
     offTar_real_ip = real_ip;
-    offTar_real_ip(obs_ids | ~opt_ids) = [];
+    offTar_real_ip(vol_ids | ~opt_ids) = [];
     offTar_real_ip_gt = real_ip_gt;
-    offTar_real_ip_gt(obs_ids | ~opt_ids) = [];
+    offTar_real_ip_gt(vol_ids | ~opt_ids) = [];
 
-    tar_real_ip = real_ip(obs_ids);
-    tar_real_ip_gt = real_ip_gt(obs_ids);
+    tar_real_ip = real_ip(vol_ids);
+    tar_real_ip_gt = real_ip_gt(vol_ids);
 
     init_real_ip = real_ip(init_ids);
     init_real_ip_gt = real_ip_gt(init_ids);
@@ -179,12 +181,12 @@ else
     fprintf("\nInverse Problem Max Off-Target (kPa):\n")
     disp(max(offTar_real_ip) * 1e-3)
     disp(max(offTar_real_ip_gt) * 1e-3)
-
-    point_coord = [-16, -27];
-    point_val_ip = abs(ip.b(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
-    point_val_ip_gt = abs(ip.b_gt(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
-
-    fprintf("\nInverse Problem sel. Point Pressure (kPa):\n")
-    disp(max(point_val_ip) * 1e-3)
-    disp(max(point_val_ip_gt) * 1e-3)
 end
+
+point_coord = [18, -18]; % -18, -27
+point_val_ip = abs(ip.b(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
+point_val_ip_gt = abs(ip.b_gt(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
+
+fprintf("\nInverse Problem sel. Point Pressure (kPa):\n")
+disp(point_val_ip * 1e-3)
+disp(point_val_ip_gt * 1e-3)
