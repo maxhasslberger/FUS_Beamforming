@@ -81,7 +81,7 @@ if kgrid.dim == 2
 %     t1_pos = [-70, -2]'; % scan dims
 %     t2_pos = [0, 83]'; % scan dims
 %     t3_pos = [77, -2]'; % scan dims
-%     t_rot = [0, 90, 0];
+%     t_rot = [90, 0, 90];
 
     t1_pos = t1_pos'; % scan dims
     t2_pos = t2_pos'; % scan dims

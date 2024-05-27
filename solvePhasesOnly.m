@@ -8,17 +8,13 @@ clear A;
 [A1, b1] = add_L2_reg(A1, b1, beta(1));
 [A1, b1] = add_zeroAmp_reg(A1, b1, b_zero, beta(2));
 [A1, b1] = add_volAmp_reg(A1, b1, b_vol, beta(3));
+[A2, b2] = add_ineq(A2, b2, length(p_init), beta(4));
 
 % Obtain sub matrices
 A1_r = real(A1);
 A1_i = imag(A1);
-if ~isempty(A2)
-    A2_r = real(A2);
-    A2_i = imag(A2);
-else
-    A2_r = zeros(1, size(A1, 2));
-    A2_i = zeros(1, size(A1, 2));
-end
+A2_r = real(A2);
+A2_i = imag(A2);
 
 % Define one amp per transducer
 n_amps = length(el_per_t);

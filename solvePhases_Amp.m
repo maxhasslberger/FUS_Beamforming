@@ -4,14 +4,11 @@ function p = solvePhases_Amp(A, b, opt_ids, obs_ids, p_init, init_ids, beta)
 [A1, A2, b1, b2, b_zero, b_vol, p_init] = prepare_opt_vars(A, b, p_init, opt_ids, obs_ids, init_ids);
 clear A;
 
-% Add L2 regularization
+% Add regularization
 [A1, b1] = add_L2_reg(A1, b1, beta(1));
 [A1, b1] = add_zeroAmp_reg(A1, b1, b_zero, beta(2));
 [A1, b1] = add_volAmp_reg(A1, b1, b_vol, beta(3));
-
-if isempty(A2)
-    A2 = zeros(1, size(A1, 2));
-end
+[A2, b2] = add_ineq(A2, b2, length(p_init), beta(4));
 
 % Cost fctn and constraints
 fun = @(p)cost_fctn(p, A1, b1);
