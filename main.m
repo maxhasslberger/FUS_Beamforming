@@ -10,8 +10,8 @@ plot_dx_factor = 1;
 
 t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
 ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
-t1w_filename = [];
-ct_filename = [];
+% t1w_filename = [];
+% ct_filename = [];
 
 sidelobe_tol = 30; % percent of max amplitude
 
@@ -95,9 +95,11 @@ ip.t_solve = toc;
 % ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
+ip.b(abs(ip.b) > 1.2 * max(b_ip_des)) = max(b_ip_des);
 
 ip.b_gt = A * ip.p_gt;
 ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
+ip.b_gt(abs(ip.b_gt) > 1.2 * max(b_ip_des)) = max(b_ip_des);
 
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
