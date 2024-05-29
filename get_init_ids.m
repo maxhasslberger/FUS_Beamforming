@@ -1,7 +1,7 @@
 function init_ids = get_init_ids(kgrid, lambda, b_mask)
 
 stim_ids = find(b_mask);
-min_dist = 1 * lambda / kgrid.dx; % m -> pix; min distance between init points
+min_dist = 2 * lambda / kgrid.dx; % m -> pix; min distance between init points
 
 % Obtain hull points of sonicated volumes
 epsilon = 2;

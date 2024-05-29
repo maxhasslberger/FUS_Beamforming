@@ -19,7 +19,7 @@ sidelobe_tol = 50; % percent of max amplitude
 only_focus_opt = false; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = "A_2D_2Trs"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_2Trs_80el"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
@@ -79,7 +79,7 @@ else
     opt_ids = limit_space(medium.sound_speed);
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
 %     beta = [0.0, 1 / numel(kgrid.k), 0.0, 0.0]; % L2_reg, zeroAmp_reg, volAmp_reg, ineq constr
-    beta = [0.1, 0.0, 0, 1.0];
+    beta = [0.0, 0.0, 0, 1.0];
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
@@ -95,11 +95,13 @@ ip.t_solve = toc;
 % ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
-ip.b(abs(ip.b) > 1. * max(b_ip_des)) = max(b_ip_des);
+max_opt_b = 1.0 * max(abs(ip.b(opt_ids)));
+ip.b(abs(ip.b) > 1. * max_opt_b) = max_opt_b;
 
 ip.b_gt = A * ip.p_gt;
 ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
-ip.b_gt(abs(ip.b_gt) > 1. * max(b_ip_des)) = max(b_ip_des);
+max_opt_b_gt = 1.0 * max(abs(ip.b_gt(opt_ids)));
+ip.b_gt(abs(ip.b_gt) > 1. * max_opt_b_gt) = max_opt_b_gt;
 
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
@@ -188,7 +190,7 @@ else
     disp(max(offTar_real_ip_gt) * 1e-3)
 end
 
-point_coord = [18, -18]; % -18, -27
+point_coord = [-18, -27];
 point_val_ip = abs(ip.b(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
 point_val_ip_gt = abs(ip.b_gt(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
 

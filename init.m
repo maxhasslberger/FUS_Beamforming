@@ -13,9 +13,9 @@ t1_pos = [-55, 60]; % scan dims
 t2_pos = [64, 60]; % scan dims
 t_rot = [45, -45]; % deg
 
-scan_focus_x = [-18, 18];
+scan_focus_x = [-18, 22];
 slice_idx_2D = 30; % Observed slice in t1w/ct scan - Serves as focus plane as well
-scan_focus_z = [-27, -18];
+scan_focus_z = [-27, -19];
 des_pressures = [300, 300]; % kPa
 
 sidelobe_tol = 50; % percent
@@ -89,7 +89,7 @@ if kgrid.dim == 2
 
     t_pos = [t1_pos, t2_pos];
 
-    num_elements = 40;
+    num_elements = 80;
     spacing = ceil(dx_factor);
     n_trs = length(t_rot);
 
@@ -180,7 +180,7 @@ if kgrid.dim == 2
 
         % Stimulate Disc pattern
         for i = 1:length(point_pos.x)
-            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.025 * kgrid.Nx), false);
+            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.035 * kgrid.Nx), false);
             amp_vol = [amp_vol; amp_in(i) * ones(sum(disc(:)), 1)];
             b_mask = b_mask + disc;
         end
