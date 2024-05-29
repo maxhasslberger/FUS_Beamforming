@@ -29,7 +29,7 @@ end
 function val = cost_fctn(p, A1, b1, gamma)
 
 p = getCompVec(p);
-val = sum((abs(A1 * p).^gamma - b1).^2);
+val = norm(abs(A1 * p).^gamma - b1);
 
 end
 

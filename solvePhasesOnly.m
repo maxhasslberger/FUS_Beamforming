@@ -77,7 +77,7 @@ end
 function val = cost_fctn(p, A1_r, A1_i, b1, gamma, trx_ids)
 
 [x_r, x_i] = getElements_abs(p, trx_ids);
-val = sum((sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2).^gamma - b1).^2);
+val = norm(sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2).^gamma - b1);
 
 end
 
@@ -87,7 +87,7 @@ n_amps = length(trx_ids);
 p_0 = zeros(size(A1, 2), 1);
 p_0 = getAmpPerElement(p_0, p, trx_ids);
 
-val = sum((amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))).^gamma - b1).^2);
+val = norm(amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))).^gamma - b1);
 
 end
 
