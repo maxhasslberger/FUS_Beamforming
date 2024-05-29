@@ -17,7 +17,7 @@ nonlcon = @(p)ineq_const(p, A2, b2);
 
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
     'Algorithm','active-set'); % interior-point, sqp, trust-region-reflective, active-set
-options.MaxFunctionEvaluations = 0.1e5;
+options.MaxFunctionEvaluations = 0.5e5;
 
 [p_opt, fval, exitflag, output] = fmincon(fun, [real(p_init); imag(p_init)], [], [], [], [], [], [], nonlcon, options);
 

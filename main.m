@@ -13,7 +13,7 @@ ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 % t1w_filename = [];
 % ct_filename = [];
 
-sidelobe_tol = 40; % percent of max amplitude
+sidelobe_tol = 50; % percent of max amplitude
 
 % Simulation config
 only_focus_opt = false; % Optimize only focal spots or entire grid
@@ -79,7 +79,7 @@ else
     opt_ids = limit_space(medium.sound_speed);
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
 %     beta = [0.0, 1 / numel(kgrid.k), 0.0, 0.0]; % L2_reg, zeroAmp_reg, volAmp_reg, ineq constr
-    beta = [0.01, 0.0, 0, 0.01];
+    beta = [0.1, 0.0, 0, 1.0];
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);

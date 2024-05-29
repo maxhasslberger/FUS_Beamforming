@@ -18,7 +18,7 @@ slice_idx_2D = 30; % Observed slice in t1w/ct scan - Serves as focus plane as we
 scan_focus_z = [-27, -18];
 des_pressures = [300, 300]; % kPa
 
-sidelobe_tol = 10; % percent
+sidelobe_tol = 50; % percent
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
