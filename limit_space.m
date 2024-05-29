@@ -13,6 +13,7 @@ skullMask = sound_speed > c0;
 if dim == 2
     % Find the row and column indices of the skull pixels
     [rowSkull, colSkull] = find(skullMask);
+    skull_ids = find(skullMask);
 
     % Create a convex hull around the skull pixels
     if ~isempty(rowSkull)
@@ -24,6 +25,7 @@ if dim == 2
     % Create a mask and obtain indices for the convex hull region
     convexHullMask = poly2mask(colSkull(k), rowSkull(k), size(sound_speed, 1), size(sound_speed, 2));
     opt_ids = find(convexHullMask);
+    opt_ids = setdiff(opt_ids, skull_ids);
     logical_opt_ids = false(numel(sound_speed), 1);
     logical_opt_ids(opt_ids) = true;
     
@@ -44,7 +46,7 @@ if dim == 2
     plot(col_opt, row_opt, 'r.', 'MarkerSize', 15);
 
     % Mark the skull region on the plot
-    plot(colSkull, rowSkull, 'b.', 'MarkerSize', 15);
+    %plot(colSkull, rowSkull, 'b.', 'MarkerSize', 15);
     
     % Add labels and title for better understanding
     xlabel('Column Index');
