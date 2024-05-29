@@ -78,8 +78,8 @@ else
     vol_ids = obs_ids;
     opt_ids = limit_space(medium.sound_speed);
     init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
-    beta = [0.0, 1 / numel(kgrid.k), 0.0, 0.0]; % L2_reg, zeroAmp_reg, volAmp_reg, ineq constr
-%     beta = [0.0, 0.0, 0.0, 0.0];
+%     beta = [0.0, 1 / numel(kgrid.k), 0.0, 0.0]; % L2_reg, zeroAmp_reg, volAmp_reg, ineq constr
+    beta = [0.0, 0.0, 0.0, 0.00];
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
