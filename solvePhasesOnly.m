@@ -1,13 +1,14 @@
 function p = solvePhasesOnly(A, b, opt_ids, obs_ids, p_init, init_ids, beta, mask2el, el_per_t, via_abs)
+p_init = double(p_init);
 
 % Separate A and b
-[A1, A2, b1, b2, A_zero, A_vol, p_init] = prepare_opt_vars(A, b, p_init, opt_ids, obs_ids, init_ids);
+[A1, A2, b1, b2, A_zero, A_vol, gamma] = prepare_opt_vars(A, b, opt_ids, obs_ids, init_ids);
 clear A;
 
 % Add regularization
-[A1, b1] = add_L2_reg(A1, b1, beta(1));
-[A1, b1] = add_zeroAmp_reg(A1, b1, A_zero, beta(2));
-% [A1, b1] = add_volAmp_reg(A1, b1, A_vol, beta(3));
+[A1, b1, gamma] = add_L2_reg(A1, b1, gamma, beta(1));
+[A1, b1, gamma] = add_zeroAmp_reg(A1, b1, gamma, A_zero, beta(2));
+[A1, b1, gamma] = add_volAmp_reg(A1, b1, gamma, A_vol, beta(3));
 [A2, b2] = add_ineq(A2, b2, length(p_init), beta(4));
 
 % Obtain sub matrices
@@ -37,7 +38,7 @@ if via_abs
     p_start(n_amps + ceil((end-n_amps)/2) + 1:end) = imag(p_init);
 
     % Cost fctn and constraints
-    fun = @(p)cost_fctn(p, A1_r, A1_i, b1, trx_ids);
+    fun = @(p)cost_fctn(p, A1_r, A1_i, b1, gamma, trx_ids);
     nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 else
     % Define initial vector
@@ -48,7 +49,7 @@ else
     p_start(n_amps + 1:end) = angle(p_init);
 
     % Cost fctn and constraints
-    fun = @(p)cost_fctn2(p, A1, b1, amp_fac, trx_ids);
+    fun = @(p)cost_fctn2(p, A1, b1, gamma, amp_fac, trx_ids);
     nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 end
 
@@ -73,20 +74,20 @@ end
 end
 
 
-function val = cost_fctn(p, A1_r, A1_i, b1, trx_ids)
+function val = cost_fctn(p, A1_r, A1_i, b1, gamma, trx_ids)
 
 [x_r, x_i] = getElements_abs(p, trx_ids);
-val = sum((sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1).^2);
+val = sum((sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2).^gamma - b1).^2);
 
 end
 
-function val = cost_fctn2(p, A1, b1, amp_fac, trx_ids)
+function val = cost_fctn2(p, A1, b1, gamma, amp_fac, trx_ids)
 n_amps = length(trx_ids);
 
 p_0 = zeros(size(A1, 2), 1);
 p_0 = getAmpPerElement(p_0, p, trx_ids);
 
-val = sum((amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b1).^2);
+val = sum((amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))).^gamma - b1).^2);
 
 end
 
