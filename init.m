@@ -9,12 +9,12 @@ plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 dx_scan = 1e-3; % m - Scan resolution
 
 % Transducer and Foci init
-t1_pos = [-55, 60]; % scan dims
-t2_pos = [64, 60]; % scan dims
+t1_pos = [-54, 55]; % scan dims [x, z]
+t2_pos = [63, 55]; % scan dims [x, z]
 t_rot = [45, -45]; % deg
 
 scan_focus_x = [-18, 22];
-slice_idx_2D = 30; % Observed slice in t1w/ct scan - Serves as focus plane as well
+slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
 scan_focus_z = [-27, -19];
 des_pressures = [300, 300]; % kPa
 
@@ -89,7 +89,7 @@ if kgrid.dim == 2
 
     t_pos = [t1_pos, t2_pos];
 
-    num_elements = 80;
+    num_elements = 70;
     spacing = ceil(dx_factor);
     n_trs = length(t_rot);
 
