@@ -119,6 +119,7 @@ end
 
 %% TR Results
 if do_time_reversal
+    % tr.b(~opt_ids) = 0.0;
     plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 end
 
