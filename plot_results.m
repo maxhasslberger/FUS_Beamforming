@@ -4,6 +4,7 @@ function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename
 slice_coord = 32;
 dx_scan = 1e-3;
 slice_dim = 2;
+cmap = hot();
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -22,6 +23,7 @@ end
 
 %% Plot magnitude and phase of array elements
 if ~isempty(excitation)
+    cmap = turbo();
     excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
     
     f_param = figure('color','w');
@@ -82,7 +84,7 @@ if ~isempty(t1w_filename)
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
-    colormap(ax2,'hot')
+    colormap(ax2,cmap)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
     xlabel(cb2, 'Pressure (kPa)');
@@ -95,7 +97,7 @@ else
     ax = axes;
     imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
     
-    colormap('hot');
+    colormap(cmap);
     xlabel('x (mm)');
     ylabel('z (mm)');
     axis image;
@@ -112,7 +114,6 @@ else
 end
 
 if kgrid.dim == 3
-    cmap = hot();
     sliceViewer(double(flip(imrotate(abs(data * 1e-3), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
     cb3 = colorbar;
     xlabel(cb3, 'Pressure (kPa)');

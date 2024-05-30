@@ -19,7 +19,7 @@ sidelobe_tol = 50; % percent of max amplitude
 only_focus_opt = false; % Optimize only focal spots or entire grid
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = "A_2D_2Trs_80el"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_2Trs_75el_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as a comparison
 save_results = false;
 
@@ -94,14 +94,16 @@ ip.t_solve = toc;
 %% Obtain Acoustic profile
 % ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = A * ip.p;
+% ip.b(~opt_ids) = 0.0;
 ip.b = reshape(ip.b, size(kgrid.k));
-max_opt_b = 1.0 * max(abs(ip.b(opt_ids)));
-ip.b(abs(ip.b) > 1. * max_opt_b) = max_opt_b;
+% max_opt_b = 1.0 * max(abs(ip.b(opt_ids)));
+% ip.b(abs(ip.b) > 1. * max_opt_b) = max_opt_b;
 
 ip.b_gt = A * ip.p_gt;
+% ip.b_gt(~opt_ids) = 0.0;
 ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
-max_opt_b_gt = 1.0 * max(abs(ip.b_gt(opt_ids)));
-ip.b_gt(abs(ip.b_gt) > 1. * max_opt_b_gt) = max_opt_b_gt;
+% max_opt_b_gt = 1.0 * max(abs(ip.b_gt(opt_ids)));
+% ip.b_gt(abs(ip.b_gt) > 1. * max_opt_b_gt) = max_opt_b_gt;
 
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
@@ -121,8 +123,8 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
-plot_results(kgrid, ip.p_gt, ip.b_gt, 'IP2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b, 'Inverse Problem 1', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
 % plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
 
 % err = abs(ip.b) - abs(ip.b_gt);

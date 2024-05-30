@@ -52,9 +52,10 @@ else
     fun = @(p)cost_fctn2(p, A1, b1, gamma, amp_fac, trx_ids);
     nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 end
+term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
-    'Algorithm','active-set'); % interior-point, sqp, trust-region-reflective, active-set
+    'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
 options.MaxFunctionEvaluations = 0.5e5;
 
 
@@ -71,6 +72,15 @@ else
 end
 
 
+end
+
+function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
+    stop = false;
+    % Check if the absolute function value is less than the threshold
+    if abs(optimValues.fval) < fval_tol && optimValues.constrviolation < constr_tol
+        stop = true;
+        disp('Terminating: Absolute function value is below the threshold.');
+    end
 end
 
 

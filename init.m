@@ -9,8 +9,8 @@ plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 dx_scan = 1e-3; % m - Scan resolution
 
 % Transducer and Foci init
-t1_pos = [-54, 55]; % scan dims [x, z]
-t2_pos = [63, 55]; % scan dims [x, z]
+t1_pos = [-59, 60]; % scan dims [x, z]
+t2_pos = [68, 60]; % scan dims [x, z]
 t_rot = [45, -45]; % deg
 
 scan_focus_x = [-18, 22];
@@ -89,7 +89,7 @@ if kgrid.dim == 2
 
     t_pos = [t1_pos, t2_pos];
 
-    num_elements = 70;
+    num_elements = 75;
     spacing = ceil(dx_factor);
     n_trs = length(t_rot);
 
@@ -180,7 +180,7 @@ if kgrid.dim == 2
 
         % Stimulate Disc pattern
         for i = 1:length(point_pos.x)
-            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.035 * kgrid.Nx), false);
+            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.03 * kgrid.Nx), false);
             amp_vol = [amp_vol; amp_in(i) * ones(sum(disc(:)), 1)];
             b_mask = b_mask + disc;
         end
@@ -254,8 +254,9 @@ if ~isscalar(medium.sound_speed)
 else
     plot_arg = zeros(size(t_mask_ps));
 end
+plot_arg = zeros(size(t_mask_ps));
 
-plot_arg(logical(t_mask_ps)) = 0.5;
+plot_arg(logical(t_mask_ps)) = 0.0;
 plot_arg(logical(b_cross)) = 1.0;
 
 plot_results(kgrid, [], plot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
