@@ -112,24 +112,24 @@ if ~isempty(ct_filename)
     medium.density(skull == 0) = rho0;
     medium.alpha_coeff(skull == 0) = alpha_coeff_water;
 
-%     dt = cfl * dx / c_max;
+    dt = cfl * dx / c_max;
 else
     % define the homogeneous space (water)
     medium.sound_speed = c0; % * ones(Nx, Ny);
     medium.density = rho0; % * ones(Nx, Ny);
     medium.alpha_coeff = alpha_coeff_water; % dB/(MHz^y cm)
 
-%     dt = cfl * dx / c0;
+    dt = cfl * dx / c0;
 end
 
 % Time
-% ppp = round(1 / (dt * f0)); % points per temporal period
-ppp = round(ppw / cfl); % points per temporal period
-dt = 1 / (ppp * f0);
-dt_stability_lim = checkStability(kgrid, medium);
-if dt_stability_lim ~= Inf
-    dt = dt_stability_lim;
-end
+ppp = round(1 / (dt * f0)); % points per temporal period
+% ppp = round(ppw / cfl); % points per temporal period
+% dt = 1 / (ppp * f0);
+% dt_stability_lim = checkStability(kgrid, medium);
+% if dt_stability_lim ~= Inf
+%     dt = dt_stability_lim;
+% end
 
 % calculate the number of time steps to reach steady state - usually sufficient even under the presence of the skull
 t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / c0; 
