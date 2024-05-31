@@ -90,6 +90,7 @@ if kgrid.dim == 2
     t_pos = [t1_pos, t2_pos];
 
     num_elements = 75;
+    % num_elements = 50;
     spacing = ceil(dx_factor);
     n_trs = length(t_rot);
 
@@ -254,9 +255,9 @@ if ~isscalar(medium.sound_speed)
 else
     plot_arg = zeros(size(t_mask_ps));
 end
-plot_arg = zeros(size(t_mask_ps));
+% plot_arg = zeros(size(t_mask_ps));
 
-plot_arg(logical(t_mask_ps)) = 0.0;
+plot_arg(logical(t_mask_ps)) = 1.0;
 plot_arg(logical(b_cross)) = 1.0;
 
 plot_results(kgrid, [], plot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
