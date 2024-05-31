@@ -38,7 +38,7 @@ if islogical(get_current_A)
     
         if isempty(karray_t)
 
-            use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed);
+            use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed(:));
         
             el_ids = find(t_mask);
 %             el2mask_ids = sort(el2mask_ids); % Mapping mask -> element index
