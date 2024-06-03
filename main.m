@@ -67,42 +67,41 @@ if only_focus_opt
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
     vol_ids = true(size(ip.A, 1), 1);
-    opt_ids = 1;
+    domain_ids = 1;
     init_ids = vol_ids;
-    beta = [0.0, 0.0, 0.0, 0.0];
+    ip.beta = 0.0;
 else
     % Take entire observation grid into account
     ip.A = A;
     b_ip_des = b_des_pl;
 
-    vol_ids = obs_ids;
-    opt_ids = limit_space(medium.sound_speed);
-    init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask);
-%     beta = [0.0, 1 / numel(kgrid.k), 0.0, 0.0]; % L2_reg, zeroAmp_reg, volAmp_reg, ineq constr
-    beta = [0.0, 0.0, 0, 1.0];
+    vol_ids = obs_ids; % Indices that correspond to the target volume(s)
+    domain_ids = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial)
+    init_ids = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask); % Indices where pressure values given
+    ip.beta = 0.0;
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
-ip.p = solvePhasesOnly(ip.A, b_ip_des, opt_ids, vol_ids, p_init, init_ids, beta, mask2el, el_per_t, true); % Amp fixed
-ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, opt_ids, vol_ids, p_init, init_ids, beta); % var Amp
+ip.p = solvePhasesOnly(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
+ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
-% ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, opt_ids, vol_ids, p_init, init_ids, beta); % var Amp
+% ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
 
 ip.t_solve = toc;
 
 %% Obtain Acoustic profile
 % ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 ip.b = A * ip.p;
-% ip.b(~opt_ids) = 0.0;
+% ip.b(~domain_ids) = 0.0;
 ip.b = reshape(ip.b, size(kgrid.k));
-% max_opt_b = 1.0 * max(abs(ip.b(opt_ids)));
+% max_opt_b = 1.0 * max(abs(ip.b(domain_ids)));
 % ip.b(abs(ip.b) > 1. * max_opt_b) = max_opt_b;
 
 ip.b_gt = A * ip.p_gt;
-% ip.b_gt(~opt_ids) = 0.0;
+% ip.b_gt(~domain_ids) = 0.0;
 ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
-% max_opt_b_gt = 1.0 * max(abs(ip.b_gt(opt_ids)));
+% max_opt_b_gt = 1.0 * max(abs(ip.b_gt(domain_ids)));
 % ip.b_gt(abs(ip.b_gt) > 1. * max_opt_b_gt) = max_opt_b_gt;
 
 %% Save Results in mat-file
@@ -119,7 +118,7 @@ end
 
 %% TR Results
 if do_time_reversal
-    % tr.b(~opt_ids) = 0.0;
+    % tr.b(~domain_ids) = 0.0;
     plot_results(kgridP, tr.p, tr.b, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factorP, save_results, current_datetime, 'slice', point_pos.slice);
 end
 
@@ -136,15 +135,14 @@ plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem', mask2el, t1w_filename, 
 
 %% Metrics evaluation
 disp("Time until solver converged: " + string(ip.t_solve) + " s")
-% fprintf("\nDesired Transducer Amplitude (kPa):\n")
-% disp(ip.u(1) * 1e-3)
-% fprintf("\nTransducer Amplitude mean deviation (Pa):\n")
-% disp(mean(abs(abs(ip.p) - ip.u)))
 
-real_ip = abs(ip.A * ip.p);
-real_ip_gt = abs(ip.A * ip.p_gt);
+real_ip = abs(reshape(ip.b, [], 1));
+real_ip_gt = abs(reshape(ip.b_gt, [], 1));
 
 if only_focus_opt
+    real_ip = real_ip(obs_ids);
+    real_ip_gt = real_ip_gt(obs_ids);
+
     err_ip = real_ip - b_ip_des;
     err_ip_gt = real_ip_gt - b_ip_des;
     
@@ -170,9 +168,9 @@ if only_focus_opt
     disp(maxDev_ip_gt * 1e-3)
 else
     offTar_real_ip = real_ip;
-    offTar_real_ip(vol_ids | ~opt_ids) = [];
+    offTar_real_ip(vol_ids | ~domain_ids) = [];
     offTar_real_ip_gt = real_ip_gt;
-    offTar_real_ip_gt(vol_ids | ~opt_ids) = [];
+    offTar_real_ip_gt(vol_ids | ~domain_ids) = [];
 
     tar_real_ip = real_ip(vol_ids);
     tar_real_ip_gt = real_ip_gt(vol_ids);

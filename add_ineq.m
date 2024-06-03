@@ -1,9 +1,6 @@
-function [A, b] = add_ineq(A, b, n_elements, beta)
+function [A, b] = add_ineq(A, b, n_elements)
 
-if beta ~= 0.0
-    b = beta * b;
-    A = beta * A;
-else
+if isempty(A)
     b = 0.0;
     A = zeros(1, n_elements);
 end

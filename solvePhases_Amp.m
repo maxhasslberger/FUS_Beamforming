@@ -1,18 +1,16 @@
-function p = solvePhases_Amp(A, b, opt_ids, obs_ids, p_init, init_ids, beta)
+function p = solvePhases_Amp(A, b, domain_ids, obs_ids, p_init, init_ids, beta)
 p_init = double(p_init);
 
 % Separate A and b
-[A1, A2, b1, b2, A_zero, A_vol, gamma] = prepare_opt_vars(A, b, opt_ids, obs_ids, init_ids);
+[A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, domain_ids, obs_ids, init_ids);
 clear A;
 
 % Add regularization
-[A1, b1, gamma] = add_L2_reg(A1, b1, gamma, beta(1));
-[A1, b1, gamma] = add_zeroAmp_reg(A1, b1, gamma, A_zero, beta(2));
-[A1, b1, gamma] = add_volAmp_reg(A1, b1, gamma, A_vol, beta(3));
-[A2, b2] = add_ineq(A2, b2, length(p_init), beta(4));
+[A1, b1] = add_L2_reg(A1, b1, beta(1));
+[A2, b2] = add_ineq(A2, b2, length(p_init));
 
 % Cost fctn and constraints
-fun = @(p)cost_fctn(p, A1, b1, gamma);
+fun = @(p)cost_fctn(p, A1, b1);
 nonlcon = @(p)ineq_const(p, A2, b2);
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 
@@ -37,10 +35,10 @@ function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
 end
 
 
-function val = cost_fctn(p, A1, b1, gamma)
+function val = cost_fctn(p, A1, b1)
 
 p = getCompVec(p);
-val = norm(abs(A1 * p).^gamma - b1);
+val = norm(abs(A1 * p) - b1);
 
 end
 
