@@ -181,7 +181,7 @@ if kgrid.dim == 2
 
         % Stimulate Disc pattern
         for i = 1:length(point_pos.x)
-            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.03 * kgrid.Nx), false);
+            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
             amp_vol = [amp_vol; amp_in(i) * ones(sum(disc(:)), 1)];
             b_mask = b_mask + disc;
         end

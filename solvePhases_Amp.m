@@ -18,7 +18,8 @@ term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 
 
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
     'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
-options.MaxFunctionEvaluations = 0.5e5;
+options.MaxFunctionEvaluations = 2.5e5;
+options.MaxIterations = 1e3;
 
 [p_opt, fval, exitflag, output] = fmincon(fun, [real(p_init); imag(p_init)], [], [], [], [], [], [], nonlcon, options);
 
