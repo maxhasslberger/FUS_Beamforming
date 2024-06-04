@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -250,17 +250,17 @@ end
 
 % Create preview plot
 if ~isscalar(medium.sound_speed)
-    plot_arg = medium.sound_speed / max(medium.sound_speed(:));
-    plot_arg = plot_arg - min(plot_arg(:));
+    preplot_arg = medium.sound_speed / max(medium.sound_speed(:));
+    preplot_arg = preplot_arg - min(preplot_arg(:));
 else
-    plot_arg = zeros(size(t_mask_ps));
+    preplot_arg = zeros(size(t_mask_ps));
 end
 % plot_arg = zeros(size(t_mask_ps));
 
-plot_arg(logical(t_mask_ps)) = 1.0;
-plot_arg(logical(b_cross)) = 1.0;
+preplot_arg(logical(t_mask_ps)) = 1.0;
+preplot_arg(logical(b_cross)) = 1.0;
 
-plot_results(kgrid, [], plot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
+plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
 
 % Create desired signal
 phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
