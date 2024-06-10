@@ -173,16 +173,15 @@ if kgrid.dim == 2
     amp_in = amp_in(order);
 
     b_mask = zeros(kgrid.Nx, kgrid.Ny);
-    b_cross = b_mask;
     
     if ~only_focus_opt
 
-        amp_vol = [];
+        amp_vol = zeros(numel(b_mask), 1);
 
         % Stimulate Disc pattern
         for i = 1:length(point_pos.x)
             disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
-            amp_vol = [amp_vol; amp_in(i) * ones(sum(disc(:)), 1)];
+            amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
             b_mask = b_mask + disc;
         end
 
@@ -195,20 +194,21 @@ if kgrid.dim == 2
 %             b_mask = b_mask + ring;
 %         end
 
+        b_cross = amp_vol;
         amp_in = amp_vol;
-        b_cross = b_mask;
     else
 
+        b_cross = b_mask;
         for i = 1:length(point_pos.x)
             b_mask(point_pos.x(i), point_pos.y(i)) = 1;
+
             b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
             b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
         end
     end
 
 else
-    only_focus_opt = true;
-
+    
     % Focal points - in Scan coordinate system
     if isempty(t1w_filename)
         point_pos_m.x = [30, 5];
@@ -232,33 +232,44 @@ else
     amp_in = amp_in(order);
 
     b_mask = zeros(kgrid.Nx, kgrid.Ny, kgrid.Nz);
-
-    for point = 1:length(point_pos.x)
-        b_mask(point_pos.x(point), point_pos.y(point), point_pos.z(point)) = 1;
-    end
-
     point_pos.slice = point_pos_m.y(1);
 
-    b_cross = b_mask;
-    for i = 1:length(point_pos.x)
-        b_cross(point_pos.x(i), point_pos.y(i), point_pos.z(i) - cross_pixRadius:point_pos.z(i) + cross_pixRadius) = 1;
-        b_cross(point_pos.x(i), :, point_pos.z(i)) = 1;
-        b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i), point_pos.z(i)) = 1;
+    if ~only_focus_opt
+
+        amp_vol = zeros(numel(b_mask), 1);
+
+        % Stimulate Disc pattern
+        for i = 1:length(point_pos.x)
+            ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(0.04 * kgrid.Nx), false);
+            amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
+            b_mask = b_mask + ball;
+        end
+
+        b_cross = amp_vol;
+        amp_in = amp_vol;
+    else
+    
+        b_cross = b_mask;
+        for i = 1:length(point_pos.x)
+            b_mask(point_pos.x(i), point_pos.y(i), point_pos.z(i)) = 1;
+
+            b_cross(point_pos.x(i), point_pos.y(i), point_pos.z(i) - cross_pixRadius:point_pos.z(i) + cross_pixRadius) = 1;
+            b_cross(point_pos.x(i), :, point_pos.z(i)) = 1;
+            b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i), point_pos.z(i)) = 1;
+        end
     end
 
 end
 
 % Create preview plot
-if ~isscalar(medium.sound_speed)
-    preplot_arg = medium.sound_speed / max(medium.sound_speed(:));
-    preplot_arg = preplot_arg - min(preplot_arg(:));
-else
-    preplot_arg = zeros(size(t_mask_ps));
-end
-% plot_arg = zeros(size(t_mask_ps));
+preplot_arg = reshape(b_cross, size(b_mask));
+preplot_arg(logical(t_mask_ps)) = max(b_cross(:));
 
-preplot_arg(logical(t_mask_ps)) = 1.0;
-preplot_arg(logical(b_cross)) = 1.0;
+if ~isscalar(medium.sound_speed)
+    skull_arg = medium.sound_speed / max(medium.sound_speed(:));
+    skull_arg = skull_arg - min(skull_arg(:));
+    preplot_arg = preplot_arg + skull_arg * max(b_cross(:));
+end
 
 plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
 
