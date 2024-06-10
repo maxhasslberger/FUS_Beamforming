@@ -176,7 +176,7 @@ if kgrid.dim == 2
     
     if ~only_focus_opt
 
-        amp_vol = zeros(numel(b_mask), 1);
+        amp_vol = -1 * ones(numel(b_mask), 1);
 
         % Stimulate Disc pattern
         for i = 1:length(point_pos.x)
@@ -195,7 +195,8 @@ if kgrid.dim == 2
 %         end
 
         b_cross = amp_vol;
-        amp_in = amp_vol;
+        b_cross(b_cross < 0.0) = 0.0;
+        amp_in = amp_vol(amp_vol >= 0);
     else
 
         b_cross = b_mask;
@@ -236,7 +237,7 @@ else
 
     if ~only_focus_opt
 
-        amp_vol = zeros(numel(b_mask), 1);
+        amp_vol = -1 * ones(numel(b_mask), 1);
 
         % Stimulate Disc pattern
         for i = 1:length(point_pos.x)
@@ -246,7 +247,8 @@ else
         end
 
         b_cross = amp_vol;
-        amp_in = amp_vol;
+        b_cross(b_cross < 0.0) = 0.0;
+        amp_in = amp_vol(amp_vol >= 0);
     else
     
         b_cross = b_mask;
@@ -279,7 +281,7 @@ phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
 b_des = amp_in .* exp(1j*phase); % only observed elements
 
 b_max = max(abs(b_des));
-b_des_pl = sidelobe_tol/100 * b_max * ones(kgrid.Nx * kgrid.Ny, 1); % entire plane
+b_des_pl = sidelobe_tol/100 * b_max * ones(numel(b_mask), 1); % entire plane
 b_des_pl(logical(b_mask)) = b_des;
 
 % set simulation input options

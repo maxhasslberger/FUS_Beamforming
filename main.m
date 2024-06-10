@@ -53,31 +53,37 @@ if ~exist('A', 'var')
         'active_ids', active_ids);
 end
 
+% if kgrid.dim == 3
+% A = ones(numel(b_mask), 1);
+% end
+
 %% Solve Inverse Problem
 tic
 
 obs_ids = reshape(logical(b_mask), numel(b_mask), 1);
 
 if only_focus_opt
+    domain_ids = 1; % To be discarded -> off-target pressures could be too large!
+
     % Preserve sonicated points only
     ip.A = A(obs_ids, :);
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
     vol_ids = true(size(ip.A, 1), 1);
     init_ids = vol_ids;
-    domain_ids = 1;
     ip.beta = 0.0;
 else
+    domain_ids = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial)
+
     % Take entire observation grid into account
     ip.A = A;
     b_ip_des = b_des_pl;
 
     vol_ids = obs_ids; % Indices that correspond to the target volume(s)
     [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask); % Indices where pressure values given
-    domain_ids = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial)
     ip.beta = 0.0;
 
-    preplot_arg = preplot_arg + b_mask_plot;
+    preplot_arg = preplot_arg + b_mask_plot * 0.5 * max(b_des_pl(:)); % TODO: fix pre-plot pressure
     plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice);
 end
 

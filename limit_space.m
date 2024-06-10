@@ -9,11 +9,11 @@ if max(sound_speed(:)) == c0 % homogeneous medium
 end
 
 skullMask = sound_speed > c0;
+skull_ids = find(skullMask);
 
 if dim == 2
     % Find the row and column indices of the skull pixels
     [rowSkull, colSkull] = find(skullMask);
-    skull_ids = find(skullMask);
 
     % Create a convex hull around the skull pixels
     if ~isempty(rowSkull)
@@ -77,7 +77,7 @@ else
         k = unique(k(:)); % only memorize ids contained in convex hull
         hullPoints = skullPointCloud(k, :); % Points forming the convex hull
     else
-        k = [];
+        hullPoints = [];
     end
     
     % Create a mask and obtain indices for the convex hull region
@@ -97,17 +97,18 @@ else
         convexHullMask = reshape(insideHull(:, 1), size(sound_speed));
     end
     opt_ids = find(convexHullMask);
+    opt_ids = setdiff(opt_ids, skull_ids);
     logical_opt_ids = false(sum(size(sound_speed)), 1);
     logical_opt_ids(opt_ids) = true;
     
     % Visualize
-    % Find the linear indices of the interior and skull pixels
-    skullIndices = find(skullMask);
-    
-    % Convert linear indices to subscripts (row, column, and depth indices)
-    [row_opt, col_opt, depth_opt] = ind2sub(size(sound_speed), opt_ids);
-    [rowSkull, colSkull, depthSkull] = ind2sub(size(sound_speed), skullIndices);
-    sliceToShow = 5; % Choose the slice to display
+%     % Find the linear indices of the interior and skull pixels
+%     skullIndices = find(skullMask);
+%     
+%     % Convert linear indices to subscripts (row, column, and depth indices)
+%     [row_opt, col_opt, depth_opt] = ind2sub(size(sound_speed), opt_ids);
+%     [rowSkull, colSkull, depthSkull] = ind2sub(size(sound_speed), skullIndices);
+%     sliceToShow = 5; % Choose the slice to display
     
     % Plot the density matrix (sliceToShow)
     %figure;
@@ -115,13 +116,15 @@ else
     %colormap(gray);
     %hold on;
     
-    % Draw the convex hull around the skull on the slice
-    if false%~isempty(k)
-        plot3(colSkull(k), rowSkull(k), 'g-', 'LineWidth', 2);
-    end
+%     % Draw the convex hull around the skull on the slice
+%     if false%~isempty(k)
+%         plot3(colSkull(k), rowSkull(k), 'g-', 'LineWidth', 2);
+%     end
 
+    convexHullMask = zeros(size(sound_speed));
+    convexHullMask(opt_ids) = 1;
     figure;
-    sliceViewer(convexHullMask + skullMask, 'SliceDirection','X')
+    sliceViewer(convexHullMask, 'SliceDirection','X')
     
     % Mark the interior region on the plot
     %plot3(col_opt, row_opt, 'r.', 'MarkerSize', 15);

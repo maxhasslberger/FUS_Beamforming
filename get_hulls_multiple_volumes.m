@@ -1,4 +1,4 @@
-function [hull_ids, labels] = get_hulls_multiple_volumes(epsilon, x, y, z)
+function [hull_ids, labels] = get_hulls_multiple_volumes(epsilon, grid_sz, stim_ids)
     % Input:
     % x - Row vector of x coordinates of the points
     % y - Column vector of y coordinates of the points
@@ -6,11 +6,13 @@ function [hull_ids, labels] = get_hulls_multiple_volumes(epsilon, x, y, z)
     % epsilon - The maximum distance between two points for one to be considered in the same cluster
 
     % Check if z is provided (3D case)
-    if nargin < 4 || isempty(z)
+    if length(grid_sz) == 2
         is3D = false;
         z = [];
+        [x, y] = ind2sub(grid_sz, stim_ids);
     else
         is3D = true;
+        [x, y, z] = ind2sub(grid_sz, stim_ids);
     end
 
     % Ensure x, y, and z are column vectors
@@ -57,7 +59,7 @@ function [hull_ids, labels] = get_hulls_multiple_volumes(epsilon, x, y, z)
 
         if size(cluster_points, 1) >= 3
             k = convhull(cluster_points);
-            k = unique(k); % only memorize unique ids contained in convex hull
+            k = unique(k(:)); % only memorize unique ids contained in convex hull
             hull_ids{i} = cluster_indices(k)';
         else
             % If less than 3 points, all points are part of the convex hull
