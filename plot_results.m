@@ -4,7 +4,7 @@ function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename
 slice_coord = 32;
 dx_scan = 1e-3;
 slice_dim = 2;
-cmap = hot();
+scale_factor = 1e-3;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -24,6 +24,7 @@ end
 %% Plot magnitude and phase of array elements
 if ~isempty(excitation)
     cmap = turbo();
+
     excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
     
     f_param = figure('color','w');
@@ -37,6 +38,9 @@ if ~isempty(excitation)
     plot(rad2deg(angle(excitation)))
     xlabel('Element #')
     ylabel('Phase (deg)')
+else
+    cmap = hot();
+    data = data / scale_factor;
 end
 
 %% Plot the pressure field 
@@ -80,14 +84,16 @@ if ~isempty(t1w_filename)
     imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(t1w_plot, -90)), [50,500]);
     hold all;
     ax2 = axes;
-    im2 = imagesc(ax2, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90)));
+    im2 = imagesc(ax2, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90)));
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
     colormap(ax2,cmap)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
-    cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
-    xlabel(cb2, 'Pressure (kPa)');
+    if ~isempty(excitation)
+        cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
+        xlabel(cb2, 'Pressure (kPa)');
+    end
     title(ax1, plot_title)
     set(ax1, 'ydir', 'normal')
     set(ax2, 'ydir', 'normal')
@@ -95,7 +101,7 @@ if ~isempty(t1w_filename)
 else
 
     ax = axes;
-    imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * 1e-3, -90))); % relative to transducer 1 face (center)
+    imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90))); % relative to transducer 1 face (center)
     
     colormap(cmap);
     xlabel('x (mm)');
@@ -108,15 +114,19 @@ else
 %     c.Label.String = 'Pressure (kPa)';
 
     set(ax,'Position',[.17 .11 .685 .815]);
-    cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
-    xlabel(cb, 'Pressure (kPa)');
+    if ~isempty(excitation)
+        cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
+        xlabel(cb, 'Pressure (kPa)');
+    end
     set(ax, 'ydir', 'normal')
 end
 
 if kgrid.dim == 3
-    sliceViewer(double(flip(imrotate(abs(data * 1e-3), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
-    cb3 = colorbar;
-    xlabel(cb3, 'Pressure (kPa)');
+    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
+    if ~isempty(excitation)
+        cb3 = colorbar;
+        xlabel(cb3, 'Pressure (kPa)');
+    end
     title(plot_title);
 end
 
