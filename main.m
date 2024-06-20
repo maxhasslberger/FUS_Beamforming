@@ -83,7 +83,8 @@ else
     [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask); % Indices where pressure values given
     ip.beta = 0.0;
 
-    preplot_arg = preplot_arg + b_mask_plot * 0.5 * max(b_des_pl(:)); % TODO: fix pre-plot pressure
+    preplot_arg = preplot_arg + b_mask_plot;
+    preplot_arg = preplot_arg / max(preplot_arg(:));
     plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice);
 end
 

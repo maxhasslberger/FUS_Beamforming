@@ -194,7 +194,7 @@ if kgrid.dim == 2
 %             b_mask = b_mask + ring;
 %         end
 
-        b_cross = amp_vol;
+        b_cross = amp_vol / max(amp_vol);
         b_cross(b_cross < 0.0) = 0.0;
         amp_in = amp_vol(amp_vol >= 0);
     else
@@ -246,7 +246,7 @@ else
             b_mask = b_mask + ball;
         end
 
-        b_cross = amp_vol;
+        b_cross = amp_vol / max(amp_vol);
         b_cross(b_cross < 0.0) = 0.0;
         amp_in = amp_vol(amp_vol >= 0);
     else
@@ -274,6 +274,7 @@ if ~isscalar(medium.sound_speed)
 end
 
 plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
+preplot_arg(logical(t_mask_ps)) = 0.0; % Do not show transducers in second pre-plot
 
 % Create desired signal
 phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
