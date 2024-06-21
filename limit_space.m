@@ -1,4 +1,4 @@
-function logical_opt_ids = limit_space(sound_speed)
+function [logical_opt_ids, logical_skull_ids] = limit_space(sound_speed)
 
 dim = numel(size(sound_speed));
 c0 = min(sound_speed(:));
@@ -9,6 +9,7 @@ if max(sound_speed(:)) == c0 % homogeneous medium
 end
 
 skullMask = sound_speed > c0;
+logical_skull_ids = reshape(skullMask, [], 1);
 skull_ids = find(skullMask);
 
 if dim == 2
@@ -98,7 +99,7 @@ else
     end
     opt_ids = find(convexHullMask);
     opt_ids = setdiff(opt_ids, skull_ids);
-    logical_opt_ids = false(sum(size(sound_speed)), 1);
+    logical_opt_ids = false(numel(sound_speed), 1);
     logical_opt_ids(opt_ids) = true;
     
     % Visualize

@@ -3,7 +3,7 @@ close all;
 
 %% Init
 f0 = 470e3; % Hz - transducer frequency
-n_dim = 3;
+n_dim = 2;
 dx = 1e-3;
 % dx = [];
 plot_dx_factor = 1;
@@ -73,7 +73,7 @@ if only_focus_opt
     init_ids = vol_ids;
     ip.beta = 0.0;
 else
-    domain_ids = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial)
+    [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial)
 
     % Take entire observation grid into account
     ip.A = A;
@@ -90,7 +90,7 @@ end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
-ip.p = solvePhasesOnly(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
+ip.p = solvePhasesOnly(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
 % ip.p = p_init;
 
 ip.t_solve = toc;
@@ -113,7 +113,7 @@ else
     grid_sizeP = grid_size;
     dx_factorP = dx_factor1;
 
-    ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
+    ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
     ip.b_gt = A * ip.p_gt;
 end

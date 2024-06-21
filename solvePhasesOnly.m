@@ -1,8 +1,8 @@
-function p = solvePhasesOnly(A, b, domain_ids, obs_ids, p_init, init_ids, beta, mask2el, el_per_t, via_abs)
+function p = solvePhasesOnly(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, mask2el, el_per_t, via_abs)
 p_init = double(p_init);
 
 % Separate A and b
-[A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, domain_ids, obs_ids, init_ids);
+[A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, domain_ids | skull_ids, vol_ids, init_ids);
 clear A;
 
 % Add regularization and constraints

@@ -19,6 +19,7 @@ scan_focus_z = [-27, -19];
 des_pressures = [300, 300]; % kPa
 
 sidelobe_tol = 50; % percent
+max_skull_pressure = 1e3; % kPa
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
@@ -215,13 +216,12 @@ else
         point_pos_m.x = [30, 5];
         point_pos_m.y = [10, 10];
         point_pos_m.z = [-30, 0];
-        amp_in = des_pressures' * 1e3; % Pa
     else
         point_pos_m.x = scan_focus_x;
         point_pos_m.y = [slice_idx_2D, slice_idx_2D];
         point_pos_m.z = scan_focus_z;
-        amp_in = des_pressures' * 1e3; % Pa
     end
+    amp_in = des_pressures' * 1e3; % Pa
 
     point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
     point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
@@ -282,8 +282,9 @@ phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
 b_des = amp_in .* exp(1j*phase); % only observed elements
 
 b_max = max(abs(b_des));
-b_des_pl = sidelobe_tol/100 * b_max * ones(numel(b_mask), 1); % entire plane
-b_des_pl(logical(b_mask)) = b_des;
+b_des_pl = sidelobe_tol/100 * b_max * ones(numel(b_mask), 1); % Entire plane max amp
+b_des_pl(logical(b_mask)) = b_des; % Target amp
+b_des_pl(logical(medium.sound_speed > min(medium.sound_speed(:)))) = max_skull_pressure * 1e3; % Skull max amp
 
 % set simulation input options
 input_args = {'PMLSize', 10, 'PMLInside', true, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
