@@ -102,11 +102,17 @@ ip.b = reshape(ip.b, size(kgrid.k));
 
 if do_ground_truth
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
-    active_idsP, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, input_argsP] = ...
+    ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 else
+    kgridP = kgrid; 
+    plot_offsetP = plot_offset;
+    point_posP = point_pos;
+    grid_sizeP = grid_size;
+    dx_factorP = dx_factor1;
+
     ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
     ip.b_gt = A * ip.p_gt;
@@ -133,10 +139,10 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, 'Inverse Problem 1', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factor1, save_results, current_datetime, 'slice', point_posP.slice);
+plot_results(kgrid, ip.p, ip.b, 'Inverse Problem 1', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, current_datetime, 'slice', point_posP.slice);
 
 if do_ground_truth
-    plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factor1, save_results, current_datetime, 'slice', point_posP.slice);
+    plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, current_datetime, 'slice', point_posP.slice);
     
     err = abs(ip.b) - abs(ip.b_gt);
     plot_results(kgridP, [], err, 'Difference', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, current_datetime, 'slice', point_posP.slice);
@@ -144,7 +150,7 @@ if do_ground_truth
     histogram(err(:))
     xlabel("Pressure Deviation (Pa)")
 else
-    plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factor1, save_results, current_datetime, 'slice', point_posP.slice);
+    plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, current_datetime, 'slice', point_posP.slice);
 end
 
 %% Metrics evaluation
