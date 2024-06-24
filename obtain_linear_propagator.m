@@ -26,7 +26,7 @@ if islogical(get_current_A)
 
     if ~get_current_A
     
-        if exist(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat"), "file")
+        if exist(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat"), "file") % Start with tmp matrix if prior run interrupted
             disp("Loading precomputed Tmp Matrix...")
             A = load(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat")).A;
             disp("Tmp Matrix loaded successfully!")
@@ -36,7 +36,7 @@ if islogical(get_current_A)
             i_start = 1;
         end
     
-        if isempty(karray_t)
+        if isempty(karray_t) % Use point sources as transducers
 
             use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed(:));
         
@@ -73,7 +73,7 @@ if islogical(get_current_A)
                 end
             end
         
-        else
+        else % Use karray class
             if ~exist("A", "var")
                 A = zeros(kgrid.total_grid_points, karray_t.number_elements, 'single');
             end

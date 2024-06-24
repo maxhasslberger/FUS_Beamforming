@@ -16,12 +16,12 @@ ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
 sidelobe_tol = 50; % percent of max amplitude
 
 % Simulation config
-only_focus_opt = false; % Optimize only focal spots or entire grid
+only_focus_opt = false; % Optimize only for focal spots or entire observation domain
 use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 get_current_A = "A_2D_2Trs_75el_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
-do_time_reversal = false; % Phase retrieval with time reversal as a comparison
-do_ground_truth = false; % Ground truth k-wave simulation
+do_time_reversal = false; % Phase retrieval with time reversal as comparison
+do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
 
 if isempty(dx)
@@ -73,7 +73,7 @@ if only_focus_opt
     init_ids = vol_ids;
     ip.beta = 0.0;
 else
-    [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial)
+    [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial and skull)
 
     % Take entire observation grid into account
     ip.A = A;
@@ -83,6 +83,7 @@ else
     [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask); % Indices where pressure values given
     ip.beta = 0.0;
 
+    % New preplot with init point arg
     preplot_arg = preplot_arg + b_mask_plot;
     preplot_arg = preplot_arg / max(preplot_arg(:));
     plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice);
@@ -97,28 +98,23 @@ ip.t_solve = toc;
 
 %% Obtain Acoustic profile
 ip.b = A * ip.p;
-% ip.b(~domain_ids) = 0.0;
 ip.b = reshape(ip.b, size(kgrid.k));
+% ip.b(~domain_ids) = 0.0;
 
-if do_ground_truth
+if do_ground_truth && n_dim == 3 % Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
+    ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
 else
-    kgridP = kgrid; 
-    plot_offsetP = plot_offset;
-    point_posP = point_pos;
-    grid_sizeP = grid_size;
-    dx_factorP = dx_factor1;
-
     ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
     ip.b_gt = A * ip.p_gt;
+    ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
 end
 % ip.b_gt(~domain_ids) = 0.0;
-ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
 
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
@@ -128,7 +124,7 @@ if save_results
         ip.A = []; % A might be very large...
     end
     save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
-        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "init_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "b_ip_des", "point_posP", "point_pos_m", ...
+        "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "init_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "b_ip_des", "point_pos", "point_pos_m", ...
         "only_focus_opt", "input_args");
 end
 
@@ -141,7 +137,7 @@ end
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, 'Inverse Problem 1', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
 
-if do_ground_truth
+if do_ground_truth && n_dim == 3 % Only supported in 3D at the moment
     plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, current_datetime, 'slice', point_posP.slice);
     
     if plot_dx_factor == 1
@@ -213,10 +209,10 @@ else
     disp(max(offTar_real_ip_gt) * 1e-3)
 end
 
-point_coord = [-18, -27];
-point_val_ip = abs(ip.b(plot_offsetP(1) + point_coord(1), plot_offsetP(3) + point_coord(2)));
-point_val_ip_gt = abs(ip.b_gt(plot_offsetP(1) + point_coord(1), plot_offsetP(3) + point_coord(2)));
-
-fprintf("\nInverse Problem sel. Point Pressure (kPa):\n")
-disp(point_val_ip * 1e-3)
-disp(point_val_ip_gt * 1e-3)
+% point_coord = [-18, -27];
+% point_val_ip = abs(ip.b(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
+% point_val_ip_gt = abs(ip.b_gt(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));
+% 
+% fprintf("\nInverse Problem sel. Point Pressure (kPa):\n")
+% disp(point_val_ip * 1e-3)
+% disp(point_val_ip_gt * 1e-3)

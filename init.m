@@ -6,7 +6,7 @@ function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps
 t1w_filename = [];
 ct_filename = [];
 plot_offset = [96, 127, 126] + 1; % Offset to Scan center
-dx_scan = 1e-3; % m - Scan resolution
+dx_scan = 1e-3; % m - MR Scan resolution
 
 % Transducer and Foci init
 t1_pos = [-59, 60]; % scan dims [x, z]
@@ -49,7 +49,7 @@ if ~isempty(varargin)
 end
 
 if n_dim == 2
-    grid_size = [192, 256] * 1e-3; % m in [x, y] respectively
+    grid_size = [192, 256] * 1e-3; % m in [x, z] respectively
 else
     if isempty(t1w_filename)
         grid_size = [140, 100, 140] * 1e-3; % m in [x, y, z] respectively
@@ -66,11 +66,10 @@ end
 if n_dim == 3
     if isempty(t1w_filename)
         plot_offset = grid_size / dx_scan / 2; % Offset to center
-%         dx_scan = kgrid.dx;
     end
 
-    tr_offset_3D = (plot_offset * dx_scan - grid_size / 2 - kgrid.dx)';
-    grid_size = [grid_size(1), grid_size(3)];
+    tr_offset_karr = (plot_offset * dx_scan - grid_size / 2 - kgrid.dx)'; % Compute offset for karray transducers
+    grid_size = [grid_size(1), grid_size(3)]; % plane size for plots
 end
 
 dx_factor = dx_scan / kgrid.dx;
@@ -142,7 +141,7 @@ else
         t2_rot = [0, t_rot(2), 180]'; % deg
     end
 
-    t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_3D;
+    t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_karr;
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
     t_rot = [t1_rot, t2_rot];
     active_tr_ids = [1, 2];

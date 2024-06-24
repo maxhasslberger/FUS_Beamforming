@@ -1,6 +1,6 @@
 function t_mask = create_linear_array(kgrid, num_elements, x_offset, y_offset, spacing, rot)
 
-if kgrid.dim == 2
+if kgrid.dim == 2 % Create linear transducer array with approx. num_elements elements
 
     t_mask = zeros(kgrid.Nx, kgrid.Ny);
 

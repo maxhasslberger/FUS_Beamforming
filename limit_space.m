@@ -45,25 +45,11 @@ if dim == 2
     
     % Mark the interior region on the plot
     plot(col_opt, row_opt, 'r.', 'MarkerSize', 15);
-
-    % Mark the skull region on the plot
-    %plot(colSkull, rowSkull, 'b.', 'MarkerSize', 15);
     
     % Add labels and title for better understanding
     xlabel('Column Index');
     ylabel('Row Index');
     title('Density Matrix with Skull and Interior Region Encapsulated by Convex Hull');
-    
-%     % Display the results
-%     disp('Row indices of pixels inside the convex hull:');
-%     disp(row_opt);
-%     disp('Column indices of pixels inside the convex hull:');
-%     disp(col_opt);
-%     
-%     disp('Row indices of skull pixels:');
-%     disp(rowSkull);
-%     disp('Column indices of skull pixels:');
-%     disp(colSkull);
 else
     % Find the row, column, and depth indices of the skull pixels
     [rowSkull, colSkull, depthSkull] = ind2sub(size(sound_speed), find(skullMask));
@@ -102,56 +88,12 @@ else
     logical_opt_ids = false(numel(sound_speed), 1);
     logical_opt_ids(opt_ids) = true;
     
-    % Visualize
-%     % Find the linear indices of the interior and skull pixels
-%     skullIndices = find(skullMask);
-%     
-%     % Convert linear indices to subscripts (row, column, and depth indices)
-%     [row_opt, col_opt, depth_opt] = ind2sub(size(sound_speed), opt_ids);
-%     [rowSkull, colSkull, depthSkull] = ind2sub(size(sound_speed), skullIndices);
-%     sliceToShow = 5; % Choose the slice to display
-    
-    % Plot the density matrix (sliceToShow)
-    %figure;
-    %imagesc(sound_speed(:,:,sliceToShow));
-    %colormap(gray);
-    %hold on;
-    
-%     % Draw the convex hull around the skull on the slice
-%     if false%~isempty(k)
-%         plot3(colSkull(k), rowSkull(k), 'g-', 'LineWidth', 2);
-%     end
-
+    % Visualize the masked region
     convexHullMask = zeros(size(sound_speed));
     convexHullMask(opt_ids) = 1;
     figure;
     sliceViewer(convexHullMask, 'SliceDirection','X')
     
-    % Mark the interior region on the plot
-    %plot3(col_opt, row_opt, 'r.', 'MarkerSize', 15);
-
-    % Mark the skull region on the plot
-    %plot3(colSkull, rowSkull, 'b.', 'MarkerSize', 15);
-    
-    % Add labels and title for better understanding
-    %xlabel('Column Index');
-    %ylabel('Row Index');
-    %title('Density Matrix (Slice) with Skull and Interior Regions Encapsulated by Convex Hull');
-    
-%     % Display the results
-%     disp('Row indices of pixels inside the convex hull:');
-%     disp(row_opt);
-%     disp('Column indices of pixels inside the convex hull:');
-%     disp(col_opt);
-%     disp('Depth indices of pixels inside the convex hull:');
-%     disp(depth_opt);
-%     
-%     disp('Row indices of skull pixels:');
-%     disp(rowSkull);
-%     disp('Column indices of skull pixels:');
-%     disp(colSkull);
-%     disp('Depth indices of skull pixels:');
-%     disp(depthSkull);
 end
     
 
@@ -163,36 +105,3 @@ function inside = isInsideConvexHull(dt, points)
     inside = ~isnan(in);
 end
 
-function inside = pointInTetrahedron(points, tetra)
-    % Create matrices for the point-in-tetrahedron test
-    A = tetra(1, :);
-    B = tetra(2, :);
-    C = tetra(3, :);
-    D = tetra(4, :);
-    
-    % Compute vectors
-    AB = B - A;
-    AC = C - A;
-    AD = D - A;
-    AP = points - A;
-    
-    % Compute dot products
-    AB_AB = dot(AB, AB, 2);
-    AB_AC = dot(AB, AC, 2);
-    AB_AD = dot(AB, AD, 2);
-    AB_AP = dot(AB, AP, 2);
-    AC_AC = dot(AC, AC, 2);
-    AC_AD = dot(AC, AD, 2);
-    AC_AP = dot(AC, AP, 2);
-    AD_AD = dot(AD, AD, 2);
-    AD_AP = dot(AD, AP, 2);
-    
-    % Compute volumes
-    denom = AB_AB * (AC_AC * AD_AD - AC_AD * AC_AD) + AB_AC * (AB_AC * AD_AD - AB_AD * AC_AD) + AB_AD * (AB_AC * AC_AD - AB_AC * AD_AD);
-    v = (AC_AC * AD_AD - AC_AD * AC_AD) * AB_AP + (AB_AC * AD_AD - AB_AD * AC_AD) * AC_AP + (AB_AC * AC_AD - AB_AD * AC_AC) * AD_AP;
-    w = (AB_AB * AD_AD - AB_AD * AB_AD) * AC_AP + (AB_AB * AC_AD - AB_AC * AB_AD) * AD_AP + (AB_AC * AB_AD - AB_AB * AC_AD) * AB_AP;
-    u = (AB_AB * (AC_AC * AD_AP - AC_AD * AC_AP) + AB_AC * (AB_AC * AD_AP - AB_AD * AC_AP) + AB_AD * (AB_AC * AC_AP - AB_AB * AD_AP));
-    
-    % Check if point is inside the tetrahedron
-    inside = u >= 0 & v >= 0 & w >= 0 & (u + v + w) <= denom;
-end
