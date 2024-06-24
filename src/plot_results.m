@@ -131,7 +131,7 @@ if kgrid.dim == 3
 end
 
 if save_results
-    filename = fullfile("Results", current_datetime + "_" + plot_title);
+    filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
     export_fig(f_param, filename + "_param.pdf");
     saveas(f_data, filename + "_data.pdf");
 end

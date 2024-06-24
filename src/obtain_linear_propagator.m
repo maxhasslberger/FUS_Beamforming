@@ -26,9 +26,9 @@ if islogical(get_current_A)
 
     if ~get_current_A
     
-        if exist(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat"), "file") % Start with tmp matrix if prior run interrupted
+        if exist(fullfile("..", "Lin_Prop_Matrices", tmp_filename + ".mat"), "file") % Start with tmp matrix if prior run interrupted
             disp("Loading precomputed Tmp Matrix...")
-            A = load(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat")).A;
+            A = load(fullfile("..", "Lin_Prop_Matrices", tmp_filename + ".mat")).A;
             disp("Tmp Matrix loaded successfully!")
 
             i_start = find(all(A==0), 1);
@@ -69,7 +69,7 @@ if islogical(get_current_A)
                 A(:, i) = a_coli;
 
                 if mod(i, save_iter) == 0
-                    save(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat"), "A", "-v7.3")
+                    save(fullfile("..", "Lin_Prop_Matrices", tmp_filename + ".mat"), "A", "-v7.3")
                 end
             end
         
@@ -94,23 +94,23 @@ if islogical(get_current_A)
 
                 karray_tmp.removeElement(1);
                 if mod(i, save_iter) == 0
-                    save(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat"), "A", "-v7.3")
+                    save(fullfile("..", "Lin_Prop_Matrices", tmp_filename + ".mat"), "A", "-v7.3")
                 end
             end
         end
         
-        delete(fullfile("Lin_Prop_Matrices", tmp_filename + ".mat")) % delete tmp file
-        save(fullfile("Lin_Prop_Matrices", std_filename + ".mat"), "A", "-v7.3")
+        delete(fullfile("..", "Lin_Prop_Matrices", tmp_filename + ".mat")) % delete tmp file
+        save(fullfile("..", "Lin_Prop_Matrices", std_filename + ".mat"), "A", "-v7.3")
         
     else
         disp("Loading precomputed Propagation Matrix...")
-        A = load(fullfile("Lin_Prop_Matrices", std_filename + ".mat")).A;
+        A = load(fullfile("..", "Lin_Prop_Matrices", std_filename + ".mat")).A;
         disp("Propagation Matrix loaded successfully!")
     end
 
 else
     disp("Loading precomputed Propagation Matrix...")
-    A = load(fullfile("Lin_Prop_Matrices", string(get_current_A) + ".mat")).A;
+    A = load(fullfile("..", "Lin_Prop_Matrices", string(get_current_A) + ".mat")).A;
     disp("Propagation Matrix loaded successfully!")
 end
 

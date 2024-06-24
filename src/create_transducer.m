@@ -1,8 +1,8 @@
 function [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids)
 
 % Init
-element_pos = load(fullfile("Array_Positions", t_name + ".mat")).ElementPosition'; % flat transducer array centered at [0, 0, 0] along the xy-plane
-sparsity_ids = load(fullfile("Array_Positions", sparsity_name + ".mat")).numbers; % sparsity ids -> element_pos
+element_pos = load(fullfile("..", "Array_Positions", t_name + ".mat")).ElementPosition'; % flat transducer array centered at [0, 0, 0] along the xy-plane
+sparsity_ids = load(fullfile("..", "Array_Positions", sparsity_name + ".mat")).numbers; % sparsity ids -> element_pos
 el_sz = [3, 3] * 1e-3; % dimensions of one array element
 
 element_pos = element_pos(:, sparsity_ids);

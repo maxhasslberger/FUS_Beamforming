@@ -8,8 +8,8 @@ dx = 1e-3;
 % dx = [];
 plot_dx_factor = 1;
 
-t1w_filename = fullfile('Scans', 'dummy_t1w.nii');
-ct_filename = fullfile('Scans', 'dummy_pseudoCT.nii');
+t1w_filename = fullfile('..', 'Scans', 'dummy_t1w.nii');
+ct_filename = fullfile('..', 'Scans', 'dummy_pseudoCT.nii');
 % t1w_filename = [];
 % ct_filename = [];
 
@@ -111,6 +111,7 @@ if do_ground_truth && n_dim == 3 % Only supported in 3D at the moment
 else
     ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
+%     ip.p_gt = p_init;
     ip.b_gt = A * ip.p_gt;
     ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
 end
@@ -123,7 +124,7 @@ if save_results
     if ~only_focus_opt
         ip.A = []; % A might be very large...
     end
-    save(fullfile("Results", current_datetime + "_" + res_filename + ".mat"), ...
+    save(fullfile("..", "Results", current_datetime + "_" + res_filename + ".mat"), ...
         "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "init_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "b_ip_des", "point_pos", "point_pos_m", ...
         "only_focus_opt", "input_args");
 end

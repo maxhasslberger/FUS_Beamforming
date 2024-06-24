@@ -2,7 +2,7 @@ clear;
 
 %% Load desired Results file
 in_filename = "20240327204947_results";
-load(fullfile("..", "Results", in_filename + ".mat"));
+load(fullfile("..", "..", "Results", in_filename + ".mat"));
 
 for i = 1:size(mask2el, 2) % for each transducer
 
@@ -16,5 +16,5 @@ for i = 1:size(mask2el, 2) % for each transducer
     record_datetime = string(in_filename(1:14));
     out_filename = "tr" + string(i);
     
-    dlmwrite(fullfile("..", "Transducer_Delay_Files", record_datetime + "_" + out_filename + ".txt"), ip_delays, 'delimiter', ' ');
+    dlmwrite(fullfile("..", "..", "Transducer_Delay_Files", record_datetime + "_" + out_filename + ".txt"), ip_delays, 'delimiter', ' ');
 end

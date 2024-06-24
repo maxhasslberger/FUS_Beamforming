@@ -1,6 +1,6 @@
 % Function to adapt the spacing for transducer arrayX to read the mask in karray class
 
-element_pos_orig = load(fullfile('..\Array_Positions\std_orig.mat')).ElementPosition';
+element_pos_orig = load(fullfile('..\..\Array_Positions\std_orig.mat')).ElementPosition';
 element_pos = round(element_pos_orig, 3);
 shiftx = zeros(1, length(element_pos));
 shifty = zeros(1, length(element_pos));
@@ -16,4 +16,4 @@ figure
 scatter(element_pos(1,:), element_pos(2,:), 'filled')
 
 ElementPosition = element_pos';
-save(fullfile('..\Array_Positions\std.mat'), "ElementPosition")
+save(fullfile('..\..\Array_Positions\std.mat'), "ElementPosition")
