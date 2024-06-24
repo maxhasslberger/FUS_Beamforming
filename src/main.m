@@ -2,7 +2,7 @@ clear;
 close all;
 
 %% Init
-f0 = 470e3; % Hz - transducer frequency
+f0 = [470] * 1e3; % Hz - transducer frequency
 n_dim = 2;
 dx = 1e-3;
 % dx = [];
@@ -32,16 +32,16 @@ end
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor1, preplot_arg, input_args] = ...
-    init(f0, n_dim, dx_factor, ...
+    init(max(f0), n_dim, dx_factor, ...
     'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
 if do_time_reversal
-    tr.p = sim_exe(kgrid, medium, sensor, f0, b_des, b_mask, t_mask_ps, false, input_args);
+    tr.p = sim_exe(kgrid, medium, sensor, max(f0), b_des, b_mask, t_mask_ps, false, input_args);
     % tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
     tr.p = conj(tr.p); % Var amplitude
-    tr.b = sim_exe(kgridP, mediumP, sensorP, f0, tr.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
+    tr.b = sim_exe(kgridP, mediumP, sensorP, max(f0), tr.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
 else
     tr = [];
 end
@@ -49,8 +49,11 @@ end
 %% Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 if ~exist('A', 'var')
-    A = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
-        'active_ids', active_ids);
+    A = [];
+    for f = f0
+        A = [A, obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
+            'active_ids', active_ids)];
+    end
 end
 
 % if kgrid.dim == 3
@@ -92,6 +95,7 @@ end
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
 ip.p = solvePhasesOnly(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
+% ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
 ip.t_solve = toc;
@@ -109,7 +113,7 @@ if do_ground_truth && n_dim == 3 % Only supported in 3D at the moment
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
     ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
 else
-    ip.p_gt = solvePhases_Amp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
+    ip.p_gt = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
 %     ip.p_gt = p_init;
     ip.b_gt = A * ip.p_gt;

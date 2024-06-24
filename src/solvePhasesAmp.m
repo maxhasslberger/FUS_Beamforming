@@ -1,4 +1,4 @@
-function p = solvePhases_Amp(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta)
+function p = solvePhasesAmp(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta)
 p_init = double(p_init);
 
 % Separate A and b
