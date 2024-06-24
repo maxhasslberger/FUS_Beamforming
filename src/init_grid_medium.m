@@ -137,8 +137,4 @@ t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / c0;
 Nt = round(t_end / dt);
 kgrid.setTime(Nt, dt);
 
-% t_end = 70e-6; % s
-% kgrid.makeTime(medium.sound_speed, [], t_end);
-% kgrid.makeTime(medium.sound_speed);
-
 end
