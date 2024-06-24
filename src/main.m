@@ -105,7 +105,7 @@ ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
 % ip.b(~domain_ids) = 0.0;
 
-if do_ground_truth && n_dim == 3 % Only supported in 3D at the moment
+if do_ground_truth % For different resolution: Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
@@ -140,10 +140,11 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, 'Inverse Problem 1', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
 
-if do_ground_truth && n_dim == 3 % Only supported in 3D at the moment
-    plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, current_datetime, 'slice', point_posP.slice);
+if do_ground_truth % For different resolution: Only supported in 3D at the moment
+    plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
+        current_datetime, 'slice', point_posP.slice);
     
     if plot_dx_factor == 1
         err = abs(ip.b) - abs(ip.b_gt);
@@ -153,7 +154,8 @@ if do_ground_truth && n_dim == 3 % Only supported in 3D at the moment
         xlabel("Pressure Deviation (Pa)")
     end
 else
-    plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+    plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
+        current_datetime, 'slice', point_pos.slice);
 end
 
 %% Metrics evaluation
