@@ -70,6 +70,20 @@ if only_focus_opt
 
     % Preserve sonicated points only
     ip.A = A(obs_ids, :); % Question --------> What is ip?
+    % -> ip stands for inverse problem, the name of the method we're using
+    % to compute array phases (and amplitudes). We used to compare it with
+    % time reversal (tr) which is another method with different properties.
+    % The struct variable ip contains all the data associated with the
+    % method (ip.A -> propagation matrix; ip.p -> excitation vector that
+    % contains all transducer phases and amplitudes (as complex numbers);
+    % ip.b -> solution vector = acoustic pressure distribution in the
+    % entire observation domain; ip.*_gt -> ground truth variables to
+    % confirm the results in a higher spatial resolution. If ground_truth =
+    % false we use the _gt variables to compare different inverse problems
+    % against each other. But for you solvePhasesOnly is not really
+    % relevant. Same for only_focus_opt, just assume it to be false for
+    % now.
+
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
     vol_ids = true(size(ip.A, 1), 1);

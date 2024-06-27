@@ -22,6 +22,12 @@ options.MaxIterations = 1e3;
 [p_opt, fval, exitflag, output] = fmincon(fun, [real(p_init); imag(p_init)], [], [], [], [], [], [], nonlcon, options);
 
 p = getCompVec(p_opt); % What does the getCompVec function do?
+% The matlab optimizers cannot deal with complex numbers as input variables
+% which is why we always need to separate the real and imaginary part when
+% we pass p (see fmincon in line 22 -> the init vector is separated in real
+% and imaginary part and then stacked). That's why every time we dive into
+% the cost function and after the optimization, we need to reconvert p into
+% a complex number.
 
 end
 
