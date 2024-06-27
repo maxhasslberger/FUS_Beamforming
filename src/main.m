@@ -98,7 +98,7 @@ ip.p = solvePhasesOnly(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, i
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
-ip.t_solve = toc;
+ip.t_solve = toc; % 
 
 %% Obtain Acoustic profile
 ip.b = A * ip.p;
