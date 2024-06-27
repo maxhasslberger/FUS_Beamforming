@@ -112,14 +112,18 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
 
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
     ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
+
+    % [domain_ids_gt, skull_ids_gt] = limit_space(mediumP.sound_speed);
+    % ip.b_gt(~domain_ids_gt) = 0.0;
 else
     ip.p_gt = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
 %     ip.p_gt = p_init;
     ip.b_gt = A * ip.p_gt;
     ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
+
+    % ip.b_gt(~domain_ids) = 0.0;
 end
-% ip.b_gt(~domain_ids) = 0.0;
 
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
