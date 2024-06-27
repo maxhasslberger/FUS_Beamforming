@@ -21,7 +21,7 @@ options.MaxIterations = 1e3;
 
 [p_opt, fval, exitflag, output] = fmincon(fun, [real(p_init); imag(p_init)], [], [], [], [], [], [], nonlcon, options);
 
-p = getCompVec(p_opt);
+p = getCompVec(p_opt); % What does the getCompVec function do?
 
 end
 

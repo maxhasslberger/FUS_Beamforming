@@ -69,7 +69,7 @@ if only_focus_opt
     domain_ids = 1; % To be discarded -> off-target pressures could be too large!
 
     % Preserve sonicated points only
-    ip.A = A(obs_ids, :);
+    ip.A = A(obs_ids, :); % Question --------> What is ip?
     b_ip_des = b_des; % = b_des_pl(obs_ids)
 
     vol_ids = true(size(ip.A, 1), 1);
