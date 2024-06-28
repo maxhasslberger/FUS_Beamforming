@@ -67,6 +67,7 @@ obs_ids = reshape(logical(b_mask), numel(b_mask), 1);
 
 if only_focus_opt
     domain_ids = 1; % To be discarded -> off-target pressures could be too large!
+    skull_ids = 1;
 
     % Preserve sonicated points only
     ip.A = A(obs_ids, :);
