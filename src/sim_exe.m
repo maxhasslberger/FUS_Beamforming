@@ -32,9 +32,9 @@ sensor.mask = sensor_mask;
 %% Run Acoustic Simulation
 % Linux (in binaries folder): chmod +x ./kspaceFirstOrder3D-OMP or chmod +x ./kspaceFirstOrder-OMP
 if kgrid.dim == 2
-    sensor_data = kspaceFirstOrder2DC(kgrid, medium, source, sensor, input_args{:});
+    sensor_data = kspaceFirstOrder2D(kgrid, medium, source, sensor, input_args{:});
 else
-    sensor_data = kspaceFirstOrder3DC(kgrid, medium, source, sensor, input_args{:});
+    sensor_data = kspaceFirstOrder3D(kgrid, medium, source, sensor, input_args{:});
 end
 
 p = post_processing(kgrid, f0, sensor_data, final_sim);
