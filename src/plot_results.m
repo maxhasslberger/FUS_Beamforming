@@ -5,6 +5,7 @@ slice_coord = 32;
 dx_scan = 1e-3;
 slice_dim = 2;
 scale_factor = 1e-3;
+plot_colorbar = true;
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -15,6 +16,8 @@ if ~isempty(varargin)
                 dx_scan = varargin{arg_idx+1};
             case 'slice_dim'
                 slice_dim = varargin{arg_idx+1};
+            case 'colorbar'
+                plot_colorbar = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -23,8 +26,6 @@ end
 
 %% Plot magnitude and phase of array elements
 if ~isempty(excitation)
-    cmap = turbo();
-
     excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
     
     f_param = figure('color','w');
@@ -38,9 +39,6 @@ if ~isempty(excitation)
     plot(rad2deg(angle(excitation)))
     xlabel('Element #')
     ylabel('Phase (deg)')
-else
-    cmap = hot();
-    data = data / scale_factor;
 end
 
 %% Plot the pressure field 
@@ -50,6 +48,12 @@ if kgrid.dim == 2
 else
     slice_p = round((plot_offset(2) + slice_coord) * dx_factor); % p space
     p_data = squeeze(abs(data(:,slice_p,:)));
+end
+
+if plot_colorbar
+    cmap = turbo();
+else
+    cmap = hot();
 end
 
 % Get Ticks
@@ -90,7 +94,7 @@ if ~isempty(t1w_filename)
     colormap(ax1,'gray')
     colormap(ax2,cmap)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
-    if ~isempty(excitation)
+    if plot_colorbar
         cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
         xlabel(cb2, 'Pressure (kPa)');
     end
@@ -114,7 +118,7 @@ else
 %     c.Label.String = 'Pressure (kPa)';
 
     set(ax,'Position',[.17 .11 .685 .815]);
-    if ~isempty(excitation)
+    if plot_colorbar
         cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
         xlabel(cb, 'Pressure (kPa)');
     end
@@ -123,7 +127,7 @@ end
 
 if kgrid.dim == 3
     sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
-    if ~isempty(excitation)
+    if plot_colorbar
         cb3 = colorbar;
         xlabel(cb3, 'Pressure (kPa)');
     end

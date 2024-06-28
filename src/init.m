@@ -139,6 +139,10 @@ else
         t1_rot = [0, t_rot(1), 180]'; % deg
         t2_pos = [t2_pos(1), slice_idx_2D, t2_pos(2)]';
         t2_rot = [0, t_rot(2), 180]'; % deg
+%         t1_pos = [4, 55, 87]';
+%         t1_rot = [45, 0, 180]'; % deg
+%         t2_pos = [4, -45, 87]';
+%         t2_rot = [-45, 0, 180]'; % deg
     end
 
     t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_karr;
@@ -272,7 +276,7 @@ if ~isscalar(medium.sound_speed)
     preplot_arg = preplot_arg + skull_arg * max(b_cross(:));
 end
 
-plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
+plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice, 'colorbar', false);
 preplot_arg(logical(t_mask_ps)) = 0.0; % Do not show transducers in second pre-plot
 
 % Create desired signal
