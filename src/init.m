@@ -139,6 +139,10 @@ else
         t1_rot = [0, t_rot(1), 180]'; % deg
         t2_pos = [t2_pos(1), slice_idx_2D, t2_pos(2)]';
         t2_rot = [0, t_rot(2), 180]'; % deg
+%         t1_pos = [4, 55, 87]';
+%         t1_rot = [45, 0, 180]'; % deg
+%         t2_pos = [4, -45, 87]';
+%         t2_rot = [-45, 0, 180]'; % deg
     end
 
     t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_karr;
