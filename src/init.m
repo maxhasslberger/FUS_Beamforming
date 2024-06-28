@@ -272,7 +272,7 @@ if ~isscalar(medium.sound_speed)
     preplot_arg = preplot_arg + skull_arg * max(b_cross(:));
 end
 
-plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice)
+plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice, 'colorbar', false);
 preplot_arg(logical(t_mask_ps)) = 0.0; % Do not show transducers in second pre-plot
 
 % Create desired signal

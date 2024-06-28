@@ -13,7 +13,7 @@ ct_filename = fullfile('..', 'Scans', 'dummy_pseudoCT.nii');
 % t1w_filename = [];
 % ct_filename = [];
 
-sidelobe_tol = 50; % percent of max amplitude
+sidelobe_tol = 49; % percent of max amplitude
 
 % Simulation config
 only_focus_opt = false; % Optimize only for focal spots or entire observation domain
@@ -21,7 +21,7 @@ use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (
 
 get_current_A = "A_2D_2Trs_75el_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
-do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
+do_ground_truth = true; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
 
 if isempty(dx)
@@ -89,12 +89,13 @@ else
     % New preplot with init point arg
     preplot_arg = preplot_arg + b_mask_plot;
     preplot_arg = preplot_arg / max(preplot_arg(:));
-    plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice);
+    plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice, ...
+        'colorbar', false);
 end
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
-ip.p = solvePhasesOnly(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
+ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
@@ -116,7 +117,7 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
     % [domain_ids_gt, skull_ids_gt] = limit_space(mediumP.sound_speed);
     % ip.b_gt(~domain_ids_gt) = 0.0;
 else
-    ip.p_gt = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
+    ip.p_gt = solvePhasesOnly(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
 %     ip.p_gt = p_init;
     ip.b_gt = A * ip.p_gt;
@@ -141,14 +142,20 @@ end
 if do_time_reversal
     % tr.b(~domain_ids) = 0.0;
     plot_results(kgrid, tr.p, tr.b, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+    plot_results(kgrid, [], abs(tr.b) > max(b_des) / 2, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, ...
+        'slice', point_pos.slice);
 end
 
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, [], abs(ip.b) > max(b_des) / 2, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, ...
+    'slice', point_pos.slice, 'colorbar', true); % plot mask with pressure above off-target limit
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
-    plot_results(kgridP, ip.p, ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
+    plot_results(kgridP, [], ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
         current_datetime, 'slice', point_posP.slice);
+    plot_results(kgridP, [], abs(ip.b_gt) > max(b_des) / 2, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
+        current_datetime, 'slice', point_posP.slice, 'colorbar', true);
     
     if plot_dx_factor == 1
         err = abs(ip.b) - abs(ip.b_gt);
@@ -160,6 +167,8 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
 else
     plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
         current_datetime, 'slice', point_pos.slice);
+    plot_results(kgrid, [], abs(ip.b_gt) > max(b_des) / 2, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
+        current_datetime, 'slice', point_pos.slice, 'colorbar', true);
 end
 
 %% Metrics evaluation
