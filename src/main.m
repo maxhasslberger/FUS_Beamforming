@@ -96,6 +96,10 @@ else
 
     % Take entire observation grid into account
     ip.A = A;
+    % Question ---> I am still a little confused about what information the A matrix
+    % contains. I understand that this is the propagation matrix and that
+    % this is multiplied with the excitation vector to get the target
+    % pressures, but I am not sure about the contents of the A matrix.
     b_ip_des = b_des_pl;
 
     vol_ids = obs_ids; % Indices that correspond to the target volume(s)
@@ -109,7 +113,9 @@ else
         'colorbar', false);
 end
 
-p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
+p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :); 
+% Question ---> Just to confirm, by using the pseudoinverse of A we are obtaining an initial solution for the excitation vector, 
+% and we then use a solver in solvePhasesAmp to optimize the solution?
 
 ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp

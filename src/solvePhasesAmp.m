@@ -38,7 +38,7 @@ end
 function val = cost_fctn(p, A1, b1)
 
 p = getCompVec(p);
-val = norm(abs(A1 * p) - b1);
+val = norm(abs(A1 * p) - b1); % Question ---> Why do we take the abs value here again?
 
 end
 
