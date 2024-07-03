@@ -40,6 +40,32 @@ function val = cost_fctn(p, A1, b1)
 p = getCompVec(p);
 val = norm(abs(A1 * p) - b1); % Question ---> Why do we take the abs value here again?
 
+% Answer: Because we don't care about the relative phases in our observed 
+% domain. Note that the product of A1*p will be subtracted from b1. b1 is
+% real, as we don't need to declare any phase information. We just want the
+% amplitude at each entry of b1 to match the product of A1*p. 
+% An example: b1 is scalar, so we only force one point in the observation
+% domain to a particular value, let's say b1 = 5 (Pa). For the sake of
+% simplicity, we only have one transducer element, which means that
+% both A1 and p are also scalar. A1 gives us the relationship between a
+% given (complex) excitation value p (including amplitude and phase) and 
+% the resulting pressure at b1 (also as complex number giving amplitude and
+% phase). However, in b1 we're only interested in the amplitude as the
+% phase values in the observation domain do not matter. For our example,
+% let's have p = 10 (Pa) and A1 = 0.5j (which means an attenuation by a
+% factor of 0.5 and a phase shift by 90° (= multiplication by j -> refer to
+% the unit cycle).
+% Now let's compare what happens, when we do and do not take the abs value:
+% NO ABS: A1 * p - b1 = 5j - 5 -> norm(5j - 5) = 7.0711 (error)
+% --> Looks like the selected solution p = 10 is bad... 
+% ABS: abs(A1 * p) - b1 = abs(5j) - 5 = 5 - 5 = 0 -> As the phase in b1
+% does not matter, we found a solution p that minimizes the error to 0!
+
+% The phase information in A1 is still relevant when you introduce multiple
+% array elements. Then you will get different absolute values as you sum
+% the signals up as part of the matrix vector product (=> 
+% constructive/destructive interference).
+
 end
 
 function [c,ceq] = ineq_const(p, A2, b2)

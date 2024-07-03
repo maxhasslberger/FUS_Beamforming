@@ -100,6 +100,12 @@ else
     % contains. I understand that this is the propagation matrix and that
     % this is multiplied with the excitation vector to get the target
     % pressures, but I am not sure about the contents of the A matrix.
+
+    % Answer: The contents are a bunch of complex values z * exp(j * phi). 
+    % Each one describes A) the attenuation (z) and B) the phase shift 
+    % (phi) from ONE transducer element to ONE point in the observation 
+    % domain. Pls see my example in solvePhasesAmp and refer to my slides 
+    % where I describe how to obtain A. Let me know if it's clear.
     b_ip_des = b_des_pl;
 
     vol_ids = obs_ids; % Indices that correspond to the target volume(s)
@@ -116,6 +122,10 @@ end
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :); 
 % Question ---> Just to confirm, by using the pseudoinverse of A we are obtaining an initial solution for the excitation vector, 
 % and we then use a solver in solvePhasesAmp to optimize the solution?
+
+% Answer: Yes, exactly. It has shown to be a good initial guess, especially
+% if the inequality constraints are not too strong. It has given us good
+% solutions in the past.
 
 ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp

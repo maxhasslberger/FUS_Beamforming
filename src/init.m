@@ -191,6 +191,18 @@ if kgrid.dim == 2
             % My understanding is that b_mask is the mask of indices of the target region 
             % and that we are using point sources, but I also noticed that the focal points seem to be stored in point_pos. 
             % Is my understanding corrent or am I off target?
+
+            % Answer: With point_pos, we store the center points of our 
+            % intended sonicated volumes (that's why point_pos.x(i) and
+            % point_pos.y(i) are arguments of makeDisc). This entire part
+            % is not related to the transducers and their representation as
+            % point sources, but disc masks the target region around one
+            % focal point, yes. At first, b_mask will be empty (line 179).
+            % If you add one volume after another, you'll end up with
+            % b_mask containing all the sonicated volumes. Feel free to
+            % set a breakpoint in this for loop and imagesc(b_mask) after
+            % each iteration. You'll see that the volumes (or areas in the
+            % 2D case) will be added one after another.
         end
 
 %         % Stimulate Ring pattern
