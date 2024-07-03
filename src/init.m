@@ -187,6 +187,8 @@ if kgrid.dim == 2
             disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
             amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
             b_mask = b_mask + disc; 
+            imagesc(b_mask); % Visualizing b_mask at each iteration
+
             % Question ---> What is the disc pattern here and why is it added to b_mask? 
             % My understanding is that b_mask is the mask of indices of the target region 
             % and that we are using point sources, but I also noticed that the focal points seem to be stored in point_pos. 
