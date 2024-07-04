@@ -64,7 +64,7 @@ end
 %% Solve Inverse Problem
 tic
 
-obs_ids = reshape(logical(b_mask), numel(b_mask), 1);
+obs_ids = reshape(logical(b_mask), numel(b_mask), 1); % Indices of target region
 
 if only_focus_opt
     domain_ids = 1; % To be discarded -> off-target pressures could be too large!
