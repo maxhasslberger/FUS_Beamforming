@@ -109,7 +109,8 @@ else
     b_ip_des = b_des_pl;
 
     vol_ids = obs_ids; % Indices that correspond to the target volume(s)
-    [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask); % Indices where pressure values given
+    % Use mean frequency to calc wavelength, which is used for minimum distance b/w init points
+    [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / mean(f0), b_mask); % Indices where pressure values given
     ip.beta = 0.0;
 
     % New preplot with init point arg
