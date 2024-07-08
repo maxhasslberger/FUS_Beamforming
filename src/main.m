@@ -2,7 +2,7 @@ clear;
 close all;
 
 %% Init
-f0 = [470] * 1e3; % Hz - transducer frequency
+f0 = [470, 600] * 1e3; % Hz - transducer frequency
 n_dim = 2;
 dx = 1e-3;
 % dx = [];
@@ -28,7 +28,7 @@ save_results = false;
 if isempty(dx)
     dx_factor = 1;
 else
-    dx_factor = (1500 / f0 / 3) / dx; % = (c0 / f0 / ppw) / dx
+    dx_factor = (1500 / max(f0) / 3) / dx; % = (c0 / f0 / ppw) / dx
 end
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
@@ -53,7 +53,7 @@ if ~exist('A', 'var')
     A = [];
     for f = f0
         A = [A, obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
-            'active_ids', active_ids)];
+            'active_ids', active_ids)]; %change this bc A's must be diag
     end
 end
 
