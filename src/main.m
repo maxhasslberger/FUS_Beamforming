@@ -20,7 +20,7 @@ only_focus_opt = false; % Optimize only for focal spots or entire observation do
 use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 % get_current_A = "A_2D_2Trs_75el_skull"
-get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = true; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
@@ -50,11 +50,24 @@ end
 %% Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 if ~exist('A', 'var')
-    A = [];
+    % % Old code:
+    % A = [];
+    % % for f = f0
+    % %     A = [A, obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
+    % %         'active_ids', active_ids)]; %change this bc A's must be diag
+    % % end
+    % A = [A, obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0(1), get_current_A, use_greens_fctn, ...
+    %         'active_ids', active_ids)];
+    % Find A matrix for each frequency
+    A_cells = {};
     for f = f0
-        A = [A, obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
-            'active_ids', active_ids)]; %change this bc A's must be diag
+        A_temp = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f, get_current_A, use_greens_fctn, ...
+            'active_ids', active_ids);
+        disp('A obtained')
+        A_cells{end + 1} = A_temp;
     end
+    % Block diagonal matrix with A matrices for each frequency
+    A = blkdiag(A_cells{:});
 end
 
 % if kgrid.dim == 3
