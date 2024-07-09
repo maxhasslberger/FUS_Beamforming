@@ -30,15 +30,20 @@ if ~isempty(excitation)
     
     f_param = figure('color','w');
     f_param.Position = [700 50 650 350];
+
     subplot(2, 1, 1)
-    plot(abs(excitation * 1e-3))
+    plot(abs(excitation * 1e-3), '.')
     title(plot_title);
+    xlim([1 length(excitation)])
     ylabel('Amplitude (kPa)')
     
     subplot(2, 1, 2)
-    plot(rad2deg(angle(excitation)))
-    xlabel('Element #')
+    plot(rad2deg(angle(excitation)), '.')
+    xlim([1 length(excitation)])
+    xlabel('Array Element #')
     ylabel('Phase (deg)')
+
+    fontsize(f_param, 12,"points")
 end
 
 %% Plot the pressure field 
@@ -124,6 +129,8 @@ else
     end
     set(ax, 'ydir', 'normal')
 end
+
+fontsize(f_data, 12,"points")
 
 if kgrid.dim == 3
     sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
