@@ -45,15 +45,21 @@ function val = cost_fctn(p, A1, b1)
 
 p = getCompVec(p);
 
+% Need to extract A matrices for each frequency from A1 matrix
+
+val = abs(sum(ifft(A1 * p))) - b1;
+
 % Separate propagation matrix and excitation vector
 
 %%%%%%%%%%%%%% TODO %%%%%%%%%%%%%%
 
-val = []; %%%%%%%%%%%%%% TODO %%%%%%%%%%%%%%
+% val = []; %%%%%%%%%%%%%% TODO %%%%%%%%%%%%%%
 
 end
 
 function [c,ceq] = ineq_const(p, A2, b2)
+
+
 
 p = getCompVec(p);
 

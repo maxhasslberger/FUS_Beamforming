@@ -100,7 +100,7 @@ if islogical(get_current_A)
         end
         
         delete(fullfile("..", "Lin_Prop_Matrices", tmp_filename + ".mat")) % delete tmp file
-        save(fullfile("..", "Lin_Prop_Matrices", std_filename + ".mat"), "A", "-v7.3")
+        % save(fullfile("..", "Lin_Prop_Matrices", std_filename + ".mat"), "A", "-v7.3")
         
     else
         disp("Loading precomputed Propagation Matrix...")
