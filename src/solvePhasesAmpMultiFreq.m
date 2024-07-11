@@ -1,13 +1,18 @@
-function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta)
+function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
 p_init = double(p_init);
 
-% Separate A and b
+% Separate A for each frequency
+
+
+% Separate A and b into target region (A1,b1) and other indices (A2,b2)
 [A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, domain_ids | skull_ids, vol_ids, init_ids);
 clear A;
 
 % Add regularization
 [A1, b1] = add_L2_reg(A1, b1, beta(1));
 [A2, b2] = add_ineq(A2, b2, length(p_init));
+
+
 
 % Cost fctn and constraints
 fun = @(p)cost_fctn(p, A1, b1);

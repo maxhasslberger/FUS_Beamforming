@@ -70,11 +70,14 @@ if ~exist('A', 'var')
         % Block diagonal matrix with A matrices for each frequency
         A = blkdiag(A_cells{:});
         save(fullfile("..", "Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
-        disp("Obtained full A matrix")
+        save(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat"), "A_cells", "-v7.3")
+        disp("Obtained full A matrix and saved to Lin_Prop_Matrices")
     else
         disp("Loading precomputed Propagation Matrix...")
         A = load(fullfile("..", "Lin_Prop_Matrices", "A_current.mat")).A;
         disp("Propagation Matrix loaded successfully!")
+        A_cells = load(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat")).A_cells;
+        disp("A_cells (contains individual propagation matrices for each frequency) loaded successfully!")  
     end
 end
 
@@ -141,6 +144,11 @@ else
         'colorbar', false);
 end
 
+% Compute pseudoinverse for each frequency, then stack the resulting
+% excitation vectors to obtain the initial solution
+size(A_cells)
+
+disp('ok')
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :); 
 % Question ---> Just to confirm, by using the pseudoinverse of A we are obtaining an initial solution for the excitation vector, 
 % and we then use a solver in solvePhasesAmp to optimize the solution?
@@ -151,10 +159,9 @@ p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 
 % ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % Obtain optimal p for multiple frequencies
-disp('The size of p_init:')
-disp(size(p_init))
-
-ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta);
+size_p = size(p_init)
+num_els = size(mask2el, 1)
+ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
