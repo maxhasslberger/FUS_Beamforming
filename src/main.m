@@ -146,10 +146,17 @@ end
 
 % Compute pseudoinverse for each frequency, then stack the resulting
 % excitation vectors to obtain the initial solution
-size(A_cells)
+m = size(A_cells, 2);
+p_init = [];
 
-disp('ok')
-p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :); 
+for i = 1:m
+    A_temp = A_cells{i};
+    p_init = [p_init; pinv(A_temp(init_ids, :)) * b_ip_des(init_ids, :)];
+end       
+
+
+% p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :); 
+
 % Question ---> Just to confirm, by using the pseudoinverse of A we are obtaining an initial solution for the excitation vector, 
 % and we then use a solver in solvePhasesAmp to optimize the solution?
 
@@ -157,10 +164,11 @@ p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
 % if the inequality constraints are not too strong. It has given us good
 % solutions in the past.
 
+% Old code for one frequency:
 % ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
+
 % Obtain optimal p for multiple frequencies
-size_p = size(p_init)
-num_els = size(mask2el, 1)
+num_els = size(mask2el, 1);
 ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
