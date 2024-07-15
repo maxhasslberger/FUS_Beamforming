@@ -173,6 +173,8 @@ num_els = size(mask2el, 1);
 % >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
 val = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
 disp(val)
+% For initial solution, cost func value is 1.0e+05 * [3.0000, -3.0000]
+
 % ---------------------------------------------
 
 size(p_init)
