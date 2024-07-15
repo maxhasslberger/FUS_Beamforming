@@ -1,4 +1,4 @@
-function testCostFctn(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
+function val = testCostFctn(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
 
 p_init = double(p_init);
 
@@ -27,16 +27,23 @@ for i = 1:m
     [A2_cells{i}, b2] = add_ineq(A2_cells{i}, b2, length(p_init));
 end
 
-% Calc cost fctn for initial soln as an example to understand ifft
-mv_prod = A1 * p_init;
-ifft_prod = ifft(mv_prod);
+% Transform resulting signals into time domiain
+mv_prod_f1 = A1_cells{1} * p_init(:,1);
+ifft_prod_f1 = ifft(mv_prod_f1);
+
+mv_prod_f2 = A1_cells{2} * p_init(:,2);
+ifft_prod_f2 = ifft(mv_prod_f2);
+
+% Sum signals in the time domain
+ifft_prod = ifft_prod_f2 + ifft_prod_f1;
+% Obtain amplitude
+y = abs(ifft_prod);
+
+% Compare amplitude of signals with desired pressures
+
+val = y - b1;
 
 
-val = abs(sum(ifft(A1 * p))) - b1;
-
-% Need to extract A matrices for each frequency from A1 matrix
-
-val = abs(sum(ifft(A1 * p))) - b1;
-
+% % val = abs(sum(ifft(A1 * p))) - b1;
 
 

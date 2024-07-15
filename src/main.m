@@ -145,13 +145,13 @@ else
 end
 
 % Compute pseudoinverse for each frequency, then stack the resulting
-% excitation vectors to obtain the initial solution
+% excitation vectors (each column is one excitation vector) to obtain the initial solution
 m = size(A_cells, 2);
 p_init = [];
 
 for i = 1:m
     A_temp = A_cells{i};
-    p_init = [p_init; pinv(A_temp(init_ids, :)) * b_ip_des(init_ids, :)];
+    p_init = [p_init, pinv(A_temp(init_ids, :)) * b_ip_des(init_ids, :)];
 end       
 
 
@@ -169,11 +169,10 @@ end
 
 % Obtain optimal p for multiple frequencies
 num_els = size(mask2el, 1);
-
 % ---------------------------------------------
 % >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
-testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
-
+val = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
+disp(val)
 % ---------------------------------------------
 
 size(p_init)
