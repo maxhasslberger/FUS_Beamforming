@@ -119,7 +119,7 @@ else
     [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial and skull)
 
     % Take entire observation grid into account
-    ip.A = A;
+    ip.A = A_cells; % Use cell array of A matrices rather than large block diagonal A matrix
     % Question ---> I am still a little confused about what information the A matrix
     % contains. I understand that this is the propagation matrix and that
     % this is multiplied with the excitation vector to get the target
@@ -169,6 +169,15 @@ end
 
 % Obtain optimal p for multiple frequencies
 num_els = size(mask2el, 1);
+
+% ---------------------------------------------
+% >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
+testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
+
+% ---------------------------------------------
+
+size(p_init)
+
 ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
