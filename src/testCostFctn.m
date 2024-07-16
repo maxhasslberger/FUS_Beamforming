@@ -28,13 +28,29 @@ for i = 1:m
 end
 
 % Transform resulting signals into time domain and sum signals
-y = zeros(m,1);
-for i = 1:m
-    y_temp = ifft(A1_cells{i} * p_init(:,i));
-    y = [y + y_temp];
-end
+y1 = timeDomainSum(m,A1_cells,p_init);
+
+% Old code:
+% for i = 1:m
+%     y_temp = ifft(A1_cells{i} * p_init(:,i));
+%     y = [y + y_temp];
+% end
 
 % Compare amplitude of signals with desired pressures
-val = norm(abs(y) - b1);
+val = norm(abs(y1) - b1);
+
+end
+
+
+function y = timeDomainSum(m,A_cells,p)
+    n = size(A_cells{1},1)
+    y = zeros(n,1);
+    for i = 1:m
+        y_temp = ifft(A_cells{i} * p(:,i));
+        y = [y + y_temp];
+    end
+end
+
+
 
 
