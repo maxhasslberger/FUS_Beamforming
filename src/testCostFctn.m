@@ -1,4 +1,6 @@
-function val = testCostFctn(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
+function [val,num_failed_constraints] = testCostFctn(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
+% Test cost function and inequality constraint logic for multiple frequencies using initial solution
+% Does not include fmincon optimization so that we are only working with one iteration for testing
 
 p_init = double(p_init);
 
@@ -29,6 +31,16 @@ end
 
 % Transform resulting signals into time domain and sum signals
 y1 = timeDomainSum(m,A1_cells,p_init);
+y2 = timeDomainSum(m,A2_cells,p_init);
+
+% Calc cost fctn value
+val = norm(abs(y1) - b1);
+
+% Calc inequality constraint value (if c > 0, then constraint is not satisfied)
+c = abs(y2) - b2;
+num_failed_constraints = length(find(c > 0));
+
+
 
 % Old code:
 % for i = 1:m
@@ -37,7 +49,7 @@ y1 = timeDomainSum(m,A1_cells,p_init);
 % end
 
 % Compare amplitude of signals with desired pressures
-val = norm(abs(y1) - b1);
+
 
 end
 
