@@ -1,6 +1,20 @@
 function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
 p_init = double(p_init);
 
+disp('size of p_init')
+size(p_init)
+% Obtain excitation vector p to have optimal amplitudes and phases to
+% minimize cost function.
+% 
+% % Args:
+%   A - cell array containing propagation matrix for each frequency
+%   b - vector with desired pressures
+%   p_init - initial excitation vector solution for each frequency
+%
+% Outputs:
+%   p - optimal excitation vector
+
+% Old code:
 % Separate A and b
 % [A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, domain_ids | skull_ids, vol_ids, init_ids);
 % clear A;
@@ -38,6 +52,7 @@ fun = @(p)cost_fctn(p, A1_cells, b1, nfreq);
 nonlcon = @(p)ineq_const(p, A2_cells, b2, nfreq);
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 
+
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
     'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
 options.MaxFunctionEvaluations = 2.5e5;
@@ -56,6 +71,9 @@ p = getCompVec(p_opt); % What does the getCompVec function do?
 end
 
 function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
+
+    disp("entered term func")
+
     stop = false;
     % Check if the absolute function value is less than the threshold
     if abs(optimValues.fval) < fval_tol && optimValues.constrviolation < constr_tol
@@ -67,16 +85,32 @@ end
 
 function val = cost_fctn(p, A1_cells, b1, nfreq)
 
+disp("entered cost func")
+
+disp('size of p pre getcompvec')
+disp(size(p))
+
 p = getCompVec(p);
+
+disp('size of p post getcompvec')
+disp(size(p))
 
 % Transform resulting signals into time domain and sum signals
 y1 = timeDomainSum(nfreq,A1_cells,p);
+disp('size of y1')
+disp(size(y1))
+
 % Calc cost fctn value
 val = norm(abs(y1) - b1);
+
+disp("obtain cost func val:")
+disp(val)
 
 end
 
 function [c,ceq] = ineq_const(p, A2_cells, b2, nfreq)
+
+disp("enter ineq const")
 
 p = getCompVec(p);
 
@@ -87,16 +121,22 @@ y2 = timeDomainSum(nfreq,A2_cells,p);
 c = abs(y2) - b2;
 ceq = [];
 
+disp("obtained number of constraint violations:")
+find(c>0) % returns 0x1 empty double column vector
+
 end
+
+
 
 function p = getCompVec(p)
 
-p = p(1:round(end/2)) + 1j * p(round(end/2)+1:end);
+% Need to adjust this to account for multifreq (multiple columns)
+p = p(1:round(end/2), :) + 1j * p(round(end/2)+1:end, :);
 
 end
 
 function y = timeDomainSum(nfreq,A_cells,p)
-    n = size(A_cells{1},1)
+    n = size(A_cells{1},1);
     y = zeros(n,1);
     for i = 1:nfreq
         y_temp = ifft(A_cells{i} * p(:,i));

@@ -183,8 +183,6 @@ num_els = size(mask2el, 1);
 % 
 % % ---------------------------------------------
 
-size(p_init)
-
 % Obtain optimal p for multiple frequencies
 ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
