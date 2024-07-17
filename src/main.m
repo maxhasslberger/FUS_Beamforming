@@ -167,27 +167,29 @@ end
 % Old code for one frequency:
 % ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 
-% Obtain optimal p for multiple frequencies
-num_els = size(mask2el, 1);
-% ---------------------------------------------
-% >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
-[val,num_failed_constraints] = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
-val
-num_failed_constraints
-% For initial solution, cost func value is 1.0e+05 * [3.0000, -3.0000], with a norm of 4.2426e+05
-% 0 indices failed the inequality constraint. Question --> Is this surprising? I thought it was because we are
-% using an initial excitation vector that simply combines 2 initial
-% solutions, which are each obtained by solving the one frequency problem
-% for each frequency
 
-% ---------------------------------------------
+num_els = size(mask2el, 1);
+% % ---------------------------------------------
+% % >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
+% [val,num_failed_constraints] = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
+% val
+% num_failed_constraints
+% 
+% % For initial solution, cost func value is 1.0e+05 * [3.0000, -3.0000], with a norm of 4.2426e+05
+% % 0 indices failed the inequality constraint. Question --> Is this surprising? I thought it was because we are
+% % using an initial excitation vector that simply combines 2 initial
+% % solutions, which are each obtained by solving the one frequency problem
+% % for each frequency
+% 
+% % ---------------------------------------------
 
 size(p_init)
 
+% Obtain optimal p for multiple frequencies
 ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
-
+ip.p
 ip.t_solve = toc; % 
 
 %% Obtain Acoustic profile

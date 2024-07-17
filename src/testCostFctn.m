@@ -8,8 +8,10 @@ p_init = double(p_init);
 % Needs to be fixed to account for larger A matrix
 % Using cell array for A now
 
-% Prepare opt vars
+
 m = size(A, 2);
+
+% Prepare opt vars
 A1_cells = {};
 A2_cells = {};
 for i = 1:m
