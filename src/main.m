@@ -187,19 +187,30 @@ num_els = size(mask2el, 1);
 ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
-ip.p
+
 ip.t_solve = toc; % 
 
 %% Obtain Acoustic profile
-ip.b = A * ip.p;
+nfreq = size(A_cells,2);
+% Single freq
+% ip.b = A * ip.p;
+% Multifreq
+ip.b = timeDomainSum(nfreq, A_cells, ip.p);
+disp("size of b before reshaping to kgrid")
+disp(size(ip.b))
+
 ip.b = reshape(ip.b, size(kgrid.k));
+disp("size of b after reshaping to kgrid")
+disp(size(ip.b))
+
 % ip.b(~domain_ids) = 0.0;
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, input_argsP] = ...
-    init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    init(max(f0), n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
+    % Need to fix handling of f0. Might need to adjust the func for using multiple frequencies
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
     ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
 

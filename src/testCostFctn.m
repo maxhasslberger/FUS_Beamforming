@@ -56,14 +56,14 @@ num_failed_constraints = length(find(c > 0));
 end
 
 
-function y = timeDomainSum(m,A_cells,p)
-    n = size(A_cells{1},1)
-    y = zeros(n,1);
-    for i = 1:m
-        y_temp = ifft(A_cells{i} * p(:,i));
-        y = [y + y_temp];
-    end
-end
+% function y = timeDomainSum(m,A_cells,p)
+%     n = size(A_cells{1},1)
+%     y = zeros(n,1);
+%     for i = 1:m
+%         y_temp = ifft(A_cells{i} * p(:,i));
+%         y = [y + y_temp];
+%     end
+% end
 
 
 
