@@ -210,7 +210,7 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, input_argsP] = ...
     init(max(f0), n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
-    % Need to fix handling of f0. Might need to adjust the func for using multiple frequencies
+    % Need to fix handling of f0. Might need to adjust for using multiple frequencies
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
     ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
 

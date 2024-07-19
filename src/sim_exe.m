@@ -14,8 +14,17 @@ if ~isempty(varargin)
 end
 
 %% Source
+if isscalar(f0)
+    source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
+else
+    % Multifreq
+    source_signal = createCWSignals(kgrid.t_array, f0(1), abs(p_in(:,1)), angle(p_in(:,1)));
+    for i = 2:length(f0)
+        source_signal = source_signal + createCWSignals(kgrid.t_array, f0(i), abs(p_in(:,i)), angle(p_in(:,i)));
+    end
+end
+        
 
-source_signal = createCWSignals(kgrid.t_array, f0, abs(p_in), angle(p_in));
 if isempty(karray_t)
     source.p_mask = source_mask;
     source.p = source_signal;
@@ -37,6 +46,7 @@ else
     sensor_data = kspaceFirstOrder3D(kgrid, medium, source, sensor, input_args{:});
 end
 
+% Need to update to handle multifreq
 p = post_processing(kgrid, f0, sensor_data, final_sim);
 
 end
