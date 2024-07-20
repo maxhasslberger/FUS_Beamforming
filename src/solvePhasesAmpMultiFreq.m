@@ -1,4 +1,4 @@
-function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
+function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta)
 p_init = double(p_init);
 
 % disp('size of p_init')

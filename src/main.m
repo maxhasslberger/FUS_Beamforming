@@ -22,7 +22,7 @@ use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (
 % get_current_A = "A_2D_2Trs_75el_skull"
 get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
-do_ground_truth = true; % Ground truth k-wave simulation -> plot_dx_factor
+do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
 
 if isempty(dx)
@@ -168,10 +168,10 @@ end
 % ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 
 
-num_els = size(mask2el, 1);
+
 % % ---------------------------------------------
 % % >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
-% [val,num_failed_constraints] = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
+% [val,num_failed_constraints] = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta);
 % val
 % num_failed_constraints
 % 
@@ -184,7 +184,7 @@ num_els = size(mask2el, 1);
 % % ---------------------------------------------
 
 % Obtain optimal p for multiple frequencies
-ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, num_els);
+ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
@@ -198,6 +198,9 @@ nfreq = size(A_cells,2);
 ip.b = timeDomainSum(nfreq, A_cells, ip.p);
 disp("size of b before reshaping to kgrid")
 disp(size(ip.b))
+
+disp("pressures at the foci:")
+disp(double(ip.b(domain_ids &  init_ids)))
 
 ip.b = reshape(ip.b, size(kgrid.k));
 disp("size of b after reshaping to kgrid")
@@ -217,13 +220,20 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
     % [domain_ids_gt, skull_ids_gt] = limit_space(mediumP.sound_speed);
     % ip.b_gt(~domain_ids_gt) = 0.0;
 else
-    ip.p_gt = solvePhasesOnly(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
+    % ip.p_gt = solvePhasesOnly(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, mask2el, el_per_t, true); % Amp fixed
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
 %     ip.p_gt = p_init;
-    ip.b_gt = A * ip.p_gt;
-    ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
+    % ip.b_gt = A * ip.p_gt;
+    % ip.b_gt = reshape(ip.b_gt, size(kgrid.k));
 
     % ip.b_gt(~domain_ids) = 0.0;
+
+    % For multifreq without ground truth, we set ground truth values to same values as inverse problem for the sake of simplicity so that
+    % comp plots don't error out
+    ip.p_gt = ip.p;
+    ip.b_gt = ip.b;
+
+ 
 end
 
 %% Save Results in mat-file
