@@ -1,4 +1,4 @@
-function [val,num_failed_constraints] = testCostFctn(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, num_els)
+function [val,num_failed_constraints] = testCostFctn(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, f0)
 % Test cost function and inequality constraint logic for multiple frequencies using initial solution
 % Does not include fmincon optimization so that we are only working with one iteration for testing
 
@@ -32,8 +32,9 @@ for i = 1:m
 end
 
 % Transform resulting signals into time domain and sum signals
-y1 = timeDomainSum(m,A1_cells,p_init);
-y2 = timeDomainSum(m,A2_cells,p_init);
+y1 = timeDomainSum(f0,A1_cells,p_init);
+y2 = timeDomainSum(f0,A2_cells,p_init);
+
 
 % Calc cost fctn value
 val = norm(abs(y1) - b1);

@@ -68,14 +68,14 @@ if ~exist('A', 'var')
             A_cells{end + 1} = A_temp;
         end
         % Block diagonal matrix with A matrices for each frequency
-        A = blkdiag(A_cells{:});
-        save(fullfile("..", "Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
+        % A = blkdiag(A_cells{:});
+        % save(fullfile("..", "Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
         save(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat"), "A_cells", "-v7.3")
         disp("Obtained full A matrix and saved to Lin_Prop_Matrices")
     else
-        disp("Loading precomputed Propagation Matrix...")
-        A = load(fullfile("..", "Lin_Prop_Matrices", "A_current.mat")).A;
-        disp("Propagation Matrix loaded successfully!")
+        % disp("Loading precomputed Propagation Matrix...")
+        % A = load(fullfile("..", "Lin_Prop_Matrices", "A_current.mat")).A;
+        % disp("Propagation Matrix loaded successfully!")
         A_cells = load(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat")).A_cells;
         disp("A_cells (contains individual propagation matrices for each frequency) loaded successfully!")  
     end
@@ -171,9 +171,9 @@ end
 
 % % ---------------------------------------------
 % % >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
-% [val,num_failed_constraints] = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta);
-% val
-% num_failed_constraints
+% [val,num_failed_constraints] = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, f0);
+% val % 4.2264e+05
+% num_failed_constraints % 3512
 % 
 % % For initial solution, cost func value is 1.0e+05 * [3.0000, -3.0000], with a norm of 4.2426e+05
 % % 0 indices failed the inequality constraint. Question --> Is this surprising? I thought it was because we are
@@ -184,7 +184,7 @@ end
 % % ---------------------------------------------
 
 % Obtain optimal p for multiple frequencies
-ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta);
+ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, f0);
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
@@ -195,7 +195,7 @@ nfreq = size(A_cells,2);
 % Single freq
 % ip.b = A * ip.p;
 % Multifreq
-ip.b = timeDomainSum(nfreq, A_cells, ip.p);
+ip.b = timeDomainSum(f0, A_cells, ip.p);
 disp("size of b before reshaping to kgrid")
 disp(size(ip.b))
 

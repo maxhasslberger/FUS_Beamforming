@@ -1,4 +1,4 @@
-function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta)
+function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, f0)
 p_init = double(p_init);
 
 % disp('size of p_init')
@@ -49,8 +49,8 @@ end
 
 
 % Cost fctn and constraints
-fun = @(p)cost_fctn(p, A1_cells, b1, nfreq);
-nonlcon = @(p)ineq_const(p, A2_cells, b2, nfreq);
+fun = @(p)cost_fctn(p, A1_cells, b1, f0);
+nonlcon = @(p)ineq_const(p, A2_cells, b2, f0);
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 
 
@@ -84,7 +84,7 @@ function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
 end
 
 
-function val = cost_fctn(p, A1_cells, b1, nfreq)
+function val = cost_fctn(p, A1_cells, b1, f0)
 
 % disp("entered cost func")
 % 
@@ -97,7 +97,7 @@ p = getCompVec(p);
 % disp(size(p))
 
 % Transform resulting signals into time domain and sum signals
-y1 = timeDomainSum(nfreq,A1_cells,p);
+y1 = timeDomainSum(f0,A1_cells,p);
 % disp('size of y1')
 % disp(size(y1))
 
@@ -109,14 +109,14 @@ val = norm(abs(y1) - b1);
 
 end
 
-function [c,ceq] = ineq_const(p, A2_cells, b2, nfreq)
+function [c,ceq] = ineq_const(p, A2_cells, b2, f0)
 
 % disp("enter ineq const")
 
 p = getCompVec(p);
 
 % Transform resulting signals into time domain and sum signals
-y2 = timeDomainSum(nfreq,A2_cells,p);
+y2 = timeDomainSum(f0,A2_cells,p);
 
 % Calc inequality constraint value (if c > 0, then constraint is not satisfied)
 c = abs(y2) - b2;
