@@ -196,15 +196,12 @@ nfreq = size(A_cells,2);
 % ip.b = A * ip.p;
 % Multifreq
 ip.b = timeDomainSum(f0, A_cells, ip.p);
-disp("size of b before reshaping to kgrid")
-disp(size(ip.b))
 
 disp("pressures at the foci:")
 disp(double(ip.b(domain_ids &  init_ids)))
 
 ip.b = reshape(ip.b, size(kgrid.k));
-disp("size of b after reshaping to kgrid")
-disp(size(ip.b))
+
 
 % ip.b(~domain_ids) = 0.0;
 

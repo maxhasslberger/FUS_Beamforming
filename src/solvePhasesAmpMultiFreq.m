@@ -93,19 +93,23 @@ function val = cost_fctn(p, A1_cells, b1, f0)
 
 p = getCompVec(p);
 
+% disp(p(9:10,1:2))
+
 % disp('size of p post getcompvec')
 % disp(size(p))
 
 % Transform resulting signals into time domain and sum signals
 y1 = timeDomainSum(f0,A1_cells,p);
-% disp('size of y1')
-% disp(size(y1))
+% disp('y1:')
+% disp(y1)
+
 
 % Calc cost fctn value
 val = norm(abs(y1) - b1);
 
-% disp("obtain cost func val:")
+% disp("obtained cost func val:")
 % disp(val)
+
 
 end
 
@@ -123,7 +127,7 @@ c = abs(y2) - b2;
 ceq = [];
 
 % disp("obtained number of constraint violations:")
-% length(find(c>0)) % returns 0 f
+% disp(length(find(c>0)))
 
 end
 
