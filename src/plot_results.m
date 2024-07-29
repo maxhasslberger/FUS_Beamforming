@@ -6,6 +6,7 @@ dx_scan = 1e-3;
 slice_dim = 2;
 scale_factor = 1e-3;
 plot_colorbar = true;
+cmap = turbo();
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -18,6 +19,8 @@ if ~isempty(varargin)
                 slice_dim = varargin{arg_idx+1};
             case 'colorbar'
                 plot_colorbar = varargin{arg_idx+1};
+            case 'cmap'
+                cmap = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -61,12 +64,6 @@ if kgrid.dim == 2
 else
     slice_p = round((plot_offset(2) + slice_coord) * dx_factor); % p space
     p_data = squeeze(abs(data(:,slice_p,:)));
-end
-
-if plot_colorbar
-    cmap = turbo();
-else
-    cmap = hot();
 end
 
 % Get Ticks
