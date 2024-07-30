@@ -5,6 +5,8 @@ In this project, we simulate intracranial acoustic field patterns for future Foc
 - [k-wave](http://www.k-wave.org)
 - [kArray tools](http://www.k-wave.org/downloads/kWaveArray_alpha_0.3.zip)
 - [PhasePack](https://github.com/tomgoldstein/phasepack-matlab)
+- Matlab Optimization Toolbox
+- Matlab Deep Learning Toolbox
 
 ## Run acoustic simulations
 TBD - For now, one can run `main.m` to carry out acoustic simulations with default parameters.
