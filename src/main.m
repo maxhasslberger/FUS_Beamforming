@@ -2,10 +2,10 @@ clear;
 close all;
 
 %% Init
-f0 = [470, 600] * 1e3; % Hz - transducer frequency
+f0 = [450,460,470,480,490] * 1e3; % Hz - transducer frequency
 n_dim = 2;
-dx = 1e-3;
-% dx = [];
+% dx = 1e-3;
+dx = [];
 plot_dx_factor = 1;
 
 t1w_filename = fullfile('..', 'Scans', 'dummy_t1w.nii');
@@ -20,7 +20,7 @@ only_focus_opt = false; % Optimize only for focal spots or entire observation do
 use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 % get_current_A = "A_2D_2Trs_75el_skull"
-get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
@@ -62,21 +62,36 @@ if ~exist('A', 'var')
         % Find A matrix for each frequency
         A_cells = {};
         for f = f0
-            A_temp = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f, get_current_A, use_greens_fctn, ...
-                'active_ids', active_ids);
-            disp('A obtained')
+            if exist("A_" + num2str(f) + "kHz.mat", "file")
+                A_temp = load(fullfile("..", "Lin_Prop_Matrices", "A_" + num2str(f) + "kHz.mat")).A_temp;
+                disp("============================================================================")
+                disp("A_", num2str(f), "kHz loaded succesfully!")
+                disp("============================================================================")
+            else
+                disp("============================================================================")
+                disp(["Computing A for ", num2str(f), " kHz"])                
+                disp("============================================================================")
+                A_temp = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f, get_current_A, use_greens_fctn, ...
+                    'active_ids', active_ids);
+                save(fullfile("..", "Lin_Prop_Matrices", "A_" + num2str(f) + "kHz.mat"), "A_temp");
+                disp("============================================================================")
+                disp(["A obtained for ", num2str(f), " kHz and saved to Lin_Prop_Matrices"])
+                disp("============================================================================")
+            end
             A_cells{end + 1} = A_temp;
         end
         % Block diagonal matrix with A matrices for each frequency
         % A = blkdiag(A_cells{:});
         % save(fullfile("..", "Lin_Prop_Matrices", "A_current.mat"), "A", "-v7.3")
         save(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat"), "A_cells", "-v7.3")
-        disp("Obtained full A matrix and saved to Lin_Prop_Matrices")
+        disp("============================================================================")
+        disp("Obtained full A matrix and saved to Lin_Prop_Matrices as A_cells_current.mat")
+        disp("============================================================================")
     else
         % disp("Loading precomputed Propagation Matrix...")
         % A = load(fullfile("..", "Lin_Prop_Matrices", "A_current.mat")).A;
         % disp("Propagation Matrix loaded successfully!")
-        A_cells = load(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat")).A_cells;
+        A_cells = load(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat")).A_cells;        
         disp("A_cells (contains individual propagation matrices for each frequency) loaded successfully!")  
     end
 end
@@ -202,7 +217,7 @@ disp(double(ip.b(domain_ids &  init_ids)))
 
 ip.b = reshape(ip.b, size(kgrid.k));
 
-
+% Comment this in for intracranial pressures
 % ip.b(~domain_ids) = 0.0;
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
