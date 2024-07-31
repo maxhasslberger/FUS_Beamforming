@@ -46,7 +46,19 @@ if ~exist(mat_file, "file")
     
     % Predict
     predictIm = predict(net,volDL);
-    predictedSegMaps = postProcessBrainCANDIData(predictIm,[],imSize,...
+
+    flipVal = false;
+    if flipVal
+        flippedData = fliplr(volProc);  
+        flippedData = flip(flippedData,2);
+        flippedData = flip(flippedData,1);
+        flippedData = dlarray(flippedData,"SSSCB");
+        flipPredictIm = predict(net,flippedData);
+    else
+        flipPredictIm = [];  
+    end
+
+    predictedSegMaps = postProcessBrainCANDIData(predictIm,flipPredictIm,imSize,...
         cropIdx,metaData,classNames,labelIDs);
     
     % Save as mat file
