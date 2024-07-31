@@ -40,26 +40,11 @@ for i = 1:length(unique_labels)
     cluster_mask(stim_ids(cluster_indices)) = 1;
 
     if size(cluster_points, 1) >= 3
-        k = convhull(cluster_points);
-        k = unique(k(:)); % only memorize unique ids contained in convex hull
-        hull_ids{i} = cluster_indices(k)';
 
         se = strel('sphere', 1); % Structural element for dilation and erosion
-        dilated_mask = imdilate(cluster_mask, se);
         eroded_mask = imerode(cluster_mask, se);
 
-        surface_mask = dilated_mask & ~eroded_mask;
-%         surface_ids = find(surface_mask);
-% 
-%         % Obtain hull coordinates 
-%         if length(grid_sz) == 2 % dim == 2
-%             [x, y] = ind2sub(grid_sz, surface_ids);
-%             data = [x, y];
-%         else
-%             [x, y, z] = ind2sub(grid_sz, surface_ids);
-%             data = [x, y, z];
-%         end
-
+        surface_mask = cluster_mask & ~eroded_mask;
         hull_ids{i} = find(surface_mask)';
 
     else
