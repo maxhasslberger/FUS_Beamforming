@@ -1,9 +1,6 @@
 function p = solvePhasesAmpMultiFreq(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, f0)
 p_init = double(p_init);
 
-% disp('size of p_init')
-% size(p_init)
-
 % Obtain excitation vector p to have optimal amplitudes and phases to
 % minimize cost function.
 % 
@@ -14,15 +11,6 @@ p_init = double(p_init);
 %
 % Outputs:
 %   p - optimal excitation vector
-
-% Old code:
-% Separate A and b
-% [A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, domain_ids | skull_ids, vol_ids, init_ids);
-% clear A;
-% 
-% % Add regularization
-% [A1, b1] = add_L2_reg(A1, b1, beta(1));
-% [A2, b2] = add_ineq(A2, b2, length(p_init));
 
 
 nfreq = size(A, 2);
@@ -40,17 +28,21 @@ for i = 1:nfreq
 end
 [b1, b2] = prepare_opt_b(b, domain_ids | skull_ids, vol_ids, init_ids);
 
+A0 = zeros(1, size(p_init, 1));
+b0 = zeros(1, size(p_init, 2));
+
 
 % Add regularization
 for i = 1:nfreq
     [A1_cells{i}, b1] = add_L2_reg(A1_cells{i}, b1, beta(1));
     [A2_cells{i}, b2] = add_ineq(A2_cells{i}, b2, length(p_init));
 end
+[A0, b0] = add_L2_reg(A0, b0, beta(1));
 
 
 % Cost fctn and constraints
-fun = @(p)cost_fctn(p, A1_cells, b1, f0);
-nonlcon = @(p)ineq_const(p, A2_cells, b2, f0);
+fun = @(p)cost_fctn(p, A0, b0);
+nonlcon = @(p)ineq_const(p, A1_cells, b1, A2_cells, b2, f0);
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 
 
@@ -84,50 +76,26 @@ function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
 end
 
 
-function val = cost_fctn(p, A1_cells, b1, f0)
-
-% disp("entered cost func")
-% 
-% disp('size of p pre getcompvec')
-% disp(size(p))
+function val = cost_fctn(p, A0, b0)
 
 p = getCompVec(p);
-
-% disp(p(9:10,1:2))
-
-% disp('size of p post getcompvec')
-% disp(size(p))
-
-% Transform resulting signals into time domain and sum signals
-y1 = timeDomainSum(f0,A1_cells,p);
-% disp('y1:')
-% disp(y1)
-
-
 % Calc cost fctn value
-val = norm(abs(y1) - b1);
-
-% disp("obtained cost func val:")
-% disp(val)
-
+val = norm(abs(A0 * p) - b0);
 
 end
 
-function [c,ceq] = ineq_const(p, A2_cells, b2, f0)
-
-% disp("enter ineq const")
+function [c,ceq] = ineq_const(p, A1_cells, b1, A2_cells, b2, f0)
 
 p = getCompVec(p);
 
 % Transform resulting signals into time domain and sum signals
+y1 = timeDomainSum(f0,A1_cells,p);
 y2 = timeDomainSum(f0,A2_cells,p);
 
+% Calc equality constraint
+ceq = abs(y1) - b1;
 % Calc inequality constraint value (if c > 0, then constraint is not satisfied)
 c = abs(y2) - b2;
-ceq = [];
-
-% disp("obtained number of constraint violations:")
-% disp(length(find(c>0)))
 
 end
 

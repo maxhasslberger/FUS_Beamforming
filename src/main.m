@@ -24,7 +24,7 @@ get_current_A = true; % Use precomputed propagation matrix - can be logical or a
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
-get_excitation_vec = true; % Use precomputed excitation vector
+get_excitation_vec = false; % Use precomputed excitation vector
 
 if isempty(dx)
     dx_factor = 1;
