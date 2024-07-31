@@ -24,6 +24,7 @@ get_current_A = true; % Use precomputed propagation matrix - can be logical or a
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
+get_excitation_vec = true; % Use precomputed excitation vector
 
 if isempty(dx)
     dx_factor = 1;
@@ -161,13 +162,14 @@ end
 
 % Compute pseudoinverse for each frequency, then stack the resulting
 % excitation vectors (each column is one excitation vector) to obtain the initial solution
-m = size(A_cells, 2);
-p_init = [];
-
-for i = 1:m
-    A_temp = A_cells{i};
-    p_init = [p_init, pinv(A_temp(init_ids, :)) * b_ip_des(init_ids, :)];
-end       
+if ~get_excitation_vec
+    m = size(A_cells, 2);
+    p_init = [];
+    
+    for i = 1:m
+        A_temp = A_cells{i};
+        p_init = [p_init, pinv(A_temp(init_ids, :)) * b_ip_des(init_ids, :)];
+    end       
 
 
 % p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :); 
@@ -199,7 +201,11 @@ end
 % % ---------------------------------------------
 
 % Obtain optimal p for multiple frequencies
-ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, f0);
+
+    ip.p = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, f0);
+else
+    ip.p = load(fullfile("..", "Excitation_Vecs", "p_470khz_5f.mat")).p; % Change excitation vectors file name manually
+end
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
