@@ -347,7 +347,7 @@ b_des = amp_in .* exp(1j*phase); % only observed elements
 b_max = max(abs(b_des));
 b_des_pl = sidelobe_tol/100 * b_max * ones(numel(b_mask), 1); % Entire plane max amp
 b_des_pl(b_mask) = b_des; % Target amp
-b_des_pl(logical(medium.sound_speed > min(medium.sound_speed(:)))) = max_skull_pressure * 1e3; % Skull max amp
+b_des_pl(logical(reshape(medium.sound_speed > min(medium.sound_speed(:)), [], 1)) & ~logical_dom_ids) = max_skull_pressure * 1e3; % Skull max amp
 
 % set simulation input options
 input_args = {'PMLSize', 10, 'PMLInside', true, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
