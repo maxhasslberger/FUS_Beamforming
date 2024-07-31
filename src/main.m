@@ -20,7 +20,7 @@ only_focus_opt = false; % Optimize only for focal spots or entire observation do
 use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 % get_current_A = "A_2D_2Trs_75el_skull"
-get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
@@ -62,21 +62,21 @@ if ~exist('A', 'var')
         % Find A matrix for each frequency
         A_cells = {};
         for f = f0
-            if exist("A_" + num2str(f) + "kHz.mat", "file")
-                A_temp = load(fullfile("..", "Lin_Prop_Matrices", "A_" + num2str(f) + "kHz.mat")).A_temp;
-                disp("============================================================================")
-                disp("A_", num2str(f), "kHz loaded succesfully!")
-                disp("============================================================================")
+            if exist(fullfile("..", "Lin_Prop_Matrices","A_" + num2str(f) + "Hz.mat"), "file")
+                A_temp = load(fullfile("..", "Lin_Prop_Matrices", "A_" + num2str(f) + "Hz.mat")).A_temp;
+                disp('============================================================================')
+                disp(['A_', num2str(f),'Hz loaded succesfully!'])
+                disp('============================================================================')
             else
-                disp("============================================================================")
-                disp(["Computing A for ", num2str(f), " kHz"])                
-                disp("============================================================================")
+                disp('============================================================================')
+                disp(['Computing A for ', num2str(f), ' Hz'])                
+                disp('============================================================================')
                 A_temp = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f, get_current_A, use_greens_fctn, ...
                     'active_ids', active_ids);
-                save(fullfile("..", "Lin_Prop_Matrices", "A_" + num2str(f) + "kHz.mat"), "A_temp");
-                disp("============================================================================")
-                disp(["A obtained for ", num2str(f), " kHz and saved to Lin_Prop_Matrices"])
-                disp("============================================================================")
+                save(fullfile("..", "Lin_Prop_Matrices", "A_" + num2str(f) + "Hz.mat"), "A_temp");
+                disp('============================================================================')
+                disp(['A obtained for ', num2str(f), ' Hz and saved to Lin_Prop_Matrices'])
+                disp('============================================================================')
             end
             A_cells{end + 1} = A_temp;
         end
