@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, domain_ids, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -14,9 +14,18 @@ t2_pos = [68, 60]; % scan dims [x, z]
 t_rot = [45, -45]; % deg
 
 scan_focus_x = [-18, 22];
+% scan_focus_x = [];
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
 scan_focus_z = [-27, -19];
+% scan_focus_z = [];
 des_pressures = [300, 300]; % kPa
+% des_pressures = []; % kPa
+
+% region_labels = ["leftAmygdala", "rightAmygdala"];
+% region_labels = ["leftHippocampus", "rightHippocampus"];
+region_labels = [];
+% des_pressures_region = [300, 300]; % kPa
+des_pressures_region = []; % kPa
 
 sidelobe_tol = 50; % percent
 max_skull_pressure = 1e3; % kPa
@@ -73,6 +82,25 @@ if n_dim == 3
 end
 
 dx_factor = dx_scan / kgrid.dx;
+
+%% Segment the brain
+[segment_ids] = segment_space(t1w_filename, dx_scan);
+if abs(dx_factor) < 0.99 || abs(dx_factor) > 1.01
+    % Interpolate to adapt to grid size
+    grid_sz = size(kgrid.k);
+    seg_sz = size(segment_ids);
+    [uniqueStrings, ~, seg_nums] = unique(segment_ids);
+    seg_nums = reshape(seg_nums, size(segment_ids)); % Ensure it has the same shape as the original 3D array
+
+    [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
+    [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz(1)), linspace(1, seg_sz(2), grid_sz(2)), linspace(1, seg_sz(3), grid_sz(3)));
+    seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
+
+    % Map back to strings
+    seg_nums = round(seg_nums); % Ensure indices are integers
+    segment_ids = uniqueStrings(seg_nums);
+end
+domain_ids = segment_ids ~= "background"; % Mask entire brain
 
 %% Define Transducer Geometry
 
@@ -158,45 +186,53 @@ else
 end
 
 %% Define (intracranial) Beamforming Pattern
+
 cross_pixRadius = 5;
 
 if kgrid.dim == 2
 
-    % Focal points - in Scan coordinate system
-    point_pos_m.x = scan_focus_x;
-    point_pos.slice = slice_idx_2D;
-    point_pos_m.y = scan_focus_z;
-    amp_in = des_pressures' * 1e3; % Pa
-
-    point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
-    point_pos.y = round((plot_offset(3) + point_pos_m.y) * dx_factor);
-
-    % Assign amplitude acc. to closest position
-    idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
-    [~, order] = sort(idx);
-    amp_in = amp_in(order);
+    if ~isempty(des_pressures)
+        % Focal points - in Scan coordinate system
+        point_pos_m.x = scan_focus_x;
+        point_pos_m.y = scan_focus_z;
+        amp_in = des_pressures' * 1e3; % Pa
+    
+        point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
+        point_pos.y = round((plot_offset(3) + point_pos_m.y) * dx_factor);
+    
+        % Assign amplitude acc. to closest position
+        idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
+        [~, order] = sort(idx);
+        amp_in = amp_in(order);
+    else
+        point_pos_m = [];
+        point_pos = [];
+    end
 
     b_mask = zeros(kgrid.Nx, kgrid.Ny);
+    amp_in_reg = des_pressures_region' * 1e3; % Pa
+    point_pos.slice = slice_idx_2D;
     
     if ~only_focus_opt
+
+        slice_grid_2D = round((plot_offset(2) + slice_idx_2D) * dx_factor);
+        stim_regions = squeeze(segment_ids(:, slice_grid_2D, :));
 
         amp_vol = -1 * ones(numel(b_mask), 1);
 
         % Stimulate Disc pattern
-        for i = 1:length(point_pos.x)
+        for i = 1:length(des_pressures)
             disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
             amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
             b_mask = b_mask + disc;
         end
 
-%         % Stimulate Ring pattern
-%         for i = 1:length(point_pos.x)
-%             ring = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false) ...
-%             - makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.02 * kgrid.Nx), false);
-% 
-%             amp_vol = [amp_vol; amp_in(i) * ones(sum(ring(:)), 1)];
-%             b_mask = b_mask + ring;
-%         end
+        % Stimulate brain region
+        for j = 1:length(region_labels)
+            reg_mask = stim_regions == region_labels(j);
+            amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+            b_mask = b_mask + reg_mask;
+        end
 
         b_cross = amp_vol / max(amp_vol);
         b_cross(b_cross < 0.0) = 0.0;
@@ -214,39 +250,54 @@ if kgrid.dim == 2
 
 else
     
-    % Focal points - in Scan coordinate system
-    if isempty(t1w_filename)
-        point_pos_m.x = [30, 5];
-        point_pos_m.y = [10, 10];
-        point_pos_m.z = [-30, 0];
+    if ~isempty(des_pressures)
+        % Focal points - in Scan coordinate system
+        if isempty(t1w_filename)
+            point_pos_m.x = [30, 5];
+            point_pos_m.y = [10, 10];
+            point_pos_m.z = [-30, 0];
+        else
+            point_pos_m.x = scan_focus_x;
+            point_pos_m.y = slice_idx_2D * ones(1, length(scan_focus_x));
+            point_pos_m.z = scan_focus_z;
+        end
+        amp_in = des_pressures' * 1e3; % Pa
+    
+        point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
+        point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
+        point_pos.z = round((plot_offset(3) + point_pos_m.z) * dx_factor);
+    
+        % Assign amplitude acc. to closest position
+        idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_pos.x, point_pos.y, point_pos.z);
+        [~, order] = sort(idx);
+        amp_in = amp_in(order);
     else
-        point_pos_m.x = scan_focus_x;
-        point_pos_m.y = [slice_idx_2D, slice_idx_2D];
-        point_pos_m.z = scan_focus_z;
+        point_pos_m = [];
+        point_pos = [];
     end
-    amp_in = des_pressures' * 1e3; % Pa
-
-    point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
-    point_pos.y = round((plot_offset(2) + point_pos_m.y) * dx_factor);
-    point_pos.z = round((plot_offset(3) + point_pos_m.z) * dx_factor);
-
-    % Assign amplitude acc. to closest position
-    idx = sub2ind([kgrid.Nx, kgrid.Ny, kgrid.Nz], point_pos.x, point_pos.y, point_pos.z);
-    [~, order] = sort(idx);
-    amp_in = amp_in(order);
 
     b_mask = zeros(kgrid.Nx, kgrid.Ny, kgrid.Nz);
-    point_pos.slice = point_pos_m.y(1);
+    amp_in_reg = des_pressures_region' * 1e3; % Pa
+    point_pos.slice = slice_idx_2D;
 
     if ~only_focus_opt
+
+        stim_regions = segment_ids;
 
         amp_vol = -1 * ones(numel(b_mask), 1);
 
         % Stimulate Disc pattern
-        for i = 1:length(point_pos.x)
+        for i = 1:length(des_pressures)
             ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(0.04 * kgrid.Nx), false);
             amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
             b_mask = b_mask + ball;
+        end
+
+        % Stimulate brain region
+        for j = 1:length(region_labels)
+            reg_mask = stim_regions == region_labels(j);
+            amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+            b_mask = b_mask + reg_mask;
         end
 
         b_cross = amp_vol / max(amp_vol);
@@ -255,7 +306,7 @@ else
     else
     
         b_cross = b_mask;
-        for i = 1:length(point_pos.x)
+        for i = 1:length(des_pressures)
             b_mask(point_pos.x(i), point_pos.y(i), point_pos.z(i)) = 1;
 
             b_cross(point_pos.x(i), point_pos.y(i), point_pos.z(i) - cross_pixRadius:point_pos.z(i) + cross_pixRadius) = 1;
@@ -265,6 +316,7 @@ else
     end
 
 end
+b_mask = logical(b_mask);
 
 % Create preview plot
 preplot_arg = reshape(b_cross, size(b_mask));
@@ -287,7 +339,7 @@ b_des = amp_in .* exp(1j*phase); % only observed elements
 
 b_max = max(abs(b_des));
 b_des_pl = sidelobe_tol/100 * b_max * ones(numel(b_mask), 1); % Entire plane max amp
-b_des_pl(logical(b_mask)) = b_des; % Target amp
+b_des_pl(b_mask) = b_des; % Target amp
 b_des_pl(logical(medium.sound_speed > min(medium.sound_speed(:)))) = max_skull_pressure * 1e3; % Skull max amp
 
 % set simulation input options

@@ -1,4 +1,4 @@
-function [seg_maps, classNames] = segment_space(imFile, dx_scan)
+function [predictedSegMaps] = segment_space(imFile, dx_scan)
 
 % Download label data
 zipFile = matlab.internal.examples.downloadSupportFile("image","data/brainSegData.zip");
@@ -44,8 +44,6 @@ layerGraph(net);
 predictIm = predict(net,volDL);
 predictedSegMaps = postProcessBrainCANDIData(predictIm,[],imSize,...
     cropIdx,metaData,classNames,labelIDs);
-
-seg_maps = double(predictedSegMaps);
 
 end
 
