@@ -20,7 +20,7 @@ end
 % Limit the selected points with the surface points
 init_ids = [];
 selected = false(length(x), 1);
-selected(cat(2, hull_ids{:})) = true; % Exclude surfaces indices
+selected(ismember(stim_ids, cat(2, hull_ids{:}))) = true; % Exclude surfaces indices
 
 for i = 1:length(hull_ids)
     selected_i = selected;
