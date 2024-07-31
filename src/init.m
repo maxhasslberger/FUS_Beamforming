@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, domain_ids, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, logical_dom_ids, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -100,7 +100,6 @@ if abs(dx_factor) < 0.99 || abs(dx_factor) > 1.01
     seg_nums = round(seg_nums); % Ensure indices are integers
     segment_ids = uniqueStrings(seg_nums);
 end
-domain_ids = segment_ids ~= "background"; % Mask entire brain
 
 %% Define Transducer Geometry
 
@@ -187,10 +186,17 @@ end
 
 %% Define (intracranial) Beamforming Pattern
 
+domain_ids = segment_ids ~= "background"; % Mask entire brain
+logical_dom_ids = false(numel(medium.sound_speed), 1);
+
 cross_pixRadius = 5;
 
 if kgrid.dim == 2
+    % Mask brain slice
+    slice_grid_2D = round((plot_offset(2) + slice_idx_2D) * dx_factor);
+    logical_dom_ids(squeeze(domain_ids(:, slice_grid_2D, :))) = true;
 
+    % Define targets
     if ~isempty(des_pressures)
         % Focal points - in Scan coordinate system
         point_pos_m.x = scan_focus_x;
@@ -214,8 +220,6 @@ if kgrid.dim == 2
     point_pos.slice = slice_idx_2D;
     
     if ~only_focus_opt
-
-        slice_grid_2D = round((plot_offset(2) + slice_idx_2D) * dx_factor);
         stim_regions = squeeze(segment_ids(:, slice_grid_2D, :));
 
         amp_vol = -1 * ones(numel(b_mask), 1);
@@ -249,7 +253,10 @@ if kgrid.dim == 2
     end
 
 else
+    % Mask brain
+    logical_dom_ids(domain_ids) = true;
     
+    % Define targets
     if ~isempty(des_pressures)
         % Focal points - in Scan coordinate system
         if isempty(t1w_filename)
