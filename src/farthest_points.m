@@ -22,7 +22,7 @@ init_ids = [];
 selected = false(length(x), 1);
 selected(ismember(stim_ids, cat(2, hull_ids{:}))) = true; % Exclude surfaces indices
 
-for i = 1:length(hull_ids)
+for i = 1:length(hull_ids) % for each cluster
     selected_i = selected;
     selected_i(cluster_labels ~= i) = true; % Exclude indices from other clusters
 

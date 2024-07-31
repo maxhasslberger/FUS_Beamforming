@@ -1,11 +1,11 @@
 function [init_ids, hull_ids, b_mask_plot] = get_init_ids(kgrid, lambda, b_mask)
 
 stim_ids = find(b_mask);
-min_dist = 1 * lambda / kgrid.dx; % m -> pix; min distance between init points
+min_dist = 2 * lambda / kgrid.dx; % m -> pix; min distance between init points
 
 % Obtain hull points of sonicated volumes
 epsilon = 2; % cluster distance reference
-[hull_ids, cluster_labels] = get_hulls_multiple_volumes(b_mask, epsilon, size(b_mask), stim_ids);
+[hull_ids, cluster_labels] = get_hulls_multiple_volumes(epsilon, size(b_mask), stim_ids);
 
 % Find n farthest points
 init_ids = farthest_points(size(b_mask), stim_ids, min_dist, hull_ids, cluster_labels);

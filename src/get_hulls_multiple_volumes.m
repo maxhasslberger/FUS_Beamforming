@@ -1,4 +1,4 @@
-function [hull_ids, labels] = get_hulls_multiple_volumes(b_mask, epsilon, grid_sz, stim_ids)
+function [hull_ids, labels] = get_hulls_multiple_volumes(epsilon, grid_sz, stim_ids)
 
 % Obtain coordinates of stim_ids
 if length(grid_sz) == 2 % dim == 2
