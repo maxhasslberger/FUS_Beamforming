@@ -33,7 +33,7 @@ else
 end
 
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor1, preplot_arg, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor1, preplot_arg, domain_ids, input_args] = ...
     init(max(f0), n_dim, dx_factor, ...
     'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
@@ -132,7 +132,9 @@ if only_focus_opt
     init_ids = vol_ids;
     ip.beta = 0.0;
 else
-    [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial and skull)
+%     [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial and skull)
+    skullMask = medium.sound_speed > min(medium.sound_speed(:));
+    skull_ids = reshape(skullMask, [], 1);
 
     % Take entire observation grid into account
     ip.A = A_cells; % Use cell array of A matrices rather than large block diagonal A matrix
@@ -228,7 +230,7 @@ ip.b = reshape(ip.b, size(kgrid.k));
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
-    ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, input_argsP] = ...
+    ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
     init(max(f0), n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 
     % Need to fix handling of f0. Might need to adjust for using multiple frequencies
@@ -254,6 +256,8 @@ else
  
 end
 
+plot_thr = min(b_ip_des) +  1e3;
+
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
 if save_results
@@ -270,28 +274,28 @@ end
 if do_time_reversal
     % tr.b(~domain_ids) = 0.0;
     plot_results(kgrid, tr.p, tr.b, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
-    plot_results(kgrid, [], abs(tr.b) > max(b_des) / 2, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, ...
+    plot_results(kgrid, [], abs(tr.b) > plot_thr, 'Time Reversal', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, ...
         'slice', point_pos.slice, 'cmap', gray());
 end
 
 %% IP Results
 plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
-plot_results(kgrid, [], abs(ip.b) > max(b_des) / 2, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, ...
+plot_results(kgrid, [], abs(ip.b) > plot_thr, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, ...
     'slice', point_pos.slice, 'colorbar', true, 'cmap', gray()); % plot mask with pressure above off-target limit
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     plot_results(kgridP, [], ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
         current_datetime, 'slice', point_posP.slice);
-    plot_results(kgridP, [], abs(ip.b_gt) > max(b_des) / 2, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
+    plot_results(kgridP, [], abs(ip.b_gt) > plot_thr, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
         current_datetime, 'slice', point_posP.slice, 'colorbar', true, 'cmap', gray());
     
-    if plot_dx_factor == 1
-        err = abs(ip.b) - abs(ip.b_gt);
-        plot_results(kgrid, [], err, 'Difference', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
-        figure
-        histogram(err(:))
-        xlabel("Pressure Deviation (Pa)")
-    end
+%     if plot_dx_factor == 1
+%         err = abs(ip.b) - abs(ip.b_gt);
+%         plot_results(kgrid, [], err, 'Difference', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+%         figure
+%         histogram(err(:))
+%         xlabel("Pressure Deviation (Pa)")
+%     end
 else
     plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
         current_datetime, 'slice', point_pos.slice);

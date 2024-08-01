@@ -81,7 +81,7 @@ else
         insideHull = isInsideConvexHull(dt, testPoints);
         
         % Reshape to the original size of the 3D matrix
-        convexHullMask = reshape(insideHull(:, 1), size(sound_speed));
+        convexHullMask = reshape(insideHull, size(sound_speed));
     end
     opt_ids = find(convexHullMask);
     opt_ids = setdiff(opt_ids, skull_ids);
@@ -101,7 +101,7 @@ end
 
 % Helper function to check if points are inside a convex hull
 function inside = isInsideConvexHull(dt, points)
-    [~, in] = pointLocation(dt, points);
+    in = pointLocation(dt, points);
     inside = ~isnan(in);
 end
 
