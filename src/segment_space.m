@@ -1,5 +1,7 @@
 function [predictedSegMaps] = segment_space(imFile, dx_scan)
 
+addpath('Brain_Segmentation')
+
 str_sep = strfind(imFile, '.nii');
 mat_file = strcat(imFile(1:str_sep(end)-1), "_seg.mat");
 

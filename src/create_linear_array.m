@@ -11,6 +11,8 @@ if kgrid.dim == 2 % Create linear transducer array with approx. num_elements ele
     xvalues = round(linspace(x_offset - x_range, x_offset + x_range, num_elements));
     yvalues = round(linspace(y_offset - y_range, y_offset + y_range, num_elements));
     
+    disp(['xvalues: ',num2str(xvalues),'; yvalues: ',num2str(yvalues),'; size(tmask): ',num2str(size(t_mask))])
+
     % Replace the relevant values within the mask
     t_mask(sub2ind(size(t_mask), xvalues, yvalues)) = 1;
 else

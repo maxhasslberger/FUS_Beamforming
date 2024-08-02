@@ -81,7 +81,7 @@ if n_dim == 3
     grid_size = [grid_size(1), grid_size(3)]; % plane size for plots
 end
 
-dx_factor = dx_scan / kgrid.dx;
+dx_factor = dx_scan / round(kgrid.dx,3);
 
 %% Segment the brain
 [segment_ids] = segment_space(t1w_filename, dx_scan);
@@ -91,11 +91,11 @@ if abs(dx_factor) < 0.99 || abs(dx_factor) > 1.01
     seg_sz = size(segment_ids);
     [uniqueStrings, ~, seg_nums] = unique(segment_ids);
     seg_nums = reshape(seg_nums, size(segment_ids)); % Ensure it has the same shape as the original 3D array
-
+    
+    % For 2D, kgrid.k has 2 dims
     [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
     [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz(1)), linspace(1, seg_sz(2), grid_sz(2)), linspace(1, seg_sz(3), grid_sz(3)));
-    seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
-
+    seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';    
     % Map back to strings
     seg_nums = round(seg_nums); % Ensure indices are integers
     segment_ids = uniqueStrings(seg_nums);
