@@ -113,22 +113,23 @@ if kgrid.dim == 2
     t1_pos = t1_pos'; % scan dims
     t2_pos = t2_pos'; % scan dims
     t_rot = t_rot';
+    tr_len_m = [70, 70]' * 1e-3; % m
 
     t_pos = [t1_pos, t2_pos];
+    tr_len = tr_len_m / kgrid.dx;
 
-    num_elements = 75;
-    % num_elements = 50;
-    spacing = ceil(dx_factor);
+    spacing = 1;
+%     spacing = ceil(dx_factor);
     n_trs = length(t_rot);
 
     t_mask_ps = false(kgrid.Nx, kgrid.Ny);
     el_per_t = zeros(1, n_trs);
     t_ids = [];
     for i = 1:n_trs
-        el_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
-        shift = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
+        x_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
+        y_offset = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
     
-        new_arr = create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
+        new_arr = create_linear_array(kgrid, tr_len(i), x_offset, y_offset, spacing, t_rot(i));
 
         el_per_t(i) = sum(new_arr(:));
         t_ids = [t_ids; find(new_arr)];
