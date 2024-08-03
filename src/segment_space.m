@@ -47,7 +47,7 @@ if ~exist(mat_file, "file")
     % Predict
     predictIm = predict(net,volDL);
 
-    flipVal = false;
+    flipVal = true;
     if flipVal
         flippedData = fliplr(volProc);  
         flippedData = flip(flippedData,2);
