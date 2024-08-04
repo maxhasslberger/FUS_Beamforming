@@ -20,7 +20,7 @@ for i = 1:length(force_pressures)
 end
 
 % Obtain hull points of sonicated volumes
-hull_ids = get_hulls_multiple_volumes(cluster_labels, size(kgrid.k), stim_ids);
+hull_ids = get_hulls(cluster_labels, size(kgrid.k), stim_ids);
 
 % Find n farthest points
 init_ids = farthest_points(size(kgrid.k), stim_ids, min_dist, hull_ids, cluster_labels);

@@ -1,4 +1,4 @@
-function hull_ids = get_hulls_multiple_volumes(labels, grid_sz, stim_ids)
+function hull_ids = get_hulls(labels, grid_sz, stim_ids)
 
 % Obtain coordinates of stim_ids
 if length(grid_sz) == 2 % dim == 2
