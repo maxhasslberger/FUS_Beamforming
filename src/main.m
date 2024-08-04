@@ -19,7 +19,7 @@ sidelobe_tol = 49; % percent of max amplitude
 only_focus_opt = false; % Optimize only for focal spots or entire observation domain
 use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
-get_current_A = "A_2D_2Trs_75el_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = "A_2D_2Trs_70mm_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = true; % Ground truth k-wave simulation -> plot_dx_factor
 save_results = false;
@@ -30,7 +30,7 @@ else
     dx_factor = (1500 / f0 / 3) / dx; % = (c0 / f0 / ppw) / dx
 end
 
-[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
+[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, only_focus_opt, force_pressures, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor1, preplot_arg, domain_ids, input_args] = ...
     init(max(f0), n_dim, dx_factor, ...
     'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
@@ -38,7 +38,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
 if do_time_reversal
-    tr.p = sim_exe(kgrid, medium, sensor, max(f0), b_des, b_mask, t_mask_ps, false, input_args);
+    tr.p = sim_exe(kgrid, medium, sensor, max(f0), b_des, full_bmask, t_mask_ps, false, input_args);
     % tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
     tr.p = conj(tr.p); % Var amplitude
     tr.b = sim_exe(kgridP, mediumP, sensorP, max(f0), tr.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
@@ -63,7 +63,7 @@ end
 %% Solve Inverse Problem
 tic
 
-obs_ids = reshape(logical(b_mask), numel(b_mask), 1);
+obs_ids = reshape(logical(full_bmask), numel(full_bmask), 1);
 
 if only_focus_opt
     domain_ids = 1; % To be discarded -> off-target pressures could be too large!
@@ -86,7 +86,7 @@ else
     b_ip_des = b_des_pl;
 
     vol_ids = obs_ids; % Indices that correspond to the target volume(s)
-    [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask); % Indices where pressure values given
+    [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask, force_pressures); % Indices where pressure values given
     ip.beta = 0.0;
 
     % New preplot with init point arg
@@ -110,7 +110,7 @@ ip.b = reshape(ip.b, size(kgrid.k));
 % ip.b(~domain_ids) = 0.0;
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
-    [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
+    [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
     init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
 

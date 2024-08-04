@@ -1,7 +1,24 @@
-function [init_ids, hull_ids, b_mask_plot] = get_init_ids(kgrid, lambda, b_mask)
+function [init_ids, hull_ids, b_mask_plot] = get_init_ids(kgrid, lambda, b_mask, force_pressures)
 
-stim_ids = find(b_mask);
+n_dim = length(size(kgrid.k));
+
+stim_ids = find(sum(b_mask, n_dim + 1));
 min_dist = 2 * lambda / kgrid.dx; % m -> pix; min distance between init points
+
+% Label clusters and identify forced stim_ids
+stim_ids2 = [];
+cluster_labels2 = [];
+
+for i = 1:length(force_pressures)
+    if n_dim == 2
+        new_ids = find(b_mask(:, :, force_pressures(i)));
+    else
+        new_ids = find(b_mask(:, :, :, force_pressures(i)));
+    end
+
+    stim_ids2 = [stim_ids2; new_ids];
+    cluster_labels2 = [cluster_labels2; i * ones(length(new_ids), 1)];
+end
 
 % Obtain hull points of sonicated volumes
 epsilon = 2; % cluster distance reference
