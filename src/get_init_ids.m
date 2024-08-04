@@ -2,12 +2,11 @@ function [init_ids, hull_ids, b_mask_plot] = get_init_ids(kgrid, lambda, b_mask,
 
 n_dim = length(size(kgrid.k));
 
-stim_ids = find(sum(b_mask, n_dim + 1));
 min_dist = 2 * lambda / kgrid.dx; % m -> pix; min distance between init points
 
 % Label clusters and identify forced stim_ids
-stim_ids2 = [];
-cluster_labels2 = [];
+stim_ids = [];
+cluster_labels = [];
 
 for i = 1:length(force_pressures)
     if n_dim == 2
@@ -16,19 +15,18 @@ for i = 1:length(force_pressures)
         new_ids = find(b_mask(:, :, :, force_pressures(i)));
     end
 
-    stim_ids2 = [stim_ids2; new_ids];
-    cluster_labels2 = [cluster_labels2; i * ones(length(new_ids), 1)];
+    stim_ids = [stim_ids; new_ids];
+    cluster_labels = [cluster_labels; i * ones(length(new_ids), 1)];
 end
 
 % Obtain hull points of sonicated volumes
-epsilon = 2; % cluster distance reference
-[hull_ids, cluster_labels] = get_hulls_multiple_volumes(epsilon, size(b_mask), stim_ids);
+hull_ids = get_hulls_multiple_volumes(cluster_labels, size(kgrid.k), stim_ids);
 
 % Find n farthest points
-init_ids = farthest_points(size(b_mask), stim_ids, min_dist, hull_ids, cluster_labels);
+init_ids = farthest_points(size(kgrid.k), stim_ids, min_dist, hull_ids, cluster_labels);
 
 % Plot selected points
-b_mask_plot = zeros(size(b_mask));
+b_mask_plot = zeros(size(kgrid.k));
 b_mask_plot(init_ids) = 1;
 for i = 1:length(hull_ids)
 %     [x, y] = ind2sub(size(b_mask_plot), stim_ids);

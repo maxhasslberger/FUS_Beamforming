@@ -1,4 +1,4 @@
-function [hull_ids, labels] = get_hulls_multiple_volumes(epsilon, grid_sz, stim_ids)
+function hull_ids = get_hulls_multiple_volumes(labels, grid_sz, stim_ids)
 
 % Obtain coordinates of stim_ids
 if length(grid_sz) == 2 % dim == 2
@@ -9,23 +9,10 @@ else
     data = [x, y, z];
 end
 
-original_indices = (1:length(x))';
-numPoints = length(x);
-
-% Initialize labels
-labels = zeros(numPoints, 1);
-cluster_id = 0;
-
-% Custom distance-based clustering
-for i = 1:numPoints
-    if labels(i) == 0
-        cluster_id = cluster_id + 1;
-        labels = assign_cluster(data, labels, i, cluster_id, epsilon);
-    end
-end
-
 % Get unique cluster labels
 unique_labels = unique(labels);
+
+original_indices = (1:length(x))';
 
 % Initialize a cell array to hold surface indices of each cluster
 hull_ids = cell(length(unique_labels), 1);
