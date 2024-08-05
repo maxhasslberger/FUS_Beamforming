@@ -4,6 +4,7 @@
 use_cw_signals = false; % use kWave continuous wave function
 perform_fft = false; % perform fft on summed signal
 smoothen_pulse = true; % smooth pulses
+zero_padding = true; % apply zero padding to beginning of the signal
 
 % -------------------------------------------------------
 % >>>>> Option 1: Constructing signals from scratch <<<<<
@@ -20,9 +21,10 @@ if ~use_cw_signals
     w = 2 * pi * f0; % Angular frequencies
     amp = 20 * 1e3; % Pa
 
-    npulses = 3;
-    pulse_train_duration = 50 * T;
-    t = 0:dt:(pulse_train_duration);
+    npulses = 4;
+    pulse_train_duration = 37.5 * T;
+    if zero_padding; padding_duration = 10 * T; else; padding_duration = 0; end;
+    t = 0:dt:(pulse_train_duration + padding_duration);
     pulse_duration = pulse_train_duration / npulses;
     duty_cycle = 0.5;
     
@@ -41,7 +43,7 @@ if ~use_cw_signals
     envelope = zeros(1, length(t));
     for pulse = 0:(npulses-1)
         sonicated_duration = duty_cycle * pulse_duration;
-        pulse_start = pulse * pulse_duration;
+        pulse_start = padding_duration + pulse * pulse_duration;
         sonic_pulse_mid = pulse_start + sonicated_duration/2;
         sonic_pulse_end = pulse_start + sonicated_duration;
 
@@ -58,6 +60,10 @@ if ~use_cw_signals
         end
     end
     smooth_result_signal = result_signal .* envelope;
+
+    if zero_padding
+        % smooth_result_signal = [zeros(1,50) smooth_result_signal];        
+    end
 
     % plot envelope
     figure;
@@ -108,12 +114,12 @@ else
     % define sampling parameters
     f0 = [450:10:490] * 1e3; % ctr freq = 470 kHz
     T = 1/(min(f0));
-    Fs = 100e6;
+    Fs = 10e6;
     dt = 1/Fs;
-    t_array = 0:dt:100*T;
+    t_array = 0:dt:37.5*T;
     
     % define amplitude and phase
-    amp = 1;
+    amp = 20e3;
     phase = 0;
     
     % create signals
