@@ -21,10 +21,16 @@ if kgrid.dim == 2 % Create linear transducer array with approx. num_elements ele
         xvalues = fit_coordinates(length(yvalues), xvalues);
     end
     
-    disp(['xvalues: ',num2str(xvalues),'; yvalues: ',num2str(yvalues),'; size(tmask): ',num2str(size(t_mask))])
+    disp(['xvalues: ',num2str(xvalues)])
+    disp(length(xvalues));
+        disp(['yvalues: ',num2str(yvalues)])
+        disp(['size(tmask): ',num2str(size(t_mask))])
 
     % Replace the relevant values within the mask
-    t_mask(sub2ind(size(t_mask), xvalues, yvalues)) = 1;
+    t_mask(sub2ind(size(t_mask), xvalues, yvalues)) = 1; % Question --> I'm getting an error here after merging the segmentation code
+    % saying that xvalues exceeds the x dimension of t_mask (and therefore kgrid). xvalues has a max value of 189, which is out of range 
+    % of t_mask's x dimension length of 188. Could this be because of how
+    % kgrid is initialized?
 else
     error("Function not supported in 3D")
 end
