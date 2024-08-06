@@ -1,4 +1,4 @@
-function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, t_mask_ps, karray_t, only_focus_opt, ...
+function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, only_focus_opt, force_pressures, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, logical_dom_ids, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
@@ -14,18 +14,20 @@ t2_pos = [68, 60]; % scan dims [x, z]
 t_rot = [45, -45]; % deg
 
 scan_focus_x = [-18, 22];
-% scan_focus_x = [];
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
 scan_focus_z = [-27, -19];
-% scan_focus_z = [];
 des_pressures = [300, 300]; % kPa
+% scan_focus_x = [];
+% scan_focus_z = [];
 % des_pressures = []; % kPa
 
 % region_labels = ["leftAmygdala", "rightAmygdala"];
 % region_labels = ["leftHippocampus", "rightHippocampus"];
-region_labels = [];
 % des_pressures_region = [300, 300]; % kPa
+region_labels = [];
 des_pressures_region = []; % kPa
+
+force_pressures = [1, 2]; % regions where pressure forced to exact value
 
 sidelobe_tol = 50; % percent
 max_skull_pressure = 1e3; % kPa
@@ -113,22 +115,23 @@ if kgrid.dim == 2
     t1_pos = t1_pos'; % scan dims
     t2_pos = t2_pos'; % scan dims
     t_rot = t_rot';
+    tr_len_m = [70, 70]' * 1e-3; % m
 
     t_pos = [t1_pos, t2_pos];
+    tr_len = tr_len_m / kgrid.dx;
 
-    num_elements = 75;
-    % num_elements = 50;
-    spacing = ceil(dx_factor);
+    spacing = 1;
+%     spacing = ceil(dx_factor);
     n_trs = length(t_rot);
 
     t_mask_ps = false(kgrid.Nx, kgrid.Ny);
     el_per_t = zeros(1, n_trs);
     t_ids = [];
     for i = 1:n_trs
-        el_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
-        shift = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
+        x_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
+        y_offset = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
     
-        new_arr = create_linear_array(kgrid, num_elements, el_offset, shift, spacing, t_rot(i));
+        new_arr = create_linear_array(kgrid, tr_len(i), x_offset, y_offset, spacing, t_rot(i));
 
         el_per_t(i) = sum(new_arr(:));
         t_ids = [t_ids; find(new_arr)];
@@ -215,21 +218,21 @@ if kgrid.dim == 2
         point_pos = [];
     end
 
-    b_mask = zeros(kgrid.Nx, kgrid.Ny);
+    b_mask = zeros(kgrid.Nx, kgrid.Ny, length(des_pressures) + length(region_labels));
     amp_in_reg = des_pressures_region' * 1e3; % Pa
     point_pos.slice = slice_idx_2D;
     
     if ~only_focus_opt
         stim_regions = squeeze(segment_ids(:, slice_grid_2D, :));
 
-        amp_vol = -1 * ones(numel(b_mask), 1);
+        amp_vol = -1 * ones(numel(kgrid.k), 1);
 
         % Stimulate Disc pattern
         for i = 1:length(des_pressures)
             disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
-            amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
-            b_mask = b_mask + disc; 
-
+            amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);           
+            
+            b_mask(:, :, i) = disc;
             % Question ---> What is the disc pattern here and why is it added to b_mask? 
             % My understanding is that b_mask is the mask of indices of the target region 
             % and that we are using point sources, but I also noticed that the focal points seem to be stored in point_pos. 
@@ -252,7 +255,7 @@ if kgrid.dim == 2
         for j = 1:length(region_labels)
             reg_mask = stim_regions == region_labels(j);
             amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
-            b_mask = b_mask + reg_mask;
+            b_mask(:, :, length(des_pressures) + j) = reg_mask;
         end
 
         b_cross = amp_vol / max(amp_vol);
@@ -260,7 +263,7 @@ if kgrid.dim == 2
         amp_in = amp_vol(amp_vol >= 0);
     else
 
-        b_cross = b_mask;
+        b_cross = b_mask;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         for i = 1:length(point_pos.x)
             b_mask(point_pos.x(i), point_pos.y(i)) = 1;
 
@@ -300,7 +303,7 @@ else
         point_pos = [];
     end
 
-    b_mask = zeros(kgrid.Nx, kgrid.Ny, kgrid.Nz);
+    b_mask = zeros(kgrid.Nx, kgrid.Ny, kgrid.Nz, length(des_pressures) + length(region_labels));
     amp_in_reg = des_pressures_region' * 1e3; % Pa
     point_pos.slice = slice_idx_2D;
 
@@ -308,20 +311,20 @@ else
 
         stim_regions = segment_ids;
 
-        amp_vol = -1 * ones(numel(b_mask), 1);
+        amp_vol = -1 * ones(numel(kgrid.k), 1);
 
         % Stimulate Disc pattern
         for i = 1:length(des_pressures)
             ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(0.04 * kgrid.Nx), false);
             amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
-            b_mask = b_mask + ball;
+            b_mask(:, :, :, i) = ball;
         end
 
         % Stimulate brain region
         for j = 1:length(region_labels)
             reg_mask = stim_regions == region_labels(j);
             amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
-            b_mask = b_mask + reg_mask;
+            b_mask(:, :, :, length(des_pressures) + j) = reg_mask;
         end
 
         b_cross = amp_vol / max(amp_vol);
@@ -343,7 +346,7 @@ end
 b_mask = logical(b_mask);
 
 % Create preview plot
-preplot_arg = reshape(b_cross, size(b_mask));
+preplot_arg = reshape(b_cross, size(kgrid.k));
 preplot_arg(logical(t_mask_ps)) = max(b_cross(:));
 
 if ~isscalar(medium.sound_speed)
@@ -360,13 +363,15 @@ preplot_arg(logical(t_mask_ps)) = 0.0; % Do not show transducers in second pre-p
 phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
 
 b_des = amp_in .* exp(1j*phase); % only observed elements
+full_bmask = sum(b_mask, n_dim + 1);
+full_bmask = logical(full_bmask);
 
 b_max = max(abs(b_des));
-b_des_pl = sidelobe_tol/100 * b_max * ones(numel(b_mask), 1); % Entire plane max amp
-b_des_pl(b_mask) = b_des; % Target amp
+b_des_pl = sidelobe_tol/100 * b_max * ones(numel(kgrid.k), 1); % Entire plane max amp
+b_des_pl(full_bmask) = b_des; % Target amp
 b_des_pl(logical(reshape(medium.sound_speed > min(medium.sound_speed(:)), [], 1)) & ~logical_dom_ids) = max_skull_pressure * 1e3; % Skull max amp
 
 % set simulation input options
-input_args = {'PMLSize', 10, 'PMLInside', true, 'PlotPML', true, 'DisplayMask', b_mask + t_mask_ps, 'RecordMovie', false};
+input_args = {'PMLSize', 10, 'PMLInside', true, 'PlotPML', true, 'DisplayMask', full_bmask + t_mask_ps, 'RecordMovie', false};
 
 end
