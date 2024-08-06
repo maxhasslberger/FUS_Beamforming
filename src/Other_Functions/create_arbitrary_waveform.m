@@ -5,6 +5,7 @@ use_cw_signals = false; % use kWave continuous wave function
 perform_fft = false; % perform fft on summed signal
 smoothen_pulse = true; % smooth pulses
 zero_padding = true; % apply zero padding to beginning of the signal
+save_csv = true; % export signal to csv file
 
 % -------------------------------------------------------
 % >>>>> Option 1: Constructing signals from scratch <<<<<
@@ -78,6 +79,14 @@ if ~use_cw_signals
     xlabel('Time (s)');
     ylabel('Amplitude');
     grid on;
+
+    if save_csv
+        time = t';
+        amplitude = smooth_result_signal';
+        signal_data = table(time, amplitude);
+        writetable(signal_data, fullfile("../..","Transducer_Delay_Files","arbitrary_signal.csv"));
+    end
+
 
     if perform_fft
         % Compute the FFT of the resulting signal
