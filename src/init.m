@@ -17,6 +17,7 @@ scan_focus_x = [-18, 22];
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
 scan_focus_z = [-27, -19];
 des_pressures = [300, 300]; % kPa
+focus_radius = [7, 7] * 1e-3; % mm
 % scan_focus_x = [];
 % scan_focus_z = [];
 % des_pressures = []; % kPa
@@ -229,7 +230,7 @@ if kgrid.dim == 2
 
         % Stimulate Disc pattern
         for i = 1:length(des_pressures)
-            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
+            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(focus_radius(i) / kgrid.dx), false);
             amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
             b_mask(:, :, i) = disc;
         end
@@ -298,7 +299,7 @@ else
 
         % Stimulate Disc pattern
         for i = 1:length(des_pressures)
-            ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(0.04 * kgrid.Nx), false);
+            ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(focus_radius(i) / kgrid.dx), false);
             amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
             b_mask(:, :, :, i) = ball;
         end
