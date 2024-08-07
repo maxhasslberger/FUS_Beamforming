@@ -22,6 +22,7 @@ use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (
 get_current_A = "A_2D_2Trs_70mm_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = true; % Ground truth k-wave simulation -> plot_dx_factor
+ineq_active = true; % Activate inequality constraints
 save_results = false;
 
 if isempty(dx)
@@ -96,18 +97,19 @@ else
         'colorbar', false, 'cmap', hot());
 end
 
-p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :);
+p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids);
 
-ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
+ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, ineq_active); % var Amp
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
-ip.t_solve = toc; % 
+ip.t_solve = toc;
 
 %% Obtain Acoustic profile
 ip.b = A * ip.p;
 ip.b = reshape(ip.b, size(kgrid.k));
 % ip.b(~domain_ids) = 0.0;
+% ip.b(~domain_ids & ~skull_ids) = 0.0;
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
