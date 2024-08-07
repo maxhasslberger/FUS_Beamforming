@@ -34,7 +34,7 @@ end
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, only_focus_opt, force_pressures, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor1, preplot_arg, domain_ids, input_args] = ...
     init(max(f0), n_dim, dx_factor, ...
-    'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
@@ -114,7 +114,7 @@ ip.b = reshape(ip.b, size(kgrid.k));
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
-    init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
 
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
     ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
