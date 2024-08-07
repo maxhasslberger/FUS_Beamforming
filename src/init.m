@@ -68,7 +68,7 @@ else
     end
 end
 
-[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
+[kgrid, medium, ppp] = init_grid_medium(max(f0), grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
     'slice_idx', round(plot_offset(2) + slice_idx_2D), 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
@@ -119,7 +119,7 @@ if kgrid.dim == 2
     t1_pos = t1_pos'; % scan dims
     t2_pos = t2_pos'; % scan dims
     t_rot = t_rot';
-    tr_len_m = [1, 1]' * 1e-3; % m
+    tr_len_m = [70, 70]' * 1e-3; % m
 
     t_pos = [t1_pos, t2_pos];
     tr_len = tr_len_m / kgrid.dx;
@@ -225,14 +225,8 @@ if kgrid.dim == 2
 
         % Stimulate Disc pattern
         for i = 1:length(des_pressures)
-<<<<<<< HEAD
-            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
-            amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);           
-            
-=======
             disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(focus_radius(i) / kgrid.dx), false);
             amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
->>>>>>> develop
             b_mask(:, :, i) = disc;
             % Question ---> What is the disc pattern here and why is it added to b_mask? 
             % My understanding is that b_mask is the mask of indices of the target region 
