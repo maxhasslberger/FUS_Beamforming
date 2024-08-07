@@ -23,6 +23,7 @@ use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (
 get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
+ineq_active = true; % Activate inequality constraints
 save_results = false;
 get_excitation_vec = false; % Use precomputed excitation vector
 
@@ -35,7 +36,7 @@ end
 [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, only_focus_opt, force_pressures, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor1, preplot_arg, domain_ids, input_args] = ...
     init(max(f0), n_dim, dx_factor, ...
-    'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
@@ -173,21 +174,6 @@ if ~get_excitation_vec
         p_init = [p_init, pinv(A_temp(init_ids, :)) * b_ip_des(init_ids, :)];
     end       
 
-
-% p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids, :); 
-
-% Question ---> Just to confirm, by using the pseudoinverse of A we are obtaining an initial solution for the excitation vector, 
-% and we then use a solver in solvePhasesAmp to optimize the solution?
-
-% Answer: Yes, exactly. It has shown to be a good initial guess, especially
-% if the inequality constraints are not too strong. It has given us good
-% solutions in the past.
-
-% Old code for one frequency:
-% ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
-
-
-
 % % ---------------------------------------------
 % % >>>>>>>>>>>> Test Cost Function <<<<<<<<<<<<<
 % [val,num_failed_constraints] = testCostFctn(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, f0);
@@ -208,10 +194,14 @@ if ~get_excitation_vec
 else
     ip.p = load(fullfile("..", "Excitation_Vecs", "p_470khz_5f.mat")).p; % Change excitation vectors file name manually
 end
+% % Single freq:
+% p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids);
+% ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, ineq_active); % var Amp
+
 % ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
-ip.t_solve = toc; % 
+ip.t_solve = toc;
 
 %% Obtain Acoustic profile
 nfreq = size(A_cells,2);
@@ -227,11 +217,13 @@ ip.b = reshape(ip.b, size(kgrid.k));
 
 % Comment this in for intracranial pressures
 % ip.b(~domain_ids) = 0.0;
+% ip.b(~domain_ids & ~skull_ids) = 0.0;
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
-    init(max(f0), n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    % init(max(f0), n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt, 'use_greens_fctn', use_greens_fctn);
+    init(max(f0), n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
 
     % Need to fix handling of f0. Might need to adjust for using multiple frequencies
     ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
@@ -252,8 +244,6 @@ else
     % comp plots don't error out
     ip.p_gt = ip.p;
     ip.b_gt = ip.b;
-
- 
 end
 
 plot_thr = min(b_ip_des) +  1e3;

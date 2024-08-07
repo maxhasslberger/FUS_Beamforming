@@ -42,7 +42,7 @@ for i = 1:length(hull_ids) % for each cluster
             end
             break;
         end
-        if maxDist < min_dist
+        if maxDist < min_dist(i)
             if ~point_found
                 % take the point found inside surface
                 nonSelectedIndices = find(~selected_i);

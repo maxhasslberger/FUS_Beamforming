@@ -17,6 +17,7 @@ t_rot = [45, -45]; % deg
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
 % scan_focus_z = [-27, -19]; % comment out for seg
 % des_pressures = [300, 300]; % kPa % comment out for seg
+% focus_radius = [7, 7] * 1e-3; % mm
 scan_focus_x = []; % comment in for seg
 scan_focus_z = []; % comment in for seg
 des_pressures = []; % kPa % comment in for seg
@@ -34,7 +35,6 @@ max_skull_pressure = 1e3; % kPa
 
 % Simulation config
 only_focus_opt = true; % Optimize only focal spots or entire grid
-use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -51,8 +51,6 @@ if ~isempty(varargin)
                 dx_scan = varargin{arg_idx+1};
             case 'only_focus_opt'
                 only_focus_opt = varargin{arg_idx+1};
-            case 'use_greens_fctn'
-                use_greens_fctn = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -86,21 +84,27 @@ end
 dx_factor = dx_scan / kgrid.dx;
 
 %% Segment the brain
-[segment_ids] = segment_space(t1w_filename, dx_scan);
-if abs(dx_factor) < 0.99 || abs(dx_factor) > 1.01
-    % Interpolate to adapt to grid size
-    grid_sz = size(kgrid.k);
-    seg_sz = size(segment_ids);
-    [uniqueStrings, ~, seg_nums] = unique(segment_ids);
-    seg_nums = reshape(seg_nums, size(segment_ids)); % Ensure it has the same shape as the original 3D array
+if ~isempty(t1w_filename)
+    [segment_ids] = segment_space(t1w_filename, dx_scan);
+    if abs(dx_factor) < 0.99 || abs(dx_factor) > 1.01
+        % Interpolate to adapt to grid size
+        grid_sz = size(kgrid.k);
+        seg_sz = size(segment_ids);
+        [uniqueStrings, ~, seg_nums] = unique(segment_ids);
+        seg_nums = reshape(seg_nums, size(segment_ids)); % Ensure it has the same shape as the original 3D array
     
-    % For 2D, kgrid.k has 2 dims
-    [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
-    [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz(1)), linspace(1, seg_sz(2), grid_sz(2)), linspace(1, seg_sz(3), grid_sz(3)));
-    seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';    
-    % Map back to strings
-    seg_nums = round(seg_nums); % Ensure indices are integers
-    segment_ids = uniqueStrings(seg_nums);
+        [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
+        [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz(1)), linspace(1, seg_sz(2), grid_sz(2)), linspace(1, seg_sz(3), grid_sz(3)));
+        seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
+    
+        % Map back to strings
+        seg_nums = round(seg_nums); % Ensure indices are integers
+        segment_ids = uniqueStrings(seg_nums);
+    end
+    domain_ids = segment_ids ~= "background"; % Mask entire brain
+else
+    segment_ids = [];
+    domain_ids = ones(size(kgrid.k));
 end
 
 %% Define Transducer Geometry
@@ -148,12 +152,7 @@ if kgrid.dim == 2
 %     colormap(getColorMap);
 else
     % Planar Array
-    if use_greens_fctn
-        t_name = "std";
-    else
-        t_name = "std_orig";
-    end
-%     t_name = "std_orig";
+    t_name = "std_orig";
 
     sparsity_name = "sparsity_ids";
     num_elements = 128;
@@ -189,7 +188,6 @@ end
 
 %% Define (intracranial) Beamforming Pattern
 
-domain_ids = segment_ids ~= "background"; % Mask entire brain
 logical_dom_ids = false(numel(medium.sound_speed), 1);
 
 cross_pixRadius = 5;
@@ -223,15 +221,18 @@ if kgrid.dim == 2
     point_pos.slice = slice_idx_2D;
     
     if ~only_focus_opt
-        stim_regions = squeeze(segment_ids(:, slice_grid_2D, :));
-
         amp_vol = -1 * ones(numel(kgrid.k), 1);
 
         % Stimulate Disc pattern
         for i = 1:length(des_pressures)
+<<<<<<< HEAD
             disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(0.04 * kgrid.Nx), false);
             amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);           
             
+=======
+            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(focus_radius(i) / kgrid.dx), false);
+            amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
+>>>>>>> develop
             b_mask(:, :, i) = disc;
             % Question ---> What is the disc pattern here and why is it added to b_mask? 
             % My understanding is that b_mask is the mask of indices of the target region 
@@ -251,11 +252,14 @@ if kgrid.dim == 2
             % 2D case) will be added one after another.
         end
 
-        % Stimulate brain region
-        for j = 1:length(region_labels)
-            reg_mask = stim_regions == region_labels(j);
-            amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
-            b_mask(:, :, length(des_pressures) + j) = reg_mask;
+        if ~isempty(t1w_filename)
+            % Stimulate brain region
+            stim_regions = squeeze(segment_ids(:, slice_grid_2D, :));
+            for j = 1:length(region_labels)
+                reg_mask = stim_regions == region_labels(j);
+                amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+                b_mask(:, :, length(des_pressures) + j) = reg_mask;
+            end
         end
 
         b_cross = amp_vol / max(amp_vol);
@@ -308,23 +312,23 @@ else
     point_pos.slice = slice_idx_2D;
 
     if ~only_focus_opt
-
-        stim_regions = segment_ids;
-
         amp_vol = -1 * ones(numel(kgrid.k), 1);
 
         % Stimulate Disc pattern
         for i = 1:length(des_pressures)
-            ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(0.04 * kgrid.Nx), false);
+            ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(focus_radius(i) / kgrid.dx), false);
             amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
             b_mask(:, :, :, i) = ball;
         end
 
-        % Stimulate brain region
-        for j = 1:length(region_labels)
-            reg_mask = stim_regions == region_labels(j);
-            amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
-            b_mask(:, :, :, length(des_pressures) + j) = reg_mask;
+        if ~isempty(t1w_filename)
+            % Stimulate brain region
+            stim_regions = segment_ids;
+            for j = 1:length(region_labels)
+                reg_mask = stim_regions == region_labels(j);
+                amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+                b_mask(:, :, :, length(des_pressures) + j) = reg_mask;
+            end
         end
 
         b_cross = amp_vol / max(amp_vol);
