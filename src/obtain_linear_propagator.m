@@ -36,15 +36,14 @@ if islogical(get_current_A)
             i_start = 1;
         end
     
-        if isempty(karray_t) % Use point sources as transducers
+        phase_in = 0;
 
-            use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed(:));
+        if isempty(karray_t) % Use point sources as transducers
         
             el_ids = find(t_mask);
 %             el2mask_ids = sort(el2mask_ids); % Mapping mask -> element index
 %             el_ids = el_ids(el2mask_ids);
 
-            phase_in = 0;
             if ~exist("A", "var")
                 A = zeros(kgrid.total_grid_points, numel(el_ids), 'single');
             end
@@ -88,7 +87,12 @@ if islogical(get_current_A)
                 el_x = karray_t.elements{i};
                 karray_tmp.addRectElement(el_x.position, el_x.length, el_x.width, el_x.orientation);
 
-                a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, [], sensor_mask, true, input_args, 'karray_t', karray_tmp));
+                if use_greens_fctn
+                    amp_in = karray_tmp.getArrayGridWeights(kgrid);
+                    a_coli = single(acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed));
+                else
+                    a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, [], sensor_mask, true, input_args, 'karray_t', karray_tmp));
+                end
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
 

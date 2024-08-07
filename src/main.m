@@ -38,6 +38,8 @@ end
     init(max(f0), n_dim, dx_factor, ...
     'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
 
+use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed(:)); % Update green's fctn flag
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Time Reversal
 if do_time_reversal
