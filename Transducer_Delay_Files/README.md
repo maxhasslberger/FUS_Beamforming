@@ -1,1 +1,0 @@
-Folder where transducer delays (per array element) are saved. Has to match the manufacturer's indexing!
