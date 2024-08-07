@@ -1,10 +1,17 @@
 % clear;
 % close all;
  
+% Options
 use_cw_signals = false; % use kWave continuous wave function
 perform_fft = false; % perform fft on summed signal
 smoothen_pulse = true; % smooth pulses
-zero_padding = true; % apply zero padding to beginning of the signal
+zero_padding = false; % apply zero padding to beginning of the signal
+
+% Plotting
+plot_continuous = true;
+plot_envelope = false;
+plot_burst = false;
+
 save_csv = true; % export signal to csv file
 
 % -------------------------------------------------------
@@ -13,17 +20,19 @@ save_csv = true; % export signal to csv file
 
 if ~use_cw_signals
     f0 = [450:10:490] * 1e3; % ctr freq = 470 kHz
+    T_m = find_mixed_period(f0);
     nfreq = length(f0);
     T = 1/(min(f0));
     % Computational load can be managed by tweaking sampling freq and/or time vector length
-    Fs = 10e6; 
+    Fs = 10e6;
     dt = 1/Fs;
     % t = 0:dt:60*T;  
     w = 2 * pi * f0; % Angular frequencies
     amp = 20 * 1e3; % Pa
 
     npulses = 4;
-    pulse_train_duration = 37.5 * T;
+    % pulse_train_duration = 37.5 * T; % 37.5 * T
+    pulse_train_duration = T_m;
     if zero_padding; padding_duration = 10 * T; else; padding_duration = 0; end;
     t = 0:dt:(pulse_train_duration + padding_duration);
     pulse_duration = pulse_train_duration / npulses;
@@ -34,12 +43,14 @@ if ~use_cw_signals
     % Sum signals of different frequencies along the first dimension to get summed signals matrix
     result_signal = sum(signals_tmp, 1);
     
-    figure;
-    plot(t, result_signal);
-    title('Arbitrary Signal');
-    xlabel('Time (s)');
-    ylabel('Amplitude (Pa)');
-    grid on;
+    if plot_continuous
+        figure;
+        plot(t, result_signal);
+        title('Arbitrary Signal');
+        xlabel('Time (s)');
+        ylabel('Amplitude (Pa)');
+        grid on;
+    end
 
     envelope = zeros(1, length(t));
     for pulse = 0:(npulses-1)
@@ -66,19 +77,21 @@ if ~use_cw_signals
         % smooth_result_signal = [zeros(1,50) smooth_result_signal];        
     end
 
-    % plot envelope
-    figure;
-    plot(t,envelope);
-    title('envelope')
-    grid on;
+    if plot_envelope        
+        figure;
+        plot(t,envelope);
+        title('envelope')
+        grid on;
+    end
 
-    % Plot
-    figure;
-    plot(t, smooth_result_signal);
-    title('Burst Signal');
-    xlabel('Time (s)');
-    ylabel('Amplitude');
-    grid on;
+    if plot_burst
+        figure;
+        plot(t, smooth_result_signal);
+        title('Burst Signal');
+        xlabel('Time (s)');
+        ylabel('Amplitude');
+        grid on;
+    end
 
     if save_csv
         time = t';
@@ -148,3 +161,17 @@ else
     % stackedPlot(cw_signal);
 end
 
+function T_m = find_mixed_period(f0)
+    T_array = 1 ./ f0;
+    T_max = max(T_array);
+    n = 1;
+    found_soln = false;
+    while ~found_soln
+        if (sum(mod(n*T_max,T_array)) > 0.0)
+            n = n+1;
+        else
+            T_m = n*T_max;
+            found_soln = true;
+        end
+    end
+end

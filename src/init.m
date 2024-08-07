@@ -13,19 +13,19 @@ t1_pos = [-59, 60]; % scan dims [x, z]
 t2_pos = [68, 60]; % scan dims [x, z]
 t_rot = [45, -45]; % deg
 
-scan_focus_x = [-18, 22];
+% scan_focus_x = [-18, 22]; % comment out for seg
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
-scan_focus_z = [-27, -19];
-des_pressures = [300, 300]; % kPa
-% scan_focus_x = [];
-% scan_focus_z = [];
-% des_pressures = []; % kPa
+% scan_focus_z = [-27, -19]; % comment out for seg
+% des_pressures = [300, 300]; % kPa % comment out for seg
+scan_focus_x = []; % comment in for seg
+scan_focus_z = []; % comment in for seg
+des_pressures = []; % kPa % comment in for seg
 
-% region_labels = ["leftAmygdala", "rightAmygdala"];
+region_labels = ["leftAmygdala", "rightAmygdala"]; % comment in for seg
 % region_labels = ["leftHippocampus", "rightHippocampus"];
-% des_pressures_region = [300, 300]; % kPa
-region_labels = [];
-des_pressures_region = []; % kPa
+des_pressures_region = [300, 300]; % kPa % comment in for seg
+% region_labels = [];
+% des_pressures_region = []; % kPa
 
 force_pressures = [1, 2]; % regions where pressure forced to exact value
 
@@ -83,7 +83,7 @@ if n_dim == 3
     grid_size = [grid_size(1), grid_size(3)]; % plane size for plots
 end
 
-dx_factor = dx_scan / round(kgrid.dx,3);
+dx_factor = dx_scan / kgrid.dx;
 
 %% Segment the brain
 [segment_ids] = segment_space(t1w_filename, dx_scan);
@@ -115,7 +115,7 @@ if kgrid.dim == 2
     t1_pos = t1_pos'; % scan dims
     t2_pos = t2_pos'; % scan dims
     t_rot = t_rot';
-    tr_len_m = [70, 70]' * 1e-3; % m
+    tr_len_m = [1, 1]' * 1e-3; % m
 
     t_pos = [t1_pos, t2_pos];
     tr_len = tr_len_m / kgrid.dx;

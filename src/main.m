@@ -2,10 +2,10 @@ clear;
 close all;
 
 %% Init
-f0 = [481,482,483,484,485,486,487,488,489,490] * 1e3; % Hz - transducer frequency
+f0 = [450:10:490] * 1e3; % Hz - transducer frequency
 n_dim = 2;
-% dx = 1e-3;
-dx = [];
+dx = 1e-3; % set dx manually since we are using 500 kHz
+% dx = [];
 plot_dx_factor = 1;
 
 t1w_filename = fullfile('..', 'Scans', 'dummy_t1w.nii');
