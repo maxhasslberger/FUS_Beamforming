@@ -39,6 +39,24 @@ function plot_focalpt_waveform(f0,A_cells,p,init_ids)
     xlabel('Time (s)');
     ylabel('Amplitude (Pa)');
     grid on;  
+
+    % Plot the fft of the signal
+    N = length(focus_signals(1,:));
+    Y = fft(focus_signals(1,:));
+    P2 = abs(Y/N);
+    P1 = Y(1:(N/2)+1); % Plus 1 for Nyquist freq
+    P1(2:end-1) = 2*P1(2:end-1); % Energy of negative spectrum is folded onto the positive spectrum
+    k = 0:N/2; % One-sided fft
+    freq = k * Fs/N;
+    
+    figure;
+    stem(freq,P1)
+    title("One-sided absolute value of focus signal fft");
+    xlabel("Frequency (Hz)");
+    ylabel("Amplitude (Pa)");
+    xlim([0 600000])
+
+
 end
 
 function T_m = find_mixed_period(f0)

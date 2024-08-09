@@ -3,8 +3,8 @@
  
 % Options
 use_cw_signals = false; % use kWave continuous wave function
-perform_fft = false; % perform fft on summed signal
-smoothen_pulse = true; % smooth pulses
+perform_fft = true; % perform fft on summed signal
+smoothen_pulse = false; % smooth pulses
 zero_padding = false; % apply zero padding to beginning of the signal
 
 % Plotting
@@ -24,7 +24,7 @@ if ~use_cw_signals
     nfreq = length(f0);
     T = 1/(min(f0));
     % Computational load can be managed by tweaking sampling freq and/or time vector length
-    Fs = 10e6;
+    Fs = 100e6;
     dt = 1/Fs;
     % t = 0:dt:60*T;  
     w = 2 * pi * f0; % Angular frequencies
@@ -111,16 +111,17 @@ if ~use_cw_signals
         f_fft = Fs*(0:(n/2))/n;
     
         % Find peaks in the FFT result
-        [peaks, locs] = findpeaks(P1, 'MinPeakHeight', 0.01*max(P1));
+        % [peaks, locs] = findpeaks(P1, 'MinPeakHeight', 0.01*max(P1));
     
         % Plot the amplitude spectrum
         figure;
-        plot(f_fft, P1);
+        % plot(f_fft, P1);
+        stem(f_fft, P1);
         hold on;
-        plot(f_fft(locs), peaks, 'ro');
-        title('Amplitude Spectrum');
+        % plot(f_fft(locs), peaks, 'ro');
+        title('Single-Sided Amplitude Spectrum');
         xlabel('Frequency (Hz)');
-        ylabel('Amplitude');
+        ylabel('Amplitude (Pa)');
         grid on;
     
         % Zoom in on the frequency range of interest
