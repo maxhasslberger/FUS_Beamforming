@@ -85,7 +85,12 @@ if islogical(get_current_A)
                 disp("Offline Simulation " + string(i) + "/" + string(size(A, 2)))
 
                 el_x = karray_t.elements{i};
-                karray_tmp.addRectElement(el_x.position, el_x.length, el_x.width, el_x.orientation);
+
+                if strcmp(el_x.type, 'disc')
+                    karray_tmp.addDiscElement(el_x.position, el_x.diameter, el_x.focus_position);
+                else
+                    karray_tmp.addRectElement(el_x.position, el_x.length, el_x.width, el_x.orientation);
+                end
 
                 if use_greens_fctn
                     amp_in = karray_tmp.getArrayGridWeights(kgrid);
