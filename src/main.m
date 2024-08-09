@@ -16,7 +16,6 @@ ct_filename = fullfile('..', 'Scans', 'dummy_pseudoCT.nii');
 sidelobe_tol = 49; % percent of max amplitude
 
 % Simulation config
-only_focus_opt = false; % Optimize only for focal spots or entire observation domain
 use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 get_current_A = "A_2D_2Trs_70mm_skull"; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
@@ -31,10 +30,10 @@ else
     dx_factor = (1500 / f0 / 3) / dx; % = (c0 / f0 / ppw) / dx
 end
 
-[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, only_focus_opt, force_pressures, ...
+[kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, force_pressures, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor1, preplot_arg, domain_ids, input_args] = ...
     init(max(f0), n_dim, dx_factor, ...
-    'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
+    'sidelobe_tol', sidelobe_tol, 't1_scan', t1w_filename, 'ct_scan', ct_filename);
 
 use_greens_fctn = use_greens_fctn & max(medium.sound_speed(:)) == min(medium.sound_speed(:)); % Update green's fctn flag
 
@@ -61,36 +60,23 @@ tic
 
 obs_ids = reshape(logical(full_bmask), numel(full_bmask), 1);
 
-if only_focus_opt
-    domain_ids = 1; % To be discarded -> off-target pressures could be too large!
-    skull_ids = 1;
+% [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial and skull)
+skullMask = medium.sound_speed > min(medium.sound_speed(:));
+skull_ids = reshape(skullMask, [], 1);
 
-    % Preserve sonicated points only
-    ip.A = A(obs_ids, :);
-    b_ip_des = b_des; % = b_des_pl(obs_ids)
+% Take entire observation grid into account
+ip.A = A;
+b_ip_des = b_des_pl;
 
-    vol_ids = true(size(ip.A, 1), 1);
-    init_ids = vol_ids;
-    ip.beta = 0.0;
-else
-%     [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial and skull)
-    skullMask = medium.sound_speed > min(medium.sound_speed(:));
-    skull_ids = reshape(skullMask, [], 1);
+vol_ids = obs_ids; % Indices that correspond to the target volume(s)
+[init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask, force_pressures); % Indices where pressure values given
+ip.beta = 0.0;
 
-    % Take entire observation grid into account
-    ip.A = A;
-    b_ip_des = b_des_pl;
-
-    vol_ids = obs_ids; % Indices that correspond to the target volume(s)
-    [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask, force_pressures); % Indices where pressure values given
-    ip.beta = 0.0;
-
-    % New preplot with init point arg
-    preplot_arg = preplot_arg + b_mask_plot;
-    preplot_arg = preplot_arg / max(preplot_arg(:));
-    plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice, ...
-        'colorbar', false, 'cmap', hot());
-end
+% New preplot with init point arg
+preplot_arg = preplot_arg + b_mask_plot;
+preplot_arg = preplot_arg / max(preplot_arg(:));
+plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice, ...
+    'colorbar', false, 'cmap', hot());
 
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids);
 
@@ -106,9 +92,9 @@ ip.b = reshape(ip.b, size(kgrid.k));
 % ip.b(~domain_ids & ~skull_ids) = 0.0;
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
-    [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
+    [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
-    init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
+    init(f0, n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename);
 
     if use_greens_fctn
         [amp_in, phase_in] = get_amp_phase_mask(kgrid, f0, ip.p, t_mask_psP, karray_tP);
@@ -136,12 +122,11 @@ plot_thr = min(b_ip_des) +  1e3; % 1 kPa tolerance
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
 if save_results
     res_filename = "results";
-    if ~only_focus_opt
-        ip.A = []; % A might be very large...
-    end
+    ip.A = []; % A might be very large...
+
     save(fullfile("..", "Results", current_datetime + "_" + res_filename + ".mat"), ...
         "f0", "kgrid", "b_mask", "t_mask_ps", "active_ids", "init_ids", "mask2el", "t_pos", "t_rot", "tr", "ip", "b_ip_des", "point_pos", "point_pos_m", ...
-        "only_focus_opt", "input_args");
+        "input_args");
 end
 
 %% TR Results
@@ -183,57 +168,35 @@ disp("Time until solver converged: " + string(ip.t_solve / 60) + " min")
 real_ip = abs(reshape(ip.b, [], 1));
 real_ip_gt = abs(reshape(ip.b_gt, [], 1));
 
-if only_focus_opt
-    real_ip = real_ip(obs_ids);
-    real_ip_gt = real_ip_gt(obs_ids);
+offTar_real_ip = real_ip;
+offTar_real_ip(vol_ids | ~domain_ids) = [];
+offTar_real_ip_gt = real_ip_gt;
+offTar_real_ip_gt(vol_ids | ~domain_ids) = [];
 
-    err_ip = real_ip - b_ip_des;
-    err_ip_gt = real_ip_gt - b_ip_des;
-    
-    std_ip = sqrt(sum(err_ip.^2) / length(err_ip));
-    std_ip_gt = sqrt(sum(err_ip_gt.^2) / length(err_ip_gt));
-    
-    maxDev_ip = max(abs(err_ip));
-    maxDev_ip_gt = max(abs(err_ip_gt));
-    
-    % fprintf("\nDesired Amplitudes (kPa):\n")
-    % disp(b_ip_des' * 1e-3)
-    % 
-    % fprintf("\nReal Amplitudes (kPa):\n")
-    % disp(real_ip' * 1e-3)
-    % disp(real_ip_gt' * 1e-3)
-    
-    fprintf("\nInverse Problem STD (kPa):\n")
-    disp(std_ip * 1e-3)
-    disp(std_ip_gt * 1e-3)
-    
-    fprintf("\nInverse Problem Max Dev (kPa):\n")
-    disp(maxDev_ip * 1e-3)
-    disp(maxDev_ip_gt * 1e-3)
-else
-    offTar_real_ip = real_ip;
-    offTar_real_ip(vol_ids | ~domain_ids) = [];
-    offTar_real_ip_gt = real_ip_gt;
-    offTar_real_ip_gt(vol_ids | ~domain_ids) = [];
+skull_real_ip = real_ip(skull_ids);
+skull_real_ip_gt = real_ip_gt(skull_ids);
 
 %     tar_real_ip = real_ip(vol_ids);
 %     tar_real_ip_gt = real_ip_gt(vol_ids);
 
-    init_real_ip = real_ip(init_ids);
-    init_real_ip_gt = real_ip_gt(init_ids);
+init_real_ip = real_ip(init_ids);
+init_real_ip_gt = real_ip_gt(init_ids);
 
-    fprintf("\nInverse Problem Init Points (kPa):\n")
-    disp(init_real_ip' * 1e-3)
-    disp(init_real_ip_gt' * 1e-3)
+fprintf("\nInverse Problem Init Points (kPa):\n")
+disp(init_real_ip' * 1e-3)
+disp(init_real_ip_gt' * 1e-3)
+
+fprintf("\nInverse Problem Skull max. Pressure (kPa):\n")
+disp(max(skull_real_ip) * 1e-3)
+disp(max(skull_real_ip_gt) * 1e-3)
 
 %     fprintf("\nInverse Problem Min Target Area (kPa):\n")
 %     disp(min(tar_real_ip) * 1e-3)
 %     disp(min(tar_real_ip_gt) * 1e-3)
 
-    fprintf("\nInverse Problem Max Off-Target (kPa):\n")
-    disp(max(offTar_real_ip) * 1e-3)
-    disp(max(offTar_real_ip_gt) * 1e-3)
-end
+fprintf("\nInverse Problem max Off-Target Pressure (kPa):\n")
+disp(max(offTar_real_ip) * 1e-3)
+disp(max(offTar_real_ip_gt) * 1e-3)
 
 % point_coord = [-18, -27];
 % point_val_ip = abs(ip.b(plot_offset(1) + point_coord(1), plot_offset(3) + point_coord(2)));

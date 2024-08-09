@@ -1,4 +1,4 @@
-function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, only_focus_opt, force_pressures, ...
+function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, force_pressures, ...
     active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, logical_dom_ids, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
@@ -33,9 +33,6 @@ force_pressures = [1, 2]; % regions where pressure forced to exact value
 sidelobe_tol = 50; % percent
 max_skull_pressure = 1e3; % kPa
 
-% Simulation config
-only_focus_opt = true; % Optimize only focal spots or entire grid
-
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
         switch varargin{arg_idx}
@@ -49,8 +46,6 @@ if ~isempty(varargin)
                 slice_idx_2D = varargin{arg_idx+1};
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
-            case 'only_focus_opt'
-                only_focus_opt = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -220,39 +215,28 @@ if kgrid.dim == 2
     amp_in_reg = des_pressures_region' * 1e3; % Pa
     point_pos.slice = slice_idx_2D;
     
-    if ~only_focus_opt
-        amp_vol = -1 * ones(numel(kgrid.k), 1);
+    amp_vol = -1 * ones(numel(kgrid.k), 1);
 
-        % Stimulate Disc pattern
-        for i = 1:length(des_pressures)
-            disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(focus_radius(i) / kgrid.dx), false);
-            amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
-            b_mask(:, :, i) = disc;
-        end
+    % Stimulate Disc pattern
+    for i = 1:length(des_pressures)
+        disc = makeDisc(kgrid.Nx, kgrid.Ny, point_pos.x(i), point_pos.y(i), round(focus_radius(i) / kgrid.dx), false);
+        amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
+        b_mask(:, :, i) = disc;
+    end
 
-        if ~isempty(t1w_filename)
-            % Stimulate brain region
-            stim_regions = squeeze(segment_ids(:, slice_grid_2D, :));
-            for j = 1:length(region_labels)
-                reg_mask = stim_regions == region_labels(j);
-                amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
-                b_mask(:, :, length(des_pressures) + j) = reg_mask;
-            end
-        end
-
-        b_cross = amp_vol / max(amp_vol);
-        b_cross(b_cross < 0.0) = 0.0;
-        amp_in = amp_vol(amp_vol >= 0);
-    else
-
-        b_cross = b_mask;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        for i = 1:length(point_pos.x)
-            b_mask(point_pos.x(i), point_pos.y(i)) = 1;
-
-            b_cross(point_pos.x(i), point_pos.y(i) - cross_pixRadius:point_pos.y(i) + cross_pixRadius) = 1;
-            b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i)) = 1;
+    if ~isempty(t1w_filename)
+        % Stimulate brain region
+        stim_regions = squeeze(segment_ids(:, slice_grid_2D, :));
+        for j = 1:length(region_labels)
+            reg_mask = stim_regions == region_labels(j);
+            amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+            b_mask(:, :, length(des_pressures) + j) = reg_mask;
         end
     end
+
+    b_cross = amp_vol / max(amp_vol);
+    b_cross(b_cross < 0.0) = 0.0;
+    amp_in = amp_vol(amp_vol >= 0);
 
 else
     % Mask brain
@@ -290,41 +274,28 @@ else
     amp_in_reg = des_pressures_region' * 1e3; % Pa
     point_pos.slice = slice_idx_2D;
 
-    if ~only_focus_opt
-        amp_vol = -1 * ones(numel(kgrid.k), 1);
+    amp_vol = -1 * ones(numel(kgrid.k), 1);
 
-        % Stimulate Disc pattern
-        for i = 1:length(des_pressures)
-            ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(focus_radius(i) / kgrid.dx), false);
-            amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
-            b_mask(:, :, :, i) = ball;
-        end
+    % Stimulate Disc pattern
+    for i = 1:length(des_pressures)
+        ball = makeBall(kgrid.Nx, kgrid.Ny, kgrid.Nz, point_pos.x(i), point_pos.y(i), point_pos.z(i), round(focus_radius(i) / kgrid.dx), false);
+        amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
+        b_mask(:, :, :, i) = ball;
+    end
 
-        if ~isempty(t1w_filename)
-            % Stimulate brain region
-            stim_regions = segment_ids;
-            for j = 1:length(region_labels)
-                reg_mask = stim_regions == region_labels(j);
-                amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
-                b_mask(:, :, :, length(des_pressures) + j) = reg_mask;
-            end
-        end
-
-        b_cross = amp_vol / max(amp_vol);
-        b_cross(b_cross < 0.0) = 0.0;
-        amp_in = amp_vol(amp_vol >= 0);
-    else
-    
-        b_cross = b_mask;
-        for i = 1:length(des_pressures)
-            b_mask(point_pos.x(i), point_pos.y(i), point_pos.z(i)) = 1;
-
-            b_cross(point_pos.x(i), point_pos.y(i), point_pos.z(i) - cross_pixRadius:point_pos.z(i) + cross_pixRadius) = 1;
-            b_cross(point_pos.x(i), :, point_pos.z(i)) = 1;
-            b_cross(point_pos.x(i) - cross_pixRadius:point_pos.x(i) + cross_pixRadius, point_pos.y(i), point_pos.z(i)) = 1;
+    if ~isempty(t1w_filename)
+        % Stimulate brain region
+        stim_regions = segment_ids;
+        for j = 1:length(region_labels)
+            reg_mask = stim_regions == region_labels(j);
+            amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+            b_mask(:, :, :, length(des_pressures) + j) = reg_mask;
         end
     end
 
+    b_cross = amp_vol / max(amp_vol);
+    b_cross(b_cross < 0.0) = 0.0;
+    amp_in = amp_vol(amp_vol >= 0);
 end
 b_mask = logical(b_mask);
 
