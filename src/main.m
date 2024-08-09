@@ -20,12 +20,12 @@ only_focus_opt = false; % Optimize only for focal spots or entire observation do
 use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 % get_current_A = "A_2D_2Trs_70mm_skull"
-get_current_A = false; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
+get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
 do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 ineq_active = true; % Activate inequality constraints
 save_results = false;
-get_excitation_vec = false; % Use precomputed excitation vector
+get_excitation_vec = true; % Use precomputed excitation vector
 
 if isempty(dx)
     dx_factor = 1;
@@ -211,6 +211,7 @@ nfreq = size(A_cells,2);
 % ip.b = A * ip.p;
 % Multifreq
 ip.b = timeDomainSum(f0, A_cells, ip.p);
+plot_focalpt_waveform(f0,A_cells,ip.p,init_ids);
 
 disp("pressures at the foci:")
 disp(double(ip.b(domain_ids &  init_ids)))
@@ -303,7 +304,7 @@ real_ip_gt = abs(reshape(ip.b_gt, [], 1));
 if only_focus_opt
     real_ip = real_ip(obs_ids);
     real_ip_gt = real_ip_gt(obs_ids);
-
+    
     err_ip = real_ip - b_ip_des;
     err_ip_gt = real_ip_gt - b_ip_des;
     
