@@ -13,20 +13,20 @@ t1_pos = [-59, 60]; % scan dims [x, z]
 t2_pos = [68, 60]; % scan dims [x, z]
 t_rot = [45, -45]; % deg
 
-scan_focus_x = [-18, 22];
+% scan_focus_x = [-18, 22];
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
-scan_focus_z = [-27, -19];
-des_pressures = [300, 300]; % kPa
+% scan_focus_z = [-27, -19];
+% des_pressures = [300, 300]; % kPa
 focus_radius = [7, 7] * 1e-3; % mm
-% scan_focus_x = [];
-% scan_focus_z = [];
-% des_pressures = []; % kPa
+scan_focus_x = [];
+scan_focus_z = [];
+des_pressures = []; % kPa
 
-% region_labels = ["leftAmygdala", "rightAmygdala"];
+region_labels = ["leftAmygdala", "rightAmygdala"];
 % region_labels = ["leftHippocampus", "rightHippocampus"];
-% des_pressures_region = [300, 300]; % kPa
-region_labels = [];
-des_pressures_region = []; % kPa
+des_pressures_region = [300, 300]; % kPa
+% region_labels = [];
+% des_pressures_region = []; % kPa
 
 force_pressures = [1, 2]; % regions where pressure forced to exact value
 

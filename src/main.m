@@ -2,7 +2,7 @@ clear;
 close all;
 
 %% Init
-f0 = [470] * 1e3; % Hz - transducer frequency
+f0 = 470 * 1e3; % Hz - center frequency
 n_dim = 2;
 dx = 1e-3;
 % dx = [];
@@ -52,16 +52,9 @@ end
 %% Obtain propagation operator -> acousticFieldPropagator (Green's functions)
 % A = linearPropagator_vs_acousticFieldPropagator(t_mask, f0, medium.sound_speed, kgrid.dx);
 if ~exist('A', 'var')
-    A = [];
-    for f = f0
-        A = [A, obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
-            'active_ids', active_ids)];
-    end
+    A = obtain_linear_propagator(kgrid, medium, sensor, sensor_mask, input_args, t_mask_ps, karray_t, f0, get_current_A, use_greens_fctn, ...
+        'active_ids', active_ids);
 end
-
-% if kgrid.dim == 3
-% A = ones(numel(b_mask), 1);
-% end
 
 %% Solve Inverse Problem
 tic
@@ -102,7 +95,6 @@ end
 p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids);
 
 ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta, ineq_active); % var Amp
-% ip.p_gt = solvePhasesAmpMultiFreq(ip.A, b_ip_des, domain_ids, skull_ids, vol_ids, p_init, init_ids, ip.beta); % var Amp
 % ip.p = p_init;
 
 ip.t_solve = toc;
@@ -138,7 +130,7 @@ else
     % ip.b_gt(~domain_ids) = 0.0;
 end
 
-plot_thr = min(b_ip_des) +  1e3;
+plot_thr = min(b_ip_des) +  1e3; % 1 kPa tolerance
 
 %% Save Results in mat-file
 current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
@@ -186,7 +178,7 @@ else
 end
 
 %% Metrics evaluation
-disp("Time until solver converged: " + string(ip.t_solve) + " s")
+disp("Time until solver converged: " + string(ip.t_solve / 60) + " min")
 
 real_ip = abs(reshape(ip.b, [], 1));
 real_ip_gt = abs(reshape(ip.b_gt, [], 1));
@@ -224,8 +216,8 @@ else
     offTar_real_ip_gt = real_ip_gt;
     offTar_real_ip_gt(vol_ids | ~domain_ids) = [];
 
-    tar_real_ip = real_ip(vol_ids);
-    tar_real_ip_gt = real_ip_gt(vol_ids);
+%     tar_real_ip = real_ip(vol_ids);
+%     tar_real_ip_gt = real_ip_gt(vol_ids);
 
     init_real_ip = real_ip(init_ids);
     init_real_ip_gt = real_ip_gt(init_ids);
@@ -234,9 +226,9 @@ else
     disp(init_real_ip' * 1e-3)
     disp(init_real_ip_gt' * 1e-3)
 
-    fprintf("\nInverse Problem Min Target Area (kPa):\n")
-    disp(min(tar_real_ip) * 1e-3)
-    disp(min(tar_real_ip_gt) * 1e-3)
+%     fprintf("\nInverse Problem Min Target Area (kPa):\n")
+%     disp(min(tar_real_ip) * 1e-3)
+%     disp(min(tar_real_ip_gt) * 1e-3)
 
     fprintf("\nInverse Problem Max Off-Target (kPa):\n")
     disp(max(offTar_real_ip) * 1e-3)
