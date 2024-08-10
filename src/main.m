@@ -17,7 +17,7 @@ sidelobe_tol = 49; % percent of max amplitude
 
 % Simulation config
 only_focus_opt = false; % Optimize only for focal spots or entire observation domain
-use_greens_fctn = false; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
+use_greens_fctn = true; % Use Green's function to obtain propagation matrix A (assuming point sources and a lossless homogeneous medium)
 
 % get_current_A = "A_2D_2Trs_70mm_skull"
 get_current_A = true; % Use precomputed propagation matrix - can be logical or a string containing the file name in Lin_Prop_Matrices
@@ -227,9 +227,14 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
     ~, ~, ~, ~, ~, plot_offsetP, point_posP, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
     init(max(f0), n_dim, dx_factor * plot_dx_factor, 't1_scan', t1w_filename, 'ct_scan', ct_filename, 'only_focus_opt', only_focus_opt);
 
-    % Need to fix handling of f0. Might need to adjust for using multiple frequencies
-    ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
-    ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
+    % Need to fix handling of f0. Might need to adjust for using multiple frequencies   
+    if use_greens_fctn
+        [amp_in, phase_in] = get_amp_phase_mask(kgrid, f0, ip.p, t_mask_psP, karray_tP);
+        ip.b_gt = acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed);
+    else
+        ip.b_gt = sim_exe(kgridP, mediumP, sensorP, f0, ip.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
+        ip.b_gt = reshape(ip.b_gt, size(kgridP.k));
+    end
 
     % [domain_ids_gt, skull_ids_gt] = limit_space(mediumP.sound_speed);
     % ip.b_gt(~domain_ids_gt) = 0.0;

@@ -279,7 +279,8 @@ else
         % Focal points - in Scan coordinate system
         if isempty(t1w_filename)
             point_pos_m.x = [30, 5];
-            point_pos_m.y = [10, 10];
+%             point_pos_m.y = [10, 10];
+            point_pos_m.y = slice_idx_2D * ones(1, length(scan_focus_x));
             point_pos_m.z = [-30, 0];
         else
             point_pos_m.x = scan_focus_x;

@@ -85,10 +85,16 @@ if islogical(get_current_A)
                 disp("Offline Simulation " + string(i) + "/" + string(size(A, 2)))
 
                 el_x = karray_t.elements{i};
-                karray_tmp.addRectElement(el_x.position, el_x.length, el_x.width, el_x.orientation);
+
+                if strcmp(el_x.type, 'disc')
+                    karray_tmp.addDiscElement(el_x.position, el_x.diameter, el_x.focus_position);
+                else
+                    karray_tmp.addRectElement(el_x.position, el_x.length, el_x.width, el_x.orientation);
+                end
 
                 if use_greens_fctn
                     amp_in = karray_tmp.getArrayGridWeights(kgrid);
+                    [amp_in, phase_in] = get_amp_phase_mask(kgrid, f0, input, [], karray_tmp);
                     a_coli = single(acousticFieldPropagator(amp_in, phase_in, kgrid.dx, f0, medium.sound_speed));
                 else
                     a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, [], sensor_mask, true, input_args, 'karray_t', karray_tmp));
