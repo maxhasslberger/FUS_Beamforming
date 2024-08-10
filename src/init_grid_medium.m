@@ -47,15 +47,28 @@ cfl = 0.3;
 dx = c0 / f0 / ppw;
 dx = dx / dx_factor;
 
-Nx = round(grid_size(1)/dx);
-Ny = round(grid_size(2)/dx);
+if ~isempty(ct_filename)
+    input_ct = double(niftiread(ct_filename));
+    skull = input_ct;
+    skull_sz = size(skull);
+
+    skull_res_factor = dx_scan / dx;
+    Nx = skull_sz(1) * skull_res_factor;
+    Ny = skull_sz(2) * skull_res_factor;
+    Nz = skull_sz(3) * skull_res_factor;
+else
+    Nx = round(grid_size(1)/dx);
+    Ny = round(grid_size(2)/dx);
+end
 
 if n_dim == 2
     kgrid = kWaveGrid(Nx, dx, Ny, dx);
     add_z = 0.0;
 
 elseif n_dim == 3
-    Nz = round(grid_size(3)/dx);
+    if ~exist("Nz", "var")
+        Nz = round(grid_size(3)/dx);
+    end
 
     kgrid = kWaveGrid(Nx, dx, Ny, dx, Nz, dx);
     add_z = kgrid.z_size.^2; % -> t_end
@@ -68,7 +81,6 @@ if ~isempty(ct_filename)
 
     hu_min = 300;
     hu_max = 2000;
-    input_ct = double(niftiread(ct_filename));
 
     ct_max = max(input_ct(:));
     if ct_max < hu_max
@@ -76,7 +88,6 @@ if ~isempty(ct_filename)
     end
     
     % truncate CT HU (see Marsac et al., 2017)
-    skull = input_ct;
     skull(skull < hu_min) = 0; % only use HU for skull acoustic properties
     skull(skull > hu_max) = hu_max;
 
@@ -85,9 +96,9 @@ if ~isempty(ct_filename)
     end
 
     % Interpolate to adapt to grid size
-    skull_sz = size(skull);
     grid_dim = size(kgrid.k);
-    if ~isequal(skull_sz, grid_dim)
+%     if ~isequal(skull_sz, grid_dim)
+    if ~isequal(dx, dx_scan)
         if n_dim == 2
             [X, Y] = meshgrid(1:skull_sz(1), 1:skull_sz(2));
             [Xq, Yq] = meshgrid(linspace(1, skull_sz(1), grid_dim(1)), linspace(1, skull_sz(2), grid_dim(2)));
@@ -100,12 +111,9 @@ if ~isempty(ct_filename)
     end
 
     % assign medium properties for skull
-    medium.alpha_coeff = alpha_coeff_min + (alpha_coeff_max - alpha_coeff_min) * ...
-                        (1 - (skull - hu_min) / (hu_max - hu_min)) .^ 0.5;
-    medium.density = rho0 + (rho_max - rho0) * ...
-                    (skull - 0) / (hu_max - 0);
-    medium.sound_speed = c0 + (c_max - c0) * ...
-                        (medium.density - rho0) / (rho_max - rho0);
+    medium.alpha_coeff = alpha_coeff_min + (alpha_coeff_max - alpha_coeff_min) * (1 - (skull - hu_min) / (hu_max - hu_min)) .^ 0.5;
+    medium.density = rho0 + (rho_max - rho0) * (skull - 0) / (hu_max - 0);
+    medium.sound_speed = c0 + (c_max - c0) * (medium.density - rho0) / (rho_max - rho0);
     
     % Non-skull modeled as water
     medium.sound_speed(skull == 0) = c0;
