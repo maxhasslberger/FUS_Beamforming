@@ -5,6 +5,7 @@ ct_filename = [];
 dx_factor = 1.0;
 slice_idx = 1;
 dx_scan = 1e-3;
+const = [];
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -19,6 +20,8 @@ if ~isempty(varargin)
                 slice_idx = varargin{arg_idx+1};
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
+            case 'constants'
+                const = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -26,25 +29,32 @@ if ~isempty(varargin)
 end
 
 %% Constants
-c0 = 1500; % m/s - water
-c_max = 3100; % m/s - skull
+if isempty(const)
+    const.c0 = 1500; % m/s - water
+    const.c_max = 3100; % m/s - skull
+    
+    const.rho0 = 1000; % kg/m^3
+    const.rho_max = 1900; % kg/m^3
+    
+    const.alpha_coeff_water = 0.75; % dB/(MHz^y cm)
+    const.alpha_coeff_min = 4; % dB/(MHz^y cm)
+    const.alpha_coeff_max = 8.7; % dB/(MHz^y cm)
+    
+    const.alpha_power = 1.43; % Robertson et al., PMB 2017
+    % medium.BonA = 6; % Non-linearity
+    
+    const.hu_min = 300; % Hounsfield units
+    const.hu_max = 2000;
+    
+    const.ppw = 3; % >= 2
+    const.cfl = 0.3;
+end
 
-rho0 = 1000; % kg/m^3
-rho_max = 1900; % kg/m^3
-
-alpha_coeff_water = 0.75; % dB/(MHz^y cm)
-alpha_coeff_min = 4; % dB/(MHz^y cm)
-alpha_coeff_max = 8.7; % dB/(MHz^y cm)
-
-medium.alpha_power = 1.43; % Robertson et al., PMB 2017
-% medium.BonA = 6; % Non-linearity
-
-ppw = 3; % >= 2
-cfl = 0.3;
+medium.alpha_power = const.alpha_power;
 
 %% Define grid
 % Grid size
-dx = c0 / f0 / ppw;
+dx = const.c0 / f0 / const.ppw;
 dx = dx / dx_factor;
 
 if ~isempty(ct_filename)
@@ -56,6 +66,8 @@ if ~isempty(ct_filename)
     Nx = skull_sz(1) * skull_res_factor;
     Ny = skull_sz(2) * skull_res_factor;
     Nz = skull_sz(3) * skull_res_factor;
+
+    grid_size = [Nx, Ny, Nz] * dx;
 else
     Nx = round(grid_size(1)/dx);
     Ny = round(grid_size(2)/dx);
@@ -79,17 +91,14 @@ end
 %% Define medium
 if ~isempty(ct_filename)
 
-    hu_min = 300;
-    hu_max = 2000;
-
     ct_max = max(input_ct(:));
-    if ct_max < hu_max
-        hu_max = ct_max;
+    if ct_max < const.hu_max
+        const.hu_max = ct_max;
     end
     
     % truncate CT HU (see Marsac et al., 2017)
-    skull(skull < hu_min) = 0; % only use HU for skull acoustic properties
-    skull(skull > hu_max) = hu_max;
+    skull(skull < const.hu_min) = 0; % only use HU for skull acoustic properties
+    skull(skull > const.hu_max) = const.hu_max;
 
     if n_dim == 2
         skull = squeeze(skull(:, slice_idx, :));
@@ -111,23 +120,23 @@ if ~isempty(ct_filename)
     end
 
     % assign medium properties for skull
-    medium.alpha_coeff = alpha_coeff_min + (alpha_coeff_max - alpha_coeff_min) * (1 - (skull - hu_min) / (hu_max - hu_min)) .^ 0.5;
-    medium.density = rho0 + (rho_max - rho0) * (skull - 0) / (hu_max - 0);
-    medium.sound_speed = c0 + (c_max - c0) * (medium.density - rho0) / (rho_max - rho0);
+    medium.alpha_coeff = const.alpha_coeff_min + (const.alpha_coeff_max - const.alpha_coeff_min) * (1 - (skull - const.hu_min) / (const.hu_max - const.hu_min)) .^ 0.5;
+    medium.density = const.rho0 + (const.rho_max - const.rho0) * (skull - 0) / (const.hu_max - 0);
+    medium.sound_speed = const.c0 + (const.c_max - const.c0) * (medium.density - const.rho0) / (const.rho_max - const.rho0);
     
     % Non-skull modeled as water
-    medium.sound_speed(skull == 0) = c0;
-    medium.density(skull == 0) = rho0;
-    medium.alpha_coeff(skull == 0) = alpha_coeff_water;
+    medium.sound_speed(skull == 0) = const.c0;
+    medium.density(skull == 0) = const.rho0;
+    medium.alpha_coeff(skull == 0) = const.alpha_coeff_water;
 
-    dt = cfl * dx / c_max;
+    dt = const.cfl * dx / const.c_max;
 else
     % define the homogeneous space (water)
-    medium.sound_speed = c0; % * ones(Nx, Ny);
-    medium.density = rho0; % * ones(Nx, Ny);
-    medium.alpha_coeff = alpha_coeff_water; % dB/(MHz^y cm)
+    medium.sound_speed = const.c0; % * ones(Nx, Ny);
+    medium.density = const.rho0; % * ones(Nx, Ny);
+    medium.alpha_coeff = const.alpha_coeff_water; % dB/(MHz^y cm)
 
-    dt = cfl * dx / c0;
+    dt = const.cfl * dx / const.c0;
 end
 
 % Time
@@ -140,7 +149,7 @@ ppp = round(1 / (dt * f0)); % points per temporal period
 % end
 
 % calculate the number of time steps to reach steady state - usually sufficient even under the presence of the skull
-t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / c0; 
+t_end = sqrt(kgrid.x_size.^2 + kgrid.y_size.^2 + add_z) / const.c0; 
 
 Nt = round(t_end / dt);
 kgrid.setTime(Nt, dt);
