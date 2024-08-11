@@ -7,15 +7,15 @@ classdef simulationApp < matlab.apps.AppBase
         UpdateSliceButton               matlab.ui.control.Button
         TabGroup                        matlab.ui.container.TabGroup
         InitTab                         matlab.ui.container.Tab
-        UpdateButton_3                  matlab.ui.control.Button
+        UpdateButtonInit                matlab.ui.control.Button
         MediumPanel                     matlab.ui.container.Panel
-        Panel_2                         matlab.ui.container.Panel
-        Panel                           matlab.ui.container.Panel
-        zEditField_2                    matlab.ui.control.NumericEditField
+        hetPanel                        matlab.ui.container.Panel
+        homPanel                        matlab.ui.container.Panel
+        HomzEditField                   matlab.ui.control.NumericEditField
         zEditField_2Label               matlab.ui.control.Label
-        yEditField_2                    matlab.ui.control.NumericEditField
+        HomyEditField                   matlab.ui.control.NumericEditField
         yEditField_2Label               matlab.ui.control.Label
-        xEditField_2                    matlab.ui.control.NumericEditField
+        xHomEditField                   matlab.ui.control.NumericEditField
         xEditField_2Label               matlab.ui.control.Label
         GridSizemmLabel                 matlab.ui.control.Label
         GreensFunctionbasedCheckBox     matlab.ui.control.CheckBox
@@ -25,18 +25,18 @@ classdef simulationApp < matlab.apps.AppBase
         CTfilenameDropDownLabel         matlab.ui.control.Label
         T1wfilenameDropDown             matlab.ui.control.DropDown
         T1wfilenameDropDownLabel        matlab.ui.control.Label
-        yEditField                      matlab.ui.control.NumericEditField
+        scanyEditField                  matlab.ui.control.NumericEditField
         yEditFieldLabel                 matlab.ui.control.Label
-        zEditField                      matlab.ui.control.NumericEditField
+        scanzEditField                  matlab.ui.control.NumericEditField
         zEditFieldLabel                 matlab.ui.control.Label
-        xEditField                      matlab.ui.control.NumericEditField
+        scanxEditField                  matlab.ui.control.NumericEditField
         xEditFieldLabel                 matlab.ui.control.Label
         MinScanIndexineachDimensionLabel  matlab.ui.control.Label
         SwitchLabel                     matlab.ui.control.Label
-        Switch                          matlab.ui.control.Switch
+        MediumSwitch                    matlab.ui.control.Switch
         DisplayAdvancedSettingsCheckBox  matlab.ui.control.CheckBox
         GeneralPanel                    matlab.ui.container.Panel
-        DSliceIndexEditField            matlab.ui.control.NumericEditField
+        SliceIndexEditField             matlab.ui.control.NumericEditField
         DSliceIndexEditFieldLabel       matlab.ui.control.Label
         SliceDirectionDropDown          matlab.ui.control.DropDown
         SliceDirectionDropDownLabel     matlab.ui.control.Label
@@ -47,7 +47,7 @@ classdef simulationApp < matlab.apps.AppBase
         DimSwitch                       matlab.ui.control.Switch
         Label                           matlab.ui.control.Label
         SaveSimulationResultsCheckBox   matlab.ui.control.CheckBox
-        RealxmmLabel                    matlab.ui.control.Label
+        RealdxLabel                     matlab.ui.control.Label
         AdvancedGridMediumSettingsPanel  matlab.ui.container.Panel
         PMLinsideCheckBox               matlab.ui.control.CheckBox
         PMLsizeEditField                matlab.ui.control.NumericEditField
@@ -90,7 +90,7 @@ classdef simulationApp < matlab.apps.AppBase
         ArrayElementsPositionsfilenameDropDownLabel  matlab.ui.control.Label
         PropagationMatrixAfilenameDropDown  matlab.ui.control.DropDown
         PropagationMatrixAfilenameDropDownLabel  matlab.ui.control.Label
-        UpdateButton                    matlab.ui.control.Button
+        UpdateButtonTransducer          matlab.ui.control.Button
         RemoveTransducerButton          matlab.ui.control.Button
         AddTransducerButton             matlab.ui.control.Button
         Transducer1Panel                matlab.ui.container.Panel
@@ -101,11 +101,11 @@ classdef simulationApp < matlab.apps.AppBase
         alphaEditField                  matlab.ui.control.NumericEditField
         alphaEditFieldLabel             matlab.ui.control.Label
         RotationdegxyzintrinsicLabel    matlab.ui.control.Label
-        zEditField_3                    matlab.ui.control.NumericEditField
+        trPoszEditField                 matlab.ui.control.NumericEditField
         zEditField_3Label               matlab.ui.control.Label
-        yEditField_3                    matlab.ui.control.NumericEditField
+        trPosyEditField                 matlab.ui.control.NumericEditField
         yEditField_3Label               matlab.ui.control.Label
-        xEditField_3                    matlab.ui.control.NumericEditField
+        trPosxEditField                 matlab.ui.control.NumericEditField
         xEditField_3Label               matlab.ui.control.Label
         FacePositionCenterLabel         matlab.ui.control.Label
         TransducerDropDown              matlab.ui.control.DropDown
@@ -117,7 +117,7 @@ classdef simulationApp < matlab.apps.AppBase
         LimitIntracranialOffTargetPressureCheckBox  matlab.ui.control.CheckBox
         MaxPressurekPaEditField         matlab.ui.control.NumericEditField
         MaxPressurekPaEditFieldLabel    matlab.ui.control.Label
-        UpdateButton_2                  matlab.ui.control.Button
+        UpdateButtonTargeting           matlab.ui.control.Button
         RegionTargetDropDown            matlab.ui.control.DropDown
         RegionTargetDropDownLabel       matlab.ui.control.Label
         RemoveRegionTargetButton        matlab.ui.control.Button
@@ -144,14 +144,16 @@ classdef simulationApp < matlab.apps.AppBase
         PressureAmplitudekPaEditFieldLabel  matlab.ui.control.Label
         FocusRadiusmmEditField          matlab.ui.control.NumericEditField
         FocusRadiusmmEditFieldLabel     matlab.ui.control.Label
-        zEditField_4                    matlab.ui.control.NumericEditField
+        focuszEditField                 matlab.ui.control.NumericEditField
         zEditField_4Label               matlab.ui.control.Label
-        yEditField_4                    matlab.ui.control.NumericEditField
+        focusyEditField                 matlab.ui.control.NumericEditField
         yEditField_4Label               matlab.ui.control.Label
-        xEditField_4                    matlab.ui.control.NumericEditField
+        focusxEditField                 matlab.ui.control.NumericEditField
         xEditField_4Label               matlab.ui.control.Label
         FocusPositionLabel              matlab.ui.control.Label
         OptimizeTab                     matlab.ui.container.Tab
+        GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
+        GroundTruthResolutionFactorEditFieldLabel  matlab.ui.control.Label
         PlotSkullCheckBox               matlab.ui.control.CheckBox
         PlotEntireDomainCheckBox        matlab.ui.control.CheckBox
         OptimizationModeButtonGroup     matlab.ui.container.ButtonGroup
@@ -160,6 +162,129 @@ classdef simulationApp < matlab.apps.AppBase
         OptimizeButton                  matlab.ui.control.Button
         ComputeInitialSolutionButton    matlab.ui.control.Button
         DoGroundTruthSimulationButton   matlab.ui.control.Button
+    end
+
+    
+    properties (Access = public)
+        n_dim
+        kgrid
+        medium
+        sensor
+        sensor_mask
+        dx_factor
+        grid_size
+        t1w_filename
+        dx_scan
+        plot_offset
+    end
+    
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Button pushed function: UpdateButtonInit
+        function UpdateButtonInitPushed(app, event)
+            f0 = app.CenterFreqkHzEditField.Value * 1e3; % Hz
+            app.n_dim = 2 + (app.DimSwitch.Value == "3D");
+            app.plot_offset = [-app.scanxEditField.Value, -app.scanyEditField.Value, -app.scanzEditField.Value] + 1;
+
+            %% Obtain Constants
+            const.c0 = app.c0msEditField.Value; % m/s - water
+            const.c_max = app.cmaxmsEditField.Value; % m/s - skull
+            
+            const.rho0 = app.rho0kgm3EditField.Value; % kg/m^3
+            const.rho_max = app.rhomaxkgm3EditField.Value; % kg/m^3
+            
+            const.alpha_coeff_water = app.alphawaterdBMHzycmEditField.Value; % dB/(MHz^y cm)
+            const.alpha_coeff_min = app.alphamindBMHzycmEditField.Value; % dB/(MHz^y cm)
+            const.alpha_coeff_max = app.alphamaxdBMHzycmEditField.Value; % dB/(MHz^y cm)
+            
+            const.alpha_power = app.alphapowerEditField.Value;
+            
+            const.hu_min = app.hounsfieldminEditField.Value; % Hounsfield units
+            const.hu_max = app.hounsfieldmaxEditField.Value;
+            
+            const.ppw = app.ppwEditField.Value; % >= 2
+            const.cfl = app.cflEditField.Value;
+
+            %% Define Grid and Medium
+            SimSpatialResolutionmmEditFieldValueChanged(app);
+
+            if strcmp(app.MediumSwitch, 'Homogeneous')
+                app.grid_size = [app.xHomEditField, app.HomyEditField, app.HomzEditField] * 1e-3;
+                app.t1w_filename = [];
+                ct_filename = [];
+                app.dx_scan = 1e-3; % m
+            else
+                app.grid_size = [];
+                app.t1w_filename = fullfile('..', 'Scans', strcat(app.T1wfilenameDropDown.Value, '.nii'));
+                ct_filename = fullfile('..', 'Scans', strcat(app.CTfilenameDropDown.Value, '.nii'));
+                app.dx_scan = app.ScanSpatialResolutionmmEditField.Value;
+            end
+
+            [app.kgrid, app.medium, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, 'dx_factor', app.dx_factor, ...
+                'ct_scan', ct_filename, 'slice_idx', round(app.plot_offset(2) + app.SliceIndexEditField.Value), ...
+                'dx_scan', app.dx_scan, 'constants', const);
+            [app.sensor, app.sensor_mask] = init_sensor(app.kgrid, ppp);
+
+            app.dx_factor = app.dx_scan / app.kgrid.dx;
+        end
+
+        % Value changed function: SimSpatialResolutionmmEditField
+        function SimSpatialResolutionmmEditFieldValueChanged(app, event)
+            value = app.SimSpatialResolutionmmEditField.Value * 1e-3;
+            
+            dx_std = 1500 / (app.CenterFreqkHzEditField.Value * 1e3) / 3; % = (c0 / f0 / ppw)
+            if value <= 0
+                app.dx_factor = 1;
+                dx = dx_std;
+            else
+                app.dx_factor = dx_std / value;
+                dx = value;
+            end
+
+            app.RealdxLabel.Text = strcat("-> Real: ", string(dx * 1e3), " mm");
+        end
+
+        % Value changed function: DisplayAdvancedSettingsCheckBox
+        function DisplayAdvancedSettingsCheckBoxValueChanged(app, event)
+            value = app.DisplayAdvancedSettingsCheckBox.Value;
+            
+            if value
+                app.AdvancedGridMediumSettingsPanel.Visible = true;
+            else
+                app.AdvancedGridMediumSettingsPanel.Visible = false;
+            end
+        end
+
+        % Value changed function: MediumSwitch
+        function MediumSwitchValueChanged(app, event)
+            value = app.MediumSwitch.Value;
+            
+            if strcmp(value, "Homogeneous")
+                app.homPanel.Visible = true;
+            else
+                app.homPanel.Visible = false;
+
+                % Create t1w and ct dropdown menu
+                items = dir(fullfile('..', 'Scans'));
+                t1_pattern = {'T1', 't1'};
+                ct_pattern = {'ct', 'CT'};
+                scan_pattern = '.nii';
+
+                % Check if each item matches any of the patterns
+                t1w_matches = false(size(items))';
+                ct_matches = false(size(items))';
+                for i = 1:length(t1_pattern)
+                    t1w_matches = t1w_matches | (contains({items.name}, t1_pattern{i}) & contains({items.name}, scan_pattern));
+                    ct_matches = ct_matches | (contains({items.name}, ct_pattern{i}) & contains({items.name}, scan_pattern));
+                end
+
+                % Assign to t1 and ct dropdown menus
+                app.T1wfilenameDropDown.Items = {items(t1w_matches).name};
+                app.CTfilenameDropDown.Items = {items(ct_matches).name};
+            end
+        end
     end
 
     % Component initialization
@@ -341,10 +466,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.GeneralPanel.Title = 'General';
             app.GeneralPanel.Position = [31 220 298 292];
 
-            % Create RealxmmLabel
-            app.RealxmmLabel = uilabel(app.GeneralPanel);
-            app.RealxmmLabel.Position = [47 58 80 22];
-            app.RealxmmLabel.Text = '-> Real: x mm';
+            % Create RealdxLabel
+            app.RealdxLabel = uilabel(app.GeneralPanel);
+            app.RealdxLabel.Position = [47 58 81 22];
+            app.RealdxLabel.Text = '-> Real: 1 mm';
 
             % Create SaveSimulationResultsCheckBox
             app.SaveSimulationResultsCheckBox = uicheckbox(app.GeneralPanel);
@@ -382,6 +507,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create SimSpatialResolutionmmEditField
             app.SimSpatialResolutionmmEditField = uieditfield(app.GeneralPanel, 'numeric');
+            app.SimSpatialResolutionmmEditField.ValueChangedFcn = createCallbackFcn(app, @SimSpatialResolutionmmEditFieldValueChanged, true);
             app.SimSpatialResolutionmmEditField.Position = [213 79 45 22];
 
             % Create SliceDirectionDropDownLabel
@@ -402,13 +528,14 @@ classdef simulationApp < matlab.apps.AppBase
             app.DSliceIndexEditFieldLabel.Position = [46 126 82 22];
             app.DSliceIndexEditFieldLabel.Text = '2D Slice Index';
 
-            % Create DSliceIndexEditField
-            app.DSliceIndexEditField = uieditfield(app.GeneralPanel, 'numeric');
-            app.DSliceIndexEditField.Position = [144 126 48 22];
-            app.DSliceIndexEditField.Value = 30;
+            % Create SliceIndexEditField
+            app.SliceIndexEditField = uieditfield(app.GeneralPanel, 'numeric');
+            app.SliceIndexEditField.Position = [144 126 48 22];
+            app.SliceIndexEditField.Value = 30;
 
             % Create DisplayAdvancedSettingsCheckBox
             app.DisplayAdvancedSettingsCheckBox = uicheckbox(app.InitTab);
+            app.DisplayAdvancedSettingsCheckBox.ValueChangedFcn = createCallbackFcn(app, @DisplayAdvancedSettingsCheckBoxValueChanged, true);
             app.DisplayAdvancedSettingsCheckBox.Text = 'Display Advanced Settings';
             app.DisplayAdvancedSettingsCheckBox.Position = [32 182 164 22];
 
@@ -417,11 +544,12 @@ classdef simulationApp < matlab.apps.AppBase
             app.MediumPanel.Title = 'Medium';
             app.MediumPanel.Position = [379 220 323 292];
 
-            % Create Switch
-            app.Switch = uiswitch(app.MediumPanel, 'slider');
-            app.Switch.Items = {'Homogeneous', 'Heterogeneous'};
-            app.Switch.Position = [139 242 45 20];
-            app.Switch.Value = 'Homogeneous';
+            % Create MediumSwitch
+            app.MediumSwitch = uiswitch(app.MediumPanel, 'slider');
+            app.MediumSwitch.Items = {'Homogeneous', 'Heterogeneous'};
+            app.MediumSwitch.ValueChangedFcn = createCallbackFcn(app, @MediumSwitchValueChanged, true);
+            app.MediumSwitch.Position = [139 242 45 20];
+            app.MediumSwitch.Value = 'Homogeneous';
 
             % Create SwitchLabel
             app.SwitchLabel = uilabel(app.MediumPanel);
@@ -429,139 +557,140 @@ classdef simulationApp < matlab.apps.AppBase
             app.SwitchLabel.Position = [148 216 25 22];
             app.SwitchLabel.Text = ' ';
 
-            % Create Panel_2
-            app.Panel_2 = uipanel(app.MediumPanel);
-            app.Panel_2.Position = [0 0 323 232];
+            % Create hetPanel
+            app.hetPanel = uipanel(app.MediumPanel);
+            app.hetPanel.Position = [1 0 322 233];
 
             % Create MinScanIndexineachDimensionLabel
-            app.MinScanIndexineachDimensionLabel = uilabel(app.Panel_2);
+            app.MinScanIndexineachDimensionLabel = uilabel(app.hetPanel);
             app.MinScanIndexineachDimensionLabel.HorizontalAlignment = 'center';
-            app.MinScanIndexineachDimensionLabel.Position = [111 103 104 30];
+            app.MinScanIndexineachDimensionLabel.Position = [111 104 104 30];
             app.MinScanIndexineachDimensionLabel.Text = {'Min Scan Index in '; 'each Dimension'};
 
             % Create xEditFieldLabel
-            app.xEditFieldLabel = uilabel(app.Panel_2);
+            app.xEditFieldLabel = uilabel(app.hetPanel);
             app.xEditFieldLabel.HorizontalAlignment = 'right';
-            app.xEditFieldLabel.Position = [22 70 25 22];
+            app.xEditFieldLabel.Position = [22 71 25 22];
             app.xEditFieldLabel.Text = 'x';
 
-            % Create xEditField
-            app.xEditField = uieditfield(app.Panel_2, 'numeric');
-            app.xEditField.Position = [62 70 42 22];
-            app.xEditField.Value = -96;
+            % Create scanxEditField
+            app.scanxEditField = uieditfield(app.hetPanel, 'numeric');
+            app.scanxEditField.Position = [62 71 42 22];
+            app.scanxEditField.Value = -96;
 
             % Create zEditFieldLabel
-            app.zEditFieldLabel = uilabel(app.Panel_2);
+            app.zEditFieldLabel = uilabel(app.hetPanel);
             app.zEditFieldLabel.HorizontalAlignment = 'right';
-            app.zEditFieldLabel.Position = [225 70 25 22];
+            app.zEditFieldLabel.Position = [225 71 25 22];
             app.zEditFieldLabel.Text = 'z';
 
-            % Create zEditField
-            app.zEditField = uieditfield(app.Panel_2, 'numeric');
-            app.zEditField.Position = [265 70 42 22];
-            app.zEditField.Value = -126;
+            % Create scanzEditField
+            app.scanzEditField = uieditfield(app.hetPanel, 'numeric');
+            app.scanzEditField.Position = [265 71 42 22];
+            app.scanzEditField.Value = -126;
 
             % Create yEditFieldLabel
-            app.yEditFieldLabel = uilabel(app.Panel_2);
+            app.yEditFieldLabel = uilabel(app.hetPanel);
             app.yEditFieldLabel.HorizontalAlignment = 'right';
-            app.yEditFieldLabel.Position = [119 70 25 22];
+            app.yEditFieldLabel.Position = [119 71 25 22];
             app.yEditFieldLabel.Text = 'y';
 
-            % Create yEditField
-            app.yEditField = uieditfield(app.Panel_2, 'numeric');
-            app.yEditField.Position = [159 70 42 22];
-            app.yEditField.Value = -127;
+            % Create scanyEditField
+            app.scanyEditField = uieditfield(app.hetPanel, 'numeric');
+            app.scanyEditField.Position = [159 71 42 22];
+            app.scanyEditField.Value = -127;
 
             % Create T1wfilenameDropDownLabel
-            app.T1wfilenameDropDownLabel = uilabel(app.Panel_2);
+            app.T1wfilenameDropDownLabel = uilabel(app.hetPanel);
             app.T1wfilenameDropDownLabel.HorizontalAlignment = 'right';
-            app.T1wfilenameDropDownLabel.Position = [27 194 76 22];
+            app.T1wfilenameDropDownLabel.Position = [27 195 76 22];
             app.T1wfilenameDropDownLabel.Text = 'T1w filename';
 
             % Create T1wfilenameDropDown
-            app.T1wfilenameDropDown = uidropdown(app.Panel_2);
+            app.T1wfilenameDropDown = uidropdown(app.hetPanel);
             app.T1wfilenameDropDown.Items = {};
-            app.T1wfilenameDropDown.Position = [118 194 100 22];
+            app.T1wfilenameDropDown.Position = [118 195 189 22];
             app.T1wfilenameDropDown.Value = {};
 
             % Create CTfilenameDropDownLabel
-            app.CTfilenameDropDownLabel = uilabel(app.Panel_2);
+            app.CTfilenameDropDownLabel = uilabel(app.hetPanel);
             app.CTfilenameDropDownLabel.HorizontalAlignment = 'right';
-            app.CTfilenameDropDownLabel.Position = [34 159 69 22];
+            app.CTfilenameDropDownLabel.Position = [34 160 69 22];
             app.CTfilenameDropDownLabel.Text = 'CT filename';
 
             % Create CTfilenameDropDown
-            app.CTfilenameDropDown = uidropdown(app.Panel_2);
+            app.CTfilenameDropDown = uidropdown(app.hetPanel);
             app.CTfilenameDropDown.Items = {};
-            app.CTfilenameDropDown.Position = [118 159 100 22];
+            app.CTfilenameDropDown.Position = [118 160 189 22];
             app.CTfilenameDropDown.Value = {};
 
             % Create ScanSpatialResolutionmmEditFieldLabel
-            app.ScanSpatialResolutionmmEditFieldLabel = uilabel(app.Panel_2);
+            app.ScanSpatialResolutionmmEditFieldLabel = uilabel(app.hetPanel);
             app.ScanSpatialResolutionmmEditFieldLabel.HorizontalAlignment = 'right';
-            app.ScanSpatialResolutionmmEditFieldLabel.Position = [47 17 164 22];
+            app.ScanSpatialResolutionmmEditFieldLabel.Position = [47 18 164 22];
             app.ScanSpatialResolutionmmEditFieldLabel.Text = 'Scan Spatial Resolution (mm)';
 
             % Create ScanSpatialResolutionmmEditField
-            app.ScanSpatialResolutionmmEditField = uieditfield(app.Panel_2, 'numeric');
-            app.ScanSpatialResolutionmmEditField.Position = [215 17 30 22];
+            app.ScanSpatialResolutionmmEditField = uieditfield(app.hetPanel, 'numeric');
+            app.ScanSpatialResolutionmmEditField.Position = [215 18 30 22];
             app.ScanSpatialResolutionmmEditField.Value = 1;
 
-            % Create Panel
-            app.Panel = uipanel(app.Panel_2);
-            app.Panel.Position = [0 0 323 232];
+            % Create homPanel
+            app.homPanel = uipanel(app.hetPanel);
+            app.homPanel.Position = [-1 14 308 219];
 
             % Create GreensFunctionbasedCheckBox
-            app.GreensFunctionbasedCheckBox = uicheckbox(app.Panel);
+            app.GreensFunctionbasedCheckBox = uicheckbox(app.homPanel);
             app.GreensFunctionbasedCheckBox.Text = 'Green''s Function based';
-            app.GreensFunctionbasedCheckBox.Position = [89 173 149 22];
+            app.GreensFunctionbasedCheckBox.Position = [89 160 149 22];
             app.GreensFunctionbasedCheckBox.Value = true;
 
             % Create GridSizemmLabel
-            app.GridSizemmLabel = uilabel(app.Panel);
-            app.GridSizemmLabel.Position = [126 105 86 22];
+            app.GridSizemmLabel = uilabel(app.homPanel);
+            app.GridSizemmLabel.Position = [126 92 86 22];
             app.GridSizemmLabel.Text = 'Grid Size (mm)';
 
             % Create xEditField_2Label
-            app.xEditField_2Label = uilabel(app.Panel);
+            app.xEditField_2Label = uilabel(app.homPanel);
             app.xEditField_2Label.HorizontalAlignment = 'right';
-            app.xEditField_2Label.Position = [34 75 25 22];
+            app.xEditField_2Label.Position = [34 62 25 22];
             app.xEditField_2Label.Text = 'x';
 
-            % Create xEditField_2
-            app.xEditField_2 = uieditfield(app.Panel, 'numeric');
-            app.xEditField_2.Limits = [0 Inf];
-            app.xEditField_2.Position = [69 75 37 22];
-            app.xEditField_2.Value = 192;
+            % Create xHomEditField
+            app.xHomEditField = uieditfield(app.homPanel, 'numeric');
+            app.xHomEditField.Limits = [0 Inf];
+            app.xHomEditField.Position = [69 62 37 22];
+            app.xHomEditField.Value = 192;
 
             % Create yEditField_2Label
-            app.yEditField_2Label = uilabel(app.Panel);
+            app.yEditField_2Label = uilabel(app.homPanel);
             app.yEditField_2Label.HorizontalAlignment = 'right';
-            app.yEditField_2Label.Position = [114 75 25 22];
+            app.yEditField_2Label.Position = [114 62 25 22];
             app.yEditField_2Label.Text = 'y';
 
-            % Create yEditField_2
-            app.yEditField_2 = uieditfield(app.Panel, 'numeric');
-            app.yEditField_2.Limits = [0 Inf];
-            app.yEditField_2.Position = [149 75 37 22];
-            app.yEditField_2.Value = 256;
+            % Create HomyEditField
+            app.HomyEditField = uieditfield(app.homPanel, 'numeric');
+            app.HomyEditField.Limits = [0 Inf];
+            app.HomyEditField.Position = [149 62 37 22];
+            app.HomyEditField.Value = 256;
 
             % Create zEditField_2Label
-            app.zEditField_2Label = uilabel(app.Panel);
+            app.zEditField_2Label = uilabel(app.homPanel);
             app.zEditField_2Label.HorizontalAlignment = 'right';
-            app.zEditField_2Label.Position = [198 75 25 22];
+            app.zEditField_2Label.Position = [198 62 25 22];
             app.zEditField_2Label.Text = 'z';
 
-            % Create zEditField_2
-            app.zEditField_2 = uieditfield(app.Panel, 'numeric');
-            app.zEditField_2.Limits = [0 Inf];
-            app.zEditField_2.Position = [233 75 37 22];
-            app.zEditField_2.Value = 256;
+            % Create HomzEditField
+            app.HomzEditField = uieditfield(app.homPanel, 'numeric');
+            app.HomzEditField.Limits = [0 Inf];
+            app.HomzEditField.Position = [233 62 37 22];
+            app.HomzEditField.Value = 256;
 
-            % Create UpdateButton_3
-            app.UpdateButton_3 = uibutton(app.InitTab, 'push');
-            app.UpdateButton_3.Position = [602 182 100 23];
-            app.UpdateButton_3.Text = 'Update';
+            % Create UpdateButtonInit
+            app.UpdateButtonInit = uibutton(app.InitTab, 'push');
+            app.UpdateButtonInit.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonInitPushed, true);
+            app.UpdateButtonInit.Position = [602 182 100 23];
+            app.UpdateButtonInit.Text = 'Update';
 
             % Create TransducersTab
             app.TransducersTab = uitab(app.TabGroup);
@@ -595,10 +724,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.xEditField_3Label.Position = [55 149 25 22];
             app.xEditField_3Label.Text = 'x';
 
-            % Create xEditField_3
-            app.xEditField_3 = uieditfield(app.Transducer1Panel, 'numeric');
-            app.xEditField_3.Position = [90 149 37 22];
-            app.xEditField_3.Value = -59;
+            % Create trPosxEditField
+            app.trPosxEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.trPosxEditField.Position = [90 149 37 22];
+            app.trPosxEditField.Value = -59;
 
             % Create yEditField_3Label
             app.yEditField_3Label = uilabel(app.Transducer1Panel);
@@ -606,10 +735,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.yEditField_3Label.Position = [135 149 25 22];
             app.yEditField_3Label.Text = 'y';
 
-            % Create yEditField_3
-            app.yEditField_3 = uieditfield(app.Transducer1Panel, 'numeric');
-            app.yEditField_3.Position = [170 149 37 22];
-            app.yEditField_3.Value = 30;
+            % Create trPosyEditField
+            app.trPosyEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.trPosyEditField.Position = [170 149 37 22];
+            app.trPosyEditField.Value = 30;
 
             % Create zEditField_3Label
             app.zEditField_3Label = uilabel(app.Transducer1Panel);
@@ -617,10 +746,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.zEditField_3Label.Position = [219 149 25 22];
             app.zEditField_3Label.Text = 'z';
 
-            % Create zEditField_3
-            app.zEditField_3 = uieditfield(app.Transducer1Panel, 'numeric');
-            app.zEditField_3.Position = [254 149 37 22];
-            app.zEditField_3.Value = 68;
+            % Create trPoszEditField
+            app.trPoszEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.trPoszEditField.Position = [254 149 37 22];
+            app.trPoszEditField.Value = 68;
 
             % Create RotationdegxyzintrinsicLabel
             app.RotationdegxyzintrinsicLabel = uilabel(app.Transducer1Panel);
@@ -669,10 +798,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.RemoveTransducerButton.Position = [128 221 123 23];
             app.RemoveTransducerButton.Text = 'Remove Transducer';
 
-            % Create UpdateButton
-            app.UpdateButton = uibutton(app.TransducersTab, 'push');
-            app.UpdateButton.Position = [574 116 100 23];
-            app.UpdateButton.Text = 'Update';
+            % Create UpdateButtonTransducer
+            app.UpdateButtonTransducer = uibutton(app.TransducersTab, 'push');
+            app.UpdateButtonTransducer.Position = [574 116 100 23];
+            app.UpdateButtonTransducer.Text = 'Update';
 
             % Create PropagationMatrixAfilenameDropDownLabel
             app.PropagationMatrixAfilenameDropDownLabel = uilabel(app.TransducersTab);
@@ -769,10 +898,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.xEditField_4Label.Position = [55 149 25 22];
             app.xEditField_4Label.Text = 'x';
 
-            % Create xEditField_4
-            app.xEditField_4 = uieditfield(app.Transducer1Panel_2, 'numeric');
-            app.xEditField_4.Position = [90 149 37 22];
-            app.xEditField_4.Value = -18;
+            % Create focusxEditField
+            app.focusxEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.focusxEditField.Position = [90 149 37 22];
+            app.focusxEditField.Value = -18;
 
             % Create yEditField_4Label
             app.yEditField_4Label = uilabel(app.Transducer1Panel_2);
@@ -780,10 +909,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.yEditField_4Label.Position = [135 149 25 22];
             app.yEditField_4Label.Text = 'y';
 
-            % Create yEditField_4
-            app.yEditField_4 = uieditfield(app.Transducer1Panel_2, 'numeric');
-            app.yEditField_4.Position = [170 149 37 22];
-            app.yEditField_4.Value = 30;
+            % Create focusyEditField
+            app.focusyEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.focusyEditField.Position = [170 149 37 22];
+            app.focusyEditField.Value = 30;
 
             % Create zEditField_4Label
             app.zEditField_4Label = uilabel(app.Transducer1Panel_2);
@@ -791,10 +920,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.zEditField_4Label.Position = [219 149 25 22];
             app.zEditField_4Label.Text = 'z';
 
-            % Create zEditField_4
-            app.zEditField_4 = uieditfield(app.Transducer1Panel_2, 'numeric');
-            app.zEditField_4.Position = [254 149 37 22];
-            app.zEditField_4.Value = -27;
+            % Create focuszEditField
+            app.focuszEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.focuszEditField.Position = [254 149 37 22];
+            app.focuszEditField.Value = -27;
 
             % Create FocusRadiusmmEditFieldLabel
             app.FocusRadiusmmEditFieldLabel = uilabel(app.Transducer1Panel_2);
@@ -937,10 +1066,10 @@ classdef simulationApp < matlab.apps.AppBase
             app.RegionTargetDropDown.Position = [122 213 100 22];
             app.RegionTargetDropDown.Value = {};
 
-            % Create UpdateButton_2
-            app.UpdateButton_2 = uibutton(app.TargetingTab, 'push');
-            app.UpdateButton_2.Position = [574 24 100 23];
-            app.UpdateButton_2.Text = 'Update';
+            % Create UpdateButtonTargeting
+            app.UpdateButtonTargeting = uibutton(app.TargetingTab, 'push');
+            app.UpdateButtonTargeting.Position = [574 24 100 23];
+            app.UpdateButtonTargeting.Text = 'Update';
 
             % Create MaxPressurekPaEditFieldLabel
             app.MaxPressurekPaEditFieldLabel = uilabel(app.TargetingTab);
@@ -1021,6 +1150,17 @@ classdef simulationApp < matlab.apps.AppBase
             app.PlotSkullCheckBox = uicheckbox(app.OptimizeTab);
             app.PlotSkullCheckBox.Text = 'Plot Skull';
             app.PlotSkullCheckBox.Position = [163 377 72 22];
+
+            % Create GroundTruthResolutionFactorEditFieldLabel
+            app.GroundTruthResolutionFactorEditFieldLabel = uilabel(app.OptimizeTab);
+            app.GroundTruthResolutionFactorEditFieldLabel.HorizontalAlignment = 'right';
+            app.GroundTruthResolutionFactorEditFieldLabel.Position = [562 435 99 30];
+            app.GroundTruthResolutionFactorEditFieldLabel.Text = {'Ground Truth '; 'Resolution Factor'};
+
+            % Create GroundTruthResolutionFactorEditField
+            app.GroundTruthResolutionFactorEditField = uieditfield(app.OptimizeTab, 'numeric');
+            app.GroundTruthResolutionFactorEditField.Position = [673 443 34 22];
+            app.GroundTruthResolutionFactorEditField.Value = 1;
 
             % Create UpdateSliceButton
             app.UpdateSliceButton = uibutton(app.UIFigure, 'push');
