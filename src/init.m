@@ -63,15 +63,15 @@ else
     end
 end
 
-[kgrid, medium, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
+if isempty(t1w_filename)
+    plot_offset = grid_size / dx_scan / 2; % Offset to center
+end
+
+[kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
     'slice_idx', round(plot_offset(2) + slice_idx_2D), 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
-    if isempty(t1w_filename)
-        plot_offset = grid_size / dx_scan / 2; % Offset to center
-    end
-
     tr_offset_karr = (plot_offset * dx_scan - grid_size / 2 - kgrid.dx)'; % Compute offset for karray transducers
     grid_size = [grid_size(1), grid_size(3)]; % plane size for plots
 end

@@ -1,4 +1,4 @@
-function [kgrid, medium, ppp] = init_grid_medium(f0, grid_size, varargin)
+function [kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, varargin)
 
 n_dim = 2;
 ct_filename = [];
@@ -63,9 +63,9 @@ if ~isempty(ct_filename)
     skull_sz = size(skull);
 
     skull_res_factor = dx_scan / dx;
-    Nx = skull_sz(1) * skull_res_factor;
-    Ny = skull_sz(2) * skull_res_factor;
-    Nz = skull_sz(3) * skull_res_factor;
+    Nx = round(skull_sz(1) * skull_res_factor);
+    Ny = round(skull_sz(2) * skull_res_factor);
+    Nz = round(skull_sz(3) * skull_res_factor);
 
     grid_size = [Nx, Ny, Nz] * dx;
 else
