@@ -46,7 +46,6 @@ classdef simulationApp < matlab.apps.AppBase
         CenterFreqkHzEditFieldLabel     matlab.ui.control.Label
         DimSwitch                       matlab.ui.control.Switch
         Label                           matlab.ui.control.Label
-        SaveSimulationResultsCheckBox   matlab.ui.control.CheckBox
         RealdxLabel                     matlab.ui.control.Label
         AdvancedGridMediumSettingsPanel  matlab.ui.container.Panel
         PMLinsideCheckBox               matlab.ui.control.CheckBox
@@ -94,6 +93,8 @@ classdef simulationApp < matlab.apps.AppBase
         RemoveTransducerButton          matlab.ui.control.Button
         AddTransducerButton             matlab.ui.control.Button
         Transducer1Panel                matlab.ui.container.Panel
+        TransducerLengthmmEditField     matlab.ui.control.NumericEditField
+        TransducerLengthmmEditFieldLabel  matlab.ui.control.Label
         gammaEditField                  matlab.ui.control.NumericEditField
         gammaEditFieldLabel             matlab.ui.control.Label
         betaEditField                   matlab.ui.control.NumericEditField
@@ -152,6 +153,7 @@ classdef simulationApp < matlab.apps.AppBase
         xEditField_4Label               matlab.ui.control.Label
         FocusPositionLabel              matlab.ui.control.Label
         OptimizeTab                     matlab.ui.container.Tab
+        SaveSimulationResultsButton     matlab.ui.control.Button
         GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
         GroundTruthResolutionFactorEditFieldLabel  matlab.ui.control.Label
         PlotSkullCheckBox               matlab.ui.control.CheckBox
@@ -176,6 +178,33 @@ classdef simulationApp < matlab.apps.AppBase
         t1w_filename
         dx_scan
         plot_offset
+        tr_offset_karr 
+        segment_ids
+        domain_ids
+        t_pos
+        t_rot
+        tr_len
+        el_per_t
+        t_mask_ps
+        mask2el
+        karray_t
+        active_ids
+    end
+    
+    methods (Access = private)
+        
+        function entries = getDropdownEntries(app, path, patterns, file_end)
+            items = dir(path);
+
+            % Check if each item matches any of the patterns
+            matches = false(size(items))';
+            for i = 1:length(patterns)
+                matches = matches | (contains({items.name}, patterns{i}) & contains({items.name}, file_end));
+            end
+
+            % List entries
+            entries = {items(matches).name};
+        end
     end
     
 
@@ -186,7 +215,6 @@ classdef simulationApp < matlab.apps.AppBase
         function UpdateButtonInitPushed(app, event)
             f0 = app.CenterFreqkHzEditField.Value * 1e3; % Hz
             app.n_dim = 2 + (app.DimSwitch.Value == "3D");
-            app.plot_offset = [-app.scanxEditField.Value, -app.scanyEditField.Value, -app.scanzEditField.Value] + 1;
 
             %% Obtain Constants
             const.c0 = app.c0msEditField.Value; % m/s - water
@@ -210,40 +238,91 @@ classdef simulationApp < matlab.apps.AppBase
             %% Define Grid and Medium
             SimSpatialResolutionmmEditFieldValueChanged(app);
 
-            if strcmp(app.MediumSwitch, 'Homogeneous')
-                app.grid_size = [app.xHomEditField, app.HomyEditField, app.HomzEditField] * 1e-3;
+            if strcmp(app.MediumSwitch.Value, 'Homogeneous')
+                app.grid_size = [app.xHomEditField.Value, app.HomyEditField.Value, app.HomzEditField.Value] * 1e-3;
                 app.t1w_filename = [];
                 ct_filename = [];
                 app.dx_scan = 1e-3; % m
+
+                app.plot_offset = app.grid_size / app.dx_scan / 2; % Offset to center
             else
                 app.grid_size = [];
-                app.t1w_filename = fullfile('..', 'Scans', strcat(app.T1wfilenameDropDown.Value, '.nii'));
-                ct_filename = fullfile('..', 'Scans', strcat(app.CTfilenameDropDown.Value, '.nii'));
-                app.dx_scan = app.ScanSpatialResolutionmmEditField.Value;
+                app.t1w_filename = fullfile('..', 'Scans', app.T1wfilenameDropDown.Value);
+                ct_filename = fullfile('..', 'Scans', app.CTfilenameDropDown.Value);
+                app.dx_scan = app.ScanSpatialResolutionmmEditField.Value * 1e-3;
+
+                app.plot_offset = [-app.scanxEditField.Value, -app.scanyEditField.Value, -app.scanzEditField.Value] + 1;
             end
 
-            [app.kgrid, app.medium, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, 'dx_factor', app.dx_factor, ...
-                'ct_scan', ct_filename, 'slice_idx', round(app.plot_offset(2) + app.SliceIndexEditField.Value), ...
+            [app.kgrid, app.medium, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, ...
+                'dx_factor', app.dx_factor, 'ct_scan', ct_filename, ...
+                'slice_idx', round(app.plot_offset(2) + app.SliceIndexEditField.Value), ...
                 'dx_scan', app.dx_scan, 'constants', const);
             [app.sensor, app.sensor_mask] = init_sensor(app.kgrid, ppp);
 
+            if app.n_dim == 3
+                app.tr_offset_karr = (app.plot_offset * app.dx_scan - app.grid_size / 2 - app.kgrid.dx)'; % Offset for karray
+                app.grid_size = [app.grid_size(1), app.grid_size(3)]; % plane size for plots
+            end
+
             app.dx_factor = app.dx_scan / app.kgrid.dx;
+
+            %% Segment the brain
+            if ~isempty(app.t1w_filename)
+                [app.segment_ids] = segment_space(app.t1w_filename, app.dx_scan);
+                if abs(app.dx_factor) < 0.99 || abs(app.dx_factor) > 1.01
+                    % Interpolate to adapt to grid size
+                    grid_sz = size(app.kgrid.k);
+                    seg_sz = size(app.segment_ids);
+                    [uniqueStrings, ~, seg_nums] = unique(app.segment_ids);
+                    seg_nums = reshape(seg_nums, size(app.segment_ids)); % Ensure it has the same shape as the original 3D array
+                
+                    [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
+                    [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz(1)), linspace(1, seg_sz(2), grid_sz(2)), ...
+                        linspace(1, seg_sz(3), grid_sz(3)));
+                    seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
+                
+                    % Map back to strings
+                    seg_nums = round(seg_nums); % Ensure indices are integers
+                    app.segment_ids = uniqueStrings(seg_nums);
+                end
+                app.domain_ids = app.segment_ids ~= "background"; % Mask entire brain
+            else
+                app.segment_ids = [];
+                app.domain_ids = ones(size(app.kgrid.k));
+            end
+
+            %% Show Skull and Scan in Preview
+            if ~strcmp(app.MediumSwitch.Value, 'Homogeneous')
+                skull_arg = app.medium.sound_speed - min(app.medium.sound_speed(:));
+                skull_arg = skull_arg / max(skull_arg(:));
+
+                plot_results(app.kgrid, [], skull_arg, 'Scan/Skull Preview', [], app.t1w_filename, ...
+                    app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
+                    'colorbar', false, 'cmap', hot());
+            end
+
+            disp("Init successful")
         end
 
         % Value changed function: SimSpatialResolutionmmEditField
         function SimSpatialResolutionmmEditFieldValueChanged(app, event)
             value = app.SimSpatialResolutionmmEditField.Value * 1e-3;
             
-            dx_std = 1500 / (app.CenterFreqkHzEditField.Value * 1e3) / 3; % = (c0 / f0 / ppw)
-            if value <= 0
+            dx_std = app.c0msEditField.Value / (app.CenterFreqkHzEditField.Value * 1e3) / app.ppwEditField.Value;
+            if value <= 0 || dx_std < value
                 app.dx_factor = 1;
                 dx = dx_std;
+                if dx_std < value
+                    app.RealdxLabel.Text = strcat("Spatial Aliasing Warning! -> Real: ", num2str(dx * 1e3, 3), " mm");
+                    return;
+                end
             else
                 app.dx_factor = dx_std / value;
                 dx = value;
             end
 
-            app.RealdxLabel.Text = strcat("-> Real: ", string(dx * 1e3), " mm");
+            app.RealdxLabel.Text = strcat("-> Real: ", num2str(dx * 1e3, 3), " mm");
         end
 
         % Value changed function: DisplayAdvancedSettingsCheckBox
@@ -267,23 +346,112 @@ classdef simulationApp < matlab.apps.AppBase
                 app.homPanel.Visible = false;
 
                 % Create t1w and ct dropdown menu
-                items = dir(fullfile('..', 'Scans'));
+                scan_path = fullfile('..', 'Scans');
                 t1_pattern = {'T1', 't1'};
                 ct_pattern = {'ct', 'CT'};
                 scan_pattern = '.nii';
 
-                % Check if each item matches any of the patterns
-                t1w_matches = false(size(items))';
-                ct_matches = false(size(items))';
-                for i = 1:length(t1_pattern)
-                    t1w_matches = t1w_matches | (contains({items.name}, t1_pattern{i}) & contains({items.name}, scan_pattern));
-                    ct_matches = ct_matches | (contains({items.name}, ct_pattern{i}) & contains({items.name}, scan_pattern));
-                end
-
                 % Assign to t1 and ct dropdown menus
-                app.T1wfilenameDropDown.Items = {items(t1w_matches).name};
-                app.CTfilenameDropDown.Items = {items(ct_matches).name};
+                app.T1wfilenameDropDown.Items = getDropdownEntries(app, scan_path, t1_pattern, scan_pattern);
+                app.CTfilenameDropDown.Items = getDropdownEntries(app, scan_path, ct_pattern, scan_pattern);
             end
+        end
+
+        % Value changed function: CenterFreqkHzEditField
+        function CenterFreqkHzEditFieldValueChanged(app, event)
+            value = app.CenterFreqkHzEditField.Value;
+            SimSpatialResolutionmmEditFieldValueChanged(app);
+        end
+
+        % Button down function: TransducersTab
+        function TransducersTabButtonDown(app, event)
+            % Get Transducer files for dropdown menu
+            trFile_path = fullfile('..', 'Array_Positions');
+            tr_pattern = {'std'};
+            sparsity_pattern = {'spars'};
+            file_ending = '.mat';
+
+            app.ArrayElementsPositionsfilenameDropDown.Items = getDropdownEntries(app, trFile_path, tr_pattern, file_ending);
+
+            sparse_entries = getDropdownEntries(app, trFile_path, sparsity_pattern, file_ending);
+            app.SparsityfilenameDropDown.Items = [{''}, sparse_entries(:)'];
+
+            % Get Propagation matrix files for dropdown menu
+            A_path = fullfile('..', 'Lin_Prop_Matrices');
+            A_pattern = {'A'};
+            file_ending = '.mat';
+
+            A_entries = getDropdownEntries(app, A_path, A_pattern, file_ending);
+            app.PropagationMatrixAfilenameDropDown.Items = [{''}, A_entries(:)'];
+
+        end
+
+        % Value changed function: ElementGeometrySwitch
+        function ElementGeometrySwitchValueChanged(app, event)
+            value = app.ElementGeometrySwitch.Value;
+            if strcmp(value, 'Rect')
+                app.WidthmmEditField.Visible = true;
+            else
+                app.WidthmmEditField.Visible = false;
+            end
+        end
+
+        % Button pushed function: AddTransducerButton
+        function AddTransducerButtonPushed(app, event)
+            new_item = num2str(length(app.TransducerDropDown.Items) + 1);
+            app.TransducerDropDown.Items = [app.TransducerDropDown.Items(:)', {new_item}];
+
+            app.TransducerDropDown.Value = {new_item};
+        end
+
+        % Button pushed function: UpdateButtonTransducer
+        function UpdateButtonTransducerPushed(app, event)
+            n_trs = length(app.TransducerDropDown.Items);
+%             app.t_pos = zeros(app.n_dim, n_trs);
+%             app.t_rot = zeros(1 + 2 * (app.n_dim == 3), n_trs); % Only one rotation in 2D
+
+            if app.n_dim == 2
+                spacing = 1;
+            
+                app.t_mask_ps = false(app.kgrid.Nx, app.kgrid.Ny);
+                app.el_per_t = zeros(1, n_trs);
+                t_ids = [];
+                for i = 1:n_trs
+                    x_offset = round((app.plot_offset(1) + app.t_pos(1, i)) * app.dx_factor); % grid points
+                    y_offset = round((app.plot_offset(3) + app.t_pos(2, i)) * app.dx_factor); % tangential shift in grid points
+                
+                    new_arr = create_linear_array(app.kgrid, app.tr_len(i), x_offset, y_offset, spacing, app.t_rot(i));
+            
+                    app.el_per_t(i) = sum(new_arr(:));
+                    t_ids = [t_ids; find(new_arr)];
+                    app.t_mask_ps = app.t_mask_ps | logical(new_arr);
+                end
+                
+                [~, el2mask_ids] = sort(t_ids);
+                [~, app.mask2el] = sort(el2mask_ids);
+            
+                app.karray_t = [];
+                app.active_ids = [];
+            else
+                % Planar Array
+                t_name = app.ArrayElementsPositionsfilenameDropDown.Value;
+                sparsity_name = app.SparsityfilenameDropDown.Value;
+
+                t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + app.tr_offset_karr;
+                active_tr_ids = 1:n_trs;
+            
+                [app.karray_t, app.t_mask_ps, app.active_ids, app.mask2el] = create_transducer(app.kgrid, t_name, ...
+                    sparsity_name, t_pos_3D, app.t_rot, active_tr_ids);
+            
+                app.el_per_t = num_elements * ones(1, length(active_tr_ids));
+            end
+
+        end
+
+        % Value changed function: TransducerDropDown
+        function TransducerDropDownValueChanged(app, event)
+            value = app.TransducerDropDown.Value;
+            
         end
     end
 
@@ -464,73 +632,69 @@ classdef simulationApp < matlab.apps.AppBase
             % Create GeneralPanel
             app.GeneralPanel = uipanel(app.InitTab);
             app.GeneralPanel.Title = 'General';
-            app.GeneralPanel.Position = [31 220 298 292];
+            app.GeneralPanel.Position = [31 258 298 254];
 
             % Create RealdxLabel
             app.RealdxLabel = uilabel(app.GeneralPanel);
-            app.RealdxLabel.Position = [47 58 81 22];
+            app.RealdxLabel.Position = [47 20 238 22];
             app.RealdxLabel.Text = '-> Real: 1 mm';
-
-            % Create SaveSimulationResultsCheckBox
-            app.SaveSimulationResultsCheckBox = uicheckbox(app.GeneralPanel);
-            app.SaveSimulationResultsCheckBox.Text = 'Save Simulation Results';
-            app.SaveSimulationResultsCheckBox.Position = [74 9 152 30];
 
             % Create Label
             app.Label = uilabel(app.GeneralPanel);
             app.Label.HorizontalAlignment = 'center';
-            app.Label.Position = [40 240 26 22];
+            app.Label.Position = [40 202 26 22];
             app.Label.Text = 'Dim';
 
             % Create DimSwitch
             app.DimSwitch = uiswitch(app.GeneralPanel, 'slider');
             app.DimSwitch.Items = {'2D', '3D'};
-            app.DimSwitch.Position = [30 210 45 20];
+            app.DimSwitch.Position = [30 172 45 20];
             app.DimSwitch.Value = '2D';
 
             % Create CenterFreqkHzEditFieldLabel
             app.CenterFreqkHzEditFieldLabel = uilabel(app.GeneralPanel);
             app.CenterFreqkHzEditFieldLabel.HorizontalAlignment = 'right';
-            app.CenterFreqkHzEditFieldLabel.Position = [126 210 101 22];
+            app.CenterFreqkHzEditFieldLabel.Position = [126 172 101 22];
             app.CenterFreqkHzEditFieldLabel.Text = 'Center Freq (kHz)';
 
             % Create CenterFreqkHzEditField
             app.CenterFreqkHzEditField = uieditfield(app.GeneralPanel, 'numeric');
-            app.CenterFreqkHzEditField.Position = [239 210 46 22];
+            app.CenterFreqkHzEditField.ValueChangedFcn = createCallbackFcn(app, @CenterFreqkHzEditFieldValueChanged, true);
+            app.CenterFreqkHzEditField.Position = [239 172 46 22];
             app.CenterFreqkHzEditField.Value = 500;
 
             % Create SimSpatialResolutionmmEditFieldLabel
             app.SimSpatialResolutionmmEditFieldLabel = uilabel(app.GeneralPanel);
             app.SimSpatialResolutionmmEditFieldLabel.HorizontalAlignment = 'right';
-            app.SimSpatialResolutionmmEditFieldLabel.Position = [41 79 157 22];
+            app.SimSpatialResolutionmmEditFieldLabel.Position = [41 41 157 22];
             app.SimSpatialResolutionmmEditFieldLabel.Text = 'Sim Spatial Resolution (mm)';
 
             % Create SimSpatialResolutionmmEditField
             app.SimSpatialResolutionmmEditField = uieditfield(app.GeneralPanel, 'numeric');
             app.SimSpatialResolutionmmEditField.ValueChangedFcn = createCallbackFcn(app, @SimSpatialResolutionmmEditFieldValueChanged, true);
-            app.SimSpatialResolutionmmEditField.Position = [213 79 45 22];
+            app.SimSpatialResolutionmmEditField.Position = [213 41 45 22];
 
             % Create SliceDirectionDropDownLabel
             app.SliceDirectionDropDownLabel = uilabel(app.GeneralPanel);
             app.SliceDirectionDropDownLabel.HorizontalAlignment = 'right';
-            app.SliceDirectionDropDownLabel.Position = [41 160 90 22];
+            app.SliceDirectionDropDownLabel.Position = [41 122 90 22];
             app.SliceDirectionDropDownLabel.Text = 'Slice (Direction)';
 
             % Create SliceDirectionDropDown
             app.SliceDirectionDropDown = uidropdown(app.GeneralPanel);
             app.SliceDirectionDropDown.Items = {'X', 'Y', 'Z'};
-            app.SliceDirectionDropDown.Position = [146 160 45 22];
+            app.SliceDirectionDropDown.Position = [146 122 45 22];
             app.SliceDirectionDropDown.Value = 'Y';
 
             % Create DSliceIndexEditFieldLabel
             app.DSliceIndexEditFieldLabel = uilabel(app.GeneralPanel);
             app.DSliceIndexEditFieldLabel.HorizontalAlignment = 'right';
-            app.DSliceIndexEditFieldLabel.Position = [46 126 82 22];
+            app.DSliceIndexEditFieldLabel.Position = [46 88 82 22];
             app.DSliceIndexEditFieldLabel.Text = '2D Slice Index';
 
             % Create SliceIndexEditField
             app.SliceIndexEditField = uieditfield(app.GeneralPanel, 'numeric');
-            app.SliceIndexEditField.Position = [144 126 48 22];
+            app.SliceIndexEditField.Position = [144 88 48 22];
             app.SliceIndexEditField.Value = 30;
 
             % Create DisplayAdvancedSettingsCheckBox
@@ -695,6 +859,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create TransducersTab
             app.TransducersTab = uitab(app.TabGroup);
             app.TransducersTab.Title = 'Transducer(s)';
+            app.TransducersTab.ButtonDownFcn = createCallbackFcn(app, @TransducersTabButtonDown, true);
 
             % Create TransducerDropDownLabel
             app.TransducerDropDownLabel = uilabel(app.TransducersTab);
@@ -705,6 +870,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create TransducerDropDown
             app.TransducerDropDown = uidropdown(app.TransducersTab);
             app.TransducerDropDown.Items = {'1'};
+            app.TransducerDropDown.ValueChangedFcn = createCallbackFcn(app, @TransducerDropDownValueChanged, true);
             app.TransducerDropDown.Position = [138 311 100 22];
             app.TransducerDropDown.Value = '1';
 
@@ -753,43 +919,54 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create RotationdegxyzintrinsicLabel
             app.RotationdegxyzintrinsicLabel = uilabel(app.Transducer1Panel);
-            app.RotationdegxyzintrinsicLabel.Position = [100 77 183 22];
+            app.RotationdegxyzintrinsicLabel.Position = [100 105 183 22];
             app.RotationdegxyzintrinsicLabel.Text = 'Rotation (deg) - x-y''-z'''' -> intrinsic';
 
             % Create alphaEditFieldLabel
             app.alphaEditFieldLabel = uilabel(app.Transducer1Panel);
             app.alphaEditFieldLabel.HorizontalAlignment = 'right';
-            app.alphaEditFieldLabel.Position = [42 47 34 22];
+            app.alphaEditFieldLabel.Position = [42 75 34 22];
             app.alphaEditFieldLabel.Text = 'alpha';
 
             % Create alphaEditField
             app.alphaEditField = uieditfield(app.Transducer1Panel, 'numeric');
-            app.alphaEditField.Position = [86 47 37 22];
+            app.alphaEditField.Position = [86 75 37 22];
 
             % Create betaEditFieldLabel
             app.betaEditFieldLabel = uilabel(app.Transducer1Panel);
             app.betaEditFieldLabel.HorizontalAlignment = 'right';
-            app.betaEditFieldLabel.Position = [137 47 28 22];
+            app.betaEditFieldLabel.Position = [137 75 28 22];
             app.betaEditFieldLabel.Text = 'beta';
 
             % Create betaEditField
             app.betaEditField = uieditfield(app.Transducer1Panel, 'numeric');
-            app.betaEditField.Position = [175 47 37 22];
+            app.betaEditField.Position = [175 75 37 22];
             app.betaEditField.Value = 45;
 
             % Create gammaEditFieldLabel
             app.gammaEditFieldLabel = uilabel(app.Transducer1Panel);
             app.gammaEditFieldLabel.HorizontalAlignment = 'right';
-            app.gammaEditFieldLabel.Position = [233 47 45 22];
+            app.gammaEditFieldLabel.Position = [233 75 45 22];
             app.gammaEditFieldLabel.Text = 'gamma';
 
             % Create gammaEditField
             app.gammaEditField = uieditfield(app.Transducer1Panel, 'numeric');
-            app.gammaEditField.Position = [288 47 37 22];
+            app.gammaEditField.Position = [288 75 37 22];
             app.gammaEditField.Value = 180;
+
+            % Create TransducerLengthmmEditFieldLabel
+            app.TransducerLengthmmEditFieldLabel = uilabel(app.Transducer1Panel);
+            app.TransducerLengthmmEditFieldLabel.HorizontalAlignment = 'right';
+            app.TransducerLengthmmEditFieldLabel.Position = [64 23 137 22];
+            app.TransducerLengthmmEditFieldLabel.Text = 'Transducer Length (mm)';
+
+            % Create TransducerLengthmmEditField
+            app.TransducerLengthmmEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.TransducerLengthmmEditField.Position = [211 23 55 22];
 
             % Create AddTransducerButton
             app.AddTransducerButton = uibutton(app.TransducersTab, 'push');
+            app.AddTransducerButton.ButtonPushedFcn = createCallbackFcn(app, @AddTransducerButtonPushed, true);
             app.AddTransducerButton.Position = [129 251 122 23];
             app.AddTransducerButton.Text = 'Add Transducer';
 
@@ -800,6 +977,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create UpdateButtonTransducer
             app.UpdateButtonTransducer = uibutton(app.TransducersTab, 'push');
+            app.UpdateButtonTransducer.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonTransducerPushed, true);
             app.UpdateButtonTransducer.Position = [574 116 100 23];
             app.UpdateButtonTransducer.Text = 'Update';
 
@@ -853,6 +1031,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create ElementGeometrySwitch
             app.ElementGeometrySwitch = uiswitch(app.GeneralPanel_2, 'slider');
             app.ElementGeometrySwitch.Items = {'Disc', 'Rect'};
+            app.ElementGeometrySwitch.ValueChangedFcn = createCallbackFcn(app, @ElementGeometrySwitchValueChanged, true);
             app.ElementGeometrySwitch.Position = [429 22 45 20];
             app.ElementGeometrySwitch.Value = 'Rect';
 
@@ -1161,6 +1340,11 @@ classdef simulationApp < matlab.apps.AppBase
             app.GroundTruthResolutionFactorEditField = uieditfield(app.OptimizeTab, 'numeric');
             app.GroundTruthResolutionFactorEditField.Position = [673 443 34 22];
             app.GroundTruthResolutionFactorEditField.Value = 1;
+
+            % Create SaveSimulationResultsButton
+            app.SaveSimulationResultsButton = uibutton(app.OptimizeTab, 'push');
+            app.SaveSimulationResultsButton.Position = [545 390 162 23];
+            app.SaveSimulationResultsButton.Text = 'Save Simulation Results';
 
             % Create UpdateSliceButton
             app.UpdateSliceButton = uibutton(app.UIFigure, 'push');
