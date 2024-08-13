@@ -195,6 +195,7 @@ classdef simulationApp < matlab.apps.AppBase
         karray_t
         active_ids
         point_pos_m
+        point_pos
         focus_radius
         des_pressures
         min_dist
@@ -203,6 +204,10 @@ classdef simulationApp < matlab.apps.AppBase
         des_pressures_reg
         min_dist_reg
         force_pressures_reg
+        b_mask
+        full_bmask
+        b_des
+        b_des_pl
     end
     
     methods (Access = private)
@@ -626,7 +631,129 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: UpdateTargetingButton
         function UpdateTargetingButtonPushed(app, event)
+            if app.n_dim == 2
+
+                % Define targets
+                if ~isempty(app.ManualTargetDropDown.Items)
+                    % Focal points - in Scan coordinate system
+%                     point_pos_m.x = scan_focus_x;
+%                     point_pos_m.y = scan_focus_z;
+                    amp_in = app.des_pressures' * 1e3; % Pa
+                
+                    app.point_pos = round((repmat(app.plot_offset(:), 1, 2) + app.point_pos_m(:, [1, 3])) * app.dx_factor);
+                
+                    % Assign amplitude acc. to closest position
+                    idx = sub2ind([app.kgrid.Nx, app.kgrid.Ny], app.point_pos(:, 1), app.point_pos(:, 3));
+                    [~, order] = sort(idx);
+                    amp_in = amp_in(order);
+                else
+                    app.point_pos = [];
+                end
             
+                app.b_mask = zeros(app.kgrid.Nx, app.kgrid.Ny, length(app.des_pressures) + length(app.tar_reg_labels));
+                
+                amp_vol = -1 * ones(numel(app.kgrid.k), 1);
+            
+                % Stimulate Disc pattern
+                for i = 1:length(app.des_pressures)
+                    disc = makeDisc(app.kgrid.Nx, app.kgrid.Ny, app.point_pos(i, 1), app.point_pos(i, 3), ...
+                        round(app.focus_radius(i) / app.kgrid.dx), false);
+                    amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
+                    app.b_mask(:, :, i) = disc;
+                end
+            
+                if ~isempty(app.t1w_filename) && ~isempty(app.RegionTargetDropDown.Items)
+                    % Stimulate brain region
+                    amp_in_reg = app.des_pressures_reg' * 1e3; % Pa
+                    stim_regions = squeeze(app.segment_ids(:, app.slice_grid_2D, :));
+
+                    for j = 1:length(app.tar_reg_labels)
+                        reg_mask = stim_regions == app.tar_reg_labels(j);
+                        amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+                        app.b_mask(:, :, length(app.des_pressures) + j) = reg_mask;
+                    end
+                end
+            
+                b_cross = amp_vol / max(amp_vol);
+                b_cross(b_cross < 0.0) = 0.0;
+                amp_in = amp_vol(amp_vol >= 0);
+            
+            else
+                
+                % Define targets
+                if ~isempty(app.ManualTargetDropDown.Items)
+                    amp_in = app.des_pressures' * 1e3; % Pa
+                
+                    app.point_pos = round((repmat(app.plot_offset(:), 1, 3) + app.point_pos_m) * app.dx_factor);
+                
+                    % Assign amplitude acc. to closest position
+                    idx = sub2ind([app.kgrid.Nx, app.kgrid.Ny, app.kgrid.Nz], ...
+                        app.point_pos(:, 1), app.point_pos(:, 2), app.point_pos(:, 3));
+                    [~, order] = sort(idx);
+                    amp_in = amp_in(order);
+                else
+                    app.point_pos = [];
+                end
+            
+                app.b_mask = zeros(app.kgrid.Nx, app.kgrid.Ny, app.kgrid.Nz, length(app.des_pressures) + length(app.tar_reg_labels));
+            
+                amp_vol = -1 * ones(numel(app.kgrid.k), 1);
+            
+                % Stimulate Disc pattern
+                for i = 1:length(app.des_pressures)
+                    ball = makeBall(app.kgrid.Nx, app.kgrid.Ny, app.kgrid.Nz, app.point_pos(i, 1), app.point_pos(i, 2), ...
+                        app.point_pos(i, 3), round(app.focus_radius(i) / app.kgrid.dx), false);
+                    amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
+                    app.b_mask(:, :, :, i) = ball;
+                end
+            
+                if ~isempty(app.t1w_filename)
+                    
+                    % Stimulate brain region
+                    amp_in_reg = des_pressures_region' * 1e3; % Pa
+                    stim_regions = app.segment_ids;
+                    for j = 1:length(app.tar_reg_labels)
+                        reg_mask = stim_regions == app.tar_reg_labels(j);
+                        amp_vol(logical(reg_mask)) = amp_in_reg(j) * ones(sum(reg_mask(:)), 1);
+                        app.b_mask(:, :, :, length(app.des_pressures) + j) = reg_mask;
+                    end
+                end
+            
+                b_cross = amp_vol / max(amp_vol);
+                b_cross(b_cross < 0.0) = 0.0;
+                amp_in = amp_vol(amp_vol >= 0);
+            end
+            app.b_mask = logical(app.b_mask);
+            
+            % Create preview plot
+            preplot_arg = reshape(b_cross, size(app.kgrid.k));
+            preplot_arg(logical(app.t_mask_ps)) = max(b_cross(:));
+            
+            if ~isscalar(app.medium.sound_speed)
+                skull_arg = app.medium.sound_speed / max(app.medium.sound_speed(:));
+                skull_arg = skull_arg - min(skull_arg(:));
+                preplot_arg = preplot_arg + skull_arg * max(b_cross(:));
+            end
+            
+            plot_results(app.kgrid, [], preplot_arg, 'Plot Preview', [], app.t1w_filename, app.plot_offset, app.grid_size, ...
+                app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot());
+
+            preplot_arg(logical(app.t_mask_ps)) = 0.0; % Do not show transducers in second pre-plot
+            
+            % Create desired signal
+            phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
+            
+            app.b_des = amp_in .* exp(1j*phase); % only observed elements
+            app.full_bmask = sum(app.b_mask, app.n_dim + 1);
+            app.full_bmask = logical(app.full_bmask);
+            
+            b_max = max(abs(app.b_des));
+            app.b_des_pl = sidelobe_tol/100 * b_max * ones(numel(app.kgrid.k), 1); % Entire plane max amp
+            app.b_des_pl(app.full_bmask) = app.b_des; % Target amp
+            app.b_des_pl(logical(reshape(app.medium.sound_speed > min(app.medium.sound_speed(:)), [], 1)) & ~app.logical_dom_ids) ...
+                = max_skull_pressure * 1e3; % Skull max amp
+
+            disp('Target init successful')
         end
 
         % Value changed function: LimitSkullPressureCheckBox
