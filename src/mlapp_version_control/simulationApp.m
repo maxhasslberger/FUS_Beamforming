@@ -93,6 +93,7 @@ classdef simulationApp < matlab.apps.AppBase
         RemoveTransducerButton          matlab.ui.control.Button
         AddTransducerButton             matlab.ui.control.Button
         Transducer1Panel                matlab.ui.container.Panel
+        ConfirmButton                   matlab.ui.control.Button
         TransducerLengthmmEditField     matlab.ui.control.NumericEditField
         TransducerLengthmmEditFieldLabel  matlab.ui.control.Label
         gammaEditField                  matlab.ui.control.NumericEditField
@@ -112,23 +113,24 @@ classdef simulationApp < matlab.apps.AppBase
         TransducerDropDown              matlab.ui.control.DropDown
         TransducerDropDownLabel         matlab.ui.control.Label
         TargetingTab                    matlab.ui.container.Tab
-        MaxPressurekPaEditField_2       matlab.ui.control.NumericEditField
-        MaxPressurekPaEditField_2Label  matlab.ui.control.Label
+        MaxPressurekPaSkullEditField    matlab.ui.control.NumericEditField
+        MaxPressurekPaSkullEditFieldLabel  matlab.ui.control.Label
         LimitSkullPressureCheckBox      matlab.ui.control.CheckBox
         LimitIntracranialOffTargetPressureCheckBox  matlab.ui.control.CheckBox
         MaxPressurekPaEditField         matlab.ui.control.NumericEditField
         MaxPressurekPaEditFieldLabel    matlab.ui.control.Label
-        UpdateButtonTargeting           matlab.ui.control.Button
+        UpdateTargetingButton           matlab.ui.control.Button
         RegionTargetDropDown            matlab.ui.control.DropDown
         RegionTargetDropDownLabel       matlab.ui.control.Label
         RemoveRegionTargetButton        matlab.ui.control.Button
         AddRegionTargetButton           matlab.ui.control.Button
-        Transducer1Panel_3              matlab.ui.container.Panel
-        PressureAmplitudekPaEditField_2  matlab.ui.control.NumericEditField
+        TargetRegPanel                  matlab.ui.container.Panel
+        ConfirmRegTargetButton          matlab.ui.control.Button
+        PressureAmplitudekPaEditFieldReg  matlab.ui.control.NumericEditField
         PressureAmplitudekPaEditField_2Label  matlab.ui.control.Label
-        todeclaredPressureSwitch        matlab.ui.control.Switch
+        todeclaredPressureSwitchReg     matlab.ui.control.Switch
         todeclaredPressureSwitchLabel   matlab.ui.control.Label
-        MinPointDistancemmEditField_2   matlab.ui.control.NumericEditField
+        MinPointDistancemmEditFieldReg  matlab.ui.control.NumericEditField
         MinPointDistancemmEditField_2Label  matlab.ui.control.Label
         BrainRegionDropDown             matlab.ui.control.DropDown
         BrainRegionDropDownLabel        matlab.ui.control.Label
@@ -136,8 +138,9 @@ classdef simulationApp < matlab.apps.AppBase
         ManualTargetDropDownLabel       matlab.ui.control.Label
         RemoveManualTransducerButton    matlab.ui.control.Button
         AddManualTargetButton           matlab.ui.control.Button
-        Transducer1Panel_2              matlab.ui.container.Panel
-        todeclaredPressureSwitch_2      matlab.ui.control.Switch
+        TargetManPanel                  matlab.ui.container.Panel
+        ConfirmManTargetButton          matlab.ui.control.Button
+        todeclaredPressureSwitch        matlab.ui.control.Switch
         todeclaredPressureSwitch_2Label  matlab.ui.control.Label
         MinPointDistancemmEditField     matlab.ui.control.NumericEditField
         MinPointDistancemmEditFieldLabel  matlab.ui.control.Label
@@ -180,7 +183,9 @@ classdef simulationApp < matlab.apps.AppBase
         plot_offset
         tr_offset_karr 
         segment_ids
-        domain_ids
+        segment_labels
+        slice_grid_2D
+        logical_dom_ids
         t_pos
         t_rot
         tr_len
@@ -189,6 +194,15 @@ classdef simulationApp < matlab.apps.AppBase
         mask2el
         karray_t
         active_ids
+        point_pos_m
+        focus_radius
+        des_pressures
+        min_dist
+        force_pressures
+        tar_reg_labels
+        des_pressures_reg
+        min_dist_reg
+        force_pressures_reg
     end
     
     methods (Access = private)
@@ -260,16 +274,12 @@ classdef simulationApp < matlab.apps.AppBase
                 'dx_scan', app.dx_scan, 'constants', const);
             [app.sensor, app.sensor_mask] = init_sensor(app.kgrid, ppp);
 
-            if app.n_dim == 3
-                app.tr_offset_karr = (app.plot_offset * app.dx_scan - app.grid_size / 2 - app.kgrid.dx)'; % Offset for karray
-                app.grid_size = [app.grid_size(1), app.grid_size(3)]; % plane size for plots
-            end
-
             app.dx_factor = app.dx_scan / app.kgrid.dx;
 
             %% Segment the brain
             if ~isempty(app.t1w_filename)
                 [app.segment_ids] = segment_space(app.t1w_filename, app.dx_scan);
+                app.segment_labels = unique(app.segment_ids(:));
                 if abs(app.dx_factor) < 0.99 || abs(app.dx_factor) > 1.01
                     % Interpolate to adapt to grid size
                     grid_sz = size(app.kgrid.k);
@@ -286,10 +296,21 @@ classdef simulationApp < matlab.apps.AppBase
                     seg_nums = round(seg_nums); % Ensure indices are integers
                     app.segment_ids = uniqueStrings(seg_nums);
                 end
-                app.domain_ids = app.segment_ids ~= "background"; % Mask entire brain
+                domain_ids = app.segment_ids ~= "background"; % Mask entire brain
             else
                 app.segment_ids = [];
-                app.domain_ids = ones(size(app.kgrid.k));
+                domain_ids = ones(size(app.kgrid.k));
+            end
+
+            app.logical_dom_ids = false(numel(app.medium.sound_speed), 1);
+            if app.n_dim == 3
+                app.tr_offset_karr = (app.plot_offset * app.dx_scan - app.grid_size / 2 - app.kgrid.dx)'; % Offset for karray
+                app.grid_size = [app.grid_size(1), app.grid_size(3)]; % plane size for plots
+
+                app.logical_dom_ids(domain_ids) = true;
+            else
+                app.slice_grid_2D = round((app.plot_offset(2) + app.SliceIndexEditField.Value) * app.dx_factor);
+                app.logical_dom_ids(squeeze(domain_ids(:, app.slice_grid_2D, :))) = true;
             end
 
             %% Show Skull and Scan in Preview
@@ -384,6 +405,7 @@ classdef simulationApp < matlab.apps.AppBase
             A_entries = getDropdownEntries(app, A_path, A_pattern, file_ending);
             app.PropagationMatrixAfilenameDropDown.Items = [{''}, A_entries(:)'];
 
+            app.ConfirmButtonPushed();
         end
 
         % Value changed function: ElementGeometrySwitch
@@ -402,13 +424,13 @@ classdef simulationApp < matlab.apps.AppBase
             app.TransducerDropDown.Items = [app.TransducerDropDown.Items(:)', {new_item}];
 
             app.TransducerDropDown.Value = {new_item};
+            app.ConfirmButtonPushed();
+            app.Transducer1Panel.Title = strcat("Transducer ", num2str(str2num(app.TransducerDropDown.Value)));
         end
 
         % Button pushed function: UpdateButtonTransducer
         function UpdateButtonTransducerPushed(app, event)
             n_trs = length(app.TransducerDropDown.Items);
-%             app.t_pos = zeros(app.n_dim, n_trs);
-%             app.t_rot = zeros(1 + 2 * (app.n_dim == 3), n_trs); % Only one rotation in 2D
 
             if app.n_dim == 2
                 spacing = 1;
@@ -418,9 +440,9 @@ classdef simulationApp < matlab.apps.AppBase
                 t_ids = [];
                 for i = 1:n_trs
                     x_offset = round((app.plot_offset(1) + app.t_pos(1, i)) * app.dx_factor); % grid points
-                    y_offset = round((app.plot_offset(3) + app.t_pos(2, i)) * app.dx_factor); % tangential shift in grid points
+                    y_offset = round((app.plot_offset(3) + app.t_pos(3, i)) * app.dx_factor); % tangential shift in grid points
                 
-                    new_arr = create_linear_array(app.kgrid, app.tr_len(i), x_offset, y_offset, spacing, app.t_rot(i));
+                    new_arr = create_linear_array(app.kgrid, app.tr_len(i) * 1e-3, x_offset, y_offset, spacing, app.t_rot(2, i));
             
                     app.el_per_t(i) = sum(new_arr(:));
                     t_ids = [t_ids; find(new_arr)];
@@ -440,18 +462,198 @@ classdef simulationApp < matlab.apps.AppBase
                 t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + app.tr_offset_karr;
                 active_tr_ids = 1:n_trs;
             
-                [app.karray_t, app.t_mask_ps, app.active_ids, app.mask2el] = create_transducer(app.kgrid, t_name, ...
+                [app.karray_t, app.t_mask_ps, app.active_ids, num_elements, app.mask2el] = create_transducer(app.kgrid, t_name, ...
                     sparsity_name, t_pos_3D, app.t_rot, active_tr_ids);
             
                 app.el_per_t = num_elements * ones(1, length(active_tr_ids));
             end
 
+            disp('Transducer init successful')
+
         end
 
         % Value changed function: TransducerDropDown
         function TransducerDropDownValueChanged(app, event)
-            value = app.TransducerDropDown.Value;
+            value = str2num(app.TransducerDropDown.Value);
             
+            app.trPosxEditField.Value = app.t_pos(1, value);
+            app.trPosyEditField.Value = app.t_pos(2, value);
+            app.trPoszEditField.Value = app.t_pos(3, value);
+            
+            app.alphaEditField.Value = app.t_rot(1, value);
+            app.betaEditField.Value = app.t_rot(2, value);
+            app.gammaEditField.Value = app.t_rot(3, value);
+
+            app.TransducerLengthmmEditField.Value = app.tr_len(value);
+
+            app.Transducer1Panel.Title = strcat("Transducer ", num2str(value));
+        end
+
+        % Button pushed function: ConfirmButton
+        function ConfirmButtonPushed(app, event)
+            value = str2num(app.TransducerDropDown.Value);
+            % Add new column for new transducer
+            if size(app.t_pos, 2) < value
+                app.t_pos = [app.t_pos, inf(3, 1)];
+                app.t_rot = [app.t_rot, inf(3, 1)];
+                app.tr_len = [app.tr_len, inf];
+            end
+
+            % Assign values to global transducer vars
+            app.t_pos(:, value) = [app.trPosxEditField.Value, app.trPosyEditField.Value, app.trPoszEditField.Value];
+            app.t_rot(:, value) = [app.alphaEditField.Value, app.betaEditField.Value, app.gammaEditField.Value];
+            app.tr_len(value) = app.TransducerLengthmmEditField.Value;
+        end
+
+        % Button pushed function: AddManualTargetButton
+        function AddManualTargetButtonPushed(app, event)
+            new_item = num2str(length(app.ManualTargetDropDown.Items) + 1);
+            app.ManualTargetDropDown.Items = [app.ManualTargetDropDown.Items(:)', {new_item}];
+
+            app.ManualTargetDropDown.Value = {new_item};
+            app.ConfirmManTargetButtonPushed();
+            app.TargetManPanel.Title = strcat("Target ", num2str(str2num(app.ManualTargetDropDown.Value)));
+        end
+
+        % Button pushed function: ConfirmManTargetButton
+        function ConfirmManTargetButtonPushed(app, event)
+            value = str2num(app.ManualTargetDropDown.Value);
+
+            % Add new column for new target
+            if length(app.des_pressures) < value
+                app.point_pos_m = [app.point_pos_m, inf(3, 1)];
+
+                app.focus_radius = [app.focus_radius, inf];
+                app.des_pressures = [app.des_pressures, inf];
+                app.min_dist = [app.min_dist, inf];
+
+                app.force_pressures = [app.force_pressures, false];
+            end
+
+            % Assign values to global target vars
+            app.point_pos_m(:, value) = [app.focusxEditField.Value, app.focusyEditField.Value, app.focuszEditField.Value];
+
+            app.focus_radius(value) = app.FocusRadiusmmEditField.Value;
+            app.des_pressures(value) = app.PressureAmplitudekPaEditField.Value;
+            app.min_dist(value) = app.MinPointDistancemmEditField.Value;
+
+            app.force_pressures(value) = app.todeclaredPressureSwitch.Value == "Force";
+        end
+
+        % Button pushed function: AddRegionTargetButton
+        function AddRegionTargetButtonPushed(app, event)
+            new_item = num2str(length(app.RegionTargetDropDown.Items) + 1);
+            app.RegionTargetDropDown.Items = [app.RegionTargetDropDown.Items(:)', {new_item}];
+
+            app.RegionTargetDropDown.Value = {new_item};
+            app.ConfirmRegTargetButtonPushed();
+            app.TargetRegPanel.Title = strcat("Target ", num2str(str2num(app.RegionTargetDropDown.Value)));
+
+            app.TargetRegPanel.Visible = true;
+        end
+
+        % Button pushed function: ConfirmRegTargetButton
+        function ConfirmRegTargetButtonPushed(app, event)
+            value = str2num(app.RegionTargetDropDown.Value);
+
+            % Add new column for new target
+            if length(app.des_pressures_reg) < value
+                app.tar_reg_labels = [app.tar_reg_labels, ""];
+
+                app.des_pressures_reg = [app.des_pressures_reg, inf];
+                app.min_dist_reg = [app.min_dist_reg, inf];
+
+                app.force_pressures_reg = [app.force_pressures_reg, false];
+            end
+
+            % Assign values to global target vars
+            app.tar_reg_labels(value) = app.BrainRegionDropDown.Value;
+
+            app.des_pressures_reg(value) = app.PressureAmplitudekPaEditFieldReg.Value;
+            app.min_dist_reg(value) = app.MinPointDistancemmEditFieldReg.Value;
+
+            app.force_pressures_reg(value) = app.todeclaredPressureSwitchReg.Value == "Force";
+        end
+
+        % Value changed function: ManualTargetDropDown
+        function ManualTargetDropDownValueChanged(app, event)
+            value = str2num(app.ManualTargetDropDown.Value);
+            
+            app.focusxEditField.Value = app.point_pos_m(1, value);
+            app.focusyEditField.Value = app.point_pos_m(2, value);
+            app.focuszEditField.Value = app.point_pos_m(3, value);
+
+            app.FocusRadiusmmEditField.Value = app.focus_radius(value);
+            app.PressureAmplitudekPaEditField.Value = app.des_pressures(value);
+            app.MinPointDistancemmEditField.Value = app.min_dist(value);
+
+            if app.force_pressures(value)
+                app.todeclaredPressureSwitch.Value = "Force";
+            else
+                app.todeclaredPressureSwitch.Value = "Limit";
+            end
+                
+            app.TargetManPanel.Title = strcat("Target ", num2str(value));
+        end
+
+        % Value changed function: RegionTargetDropDown
+        function RegionTargetDropDownValueChanged(app, event)
+            value = str2num(app.RegionTargetDropDown.Value);
+
+            app.BrainRegionDropDown.Value = app.tar_reg_labels(value);
+
+            app.PressureAmplitudekPaEditFieldReg.Value = app.des_pressures_reg(value);
+            app.MinPointDistancemmEditFieldReg.Value = app.min_dist_reg(value);
+
+            if app.force_pressures_reg(value)
+                app.todeclaredPressureSwitchReg.Value = "Force";
+            else
+                app.todeclaredPressureSwitchReg.Value = "Limit";
+            end
+            
+            app.TargetRegPanel.Title = strcat("Target ", num2str(value));
+        end
+
+        % Button down function: TargetingTab
+        function TargetingTabButtonDown(app, event)
+            % Get region labels for dropdown menu
+            if ~isempty(app.segment_labels)
+                app.BrainRegionDropDown.Items = app.segment_labels;
+            end
+
+            app.ConfirmManTargetButtonPushed();
+        end
+
+        % Button pushed function: UpdateTargetingButton
+        function UpdateTargetingButtonPushed(app, event)
+            
+        end
+
+        % Value changed function: LimitSkullPressureCheckBox
+        function LimitSkullPressureCheckBoxValueChanged(app, event)
+            value = app.LimitSkullPressureCheckBox.Value;
+            
+            if value
+                app.MaxPressurekPaSkullEditField.Visible = true;
+                app.MaxPressurekPaSkullEditFieldLabel.Visible = true;
+            else
+                app.MaxPressurekPaSkullEditField.Visible = false;
+                app.MaxPressurekPaSkullEditFieldLabel.Visible = false;
+            end
+        end
+
+        % Value changed function: 
+        % LimitIntracranialOffTargetPressureCheckBox
+        function LimitIntracranialOffTargetPressureCheckBoxValueChanged(app, event)
+            value = app.LimitIntracranialOffTargetPressureCheckBox.Value;
+            
+            if value
+                app.MaxPressurekPaEditField.Visible = true;
+                app.MaxPressurekPaEditFieldLabel.Visible = true;
+            else
+                app.MaxPressurekPaEditField.Visible = false;
+                app.MaxPressurekPaEditFieldLabel.Visible = false;
+            end
         end
     end
 
@@ -957,12 +1159,19 @@ classdef simulationApp < matlab.apps.AppBase
             % Create TransducerLengthmmEditFieldLabel
             app.TransducerLengthmmEditFieldLabel = uilabel(app.Transducer1Panel);
             app.TransducerLengthmmEditFieldLabel.HorizontalAlignment = 'right';
-            app.TransducerLengthmmEditFieldLabel.Position = [64 23 137 22];
+            app.TransducerLengthmmEditFieldLabel.Position = [36 23 137 22];
             app.TransducerLengthmmEditFieldLabel.Text = 'Transducer Length (mm)';
 
             % Create TransducerLengthmmEditField
             app.TransducerLengthmmEditField = uieditfield(app.Transducer1Panel, 'numeric');
-            app.TransducerLengthmmEditField.Position = [211 23 55 22];
+            app.TransducerLengthmmEditField.Position = [183 23 55 22];
+            app.TransducerLengthmmEditField.Value = 70;
+
+            % Create ConfirmButton
+            app.ConfirmButton = uibutton(app.Transducer1Panel, 'push');
+            app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
+            app.ConfirmButton.Position = [275 11 100 23];
+            app.ConfirmButton.Text = 'Confirm';
 
             % Create AddTransducerButton
             app.AddTransducerButton = uibutton(app.TransducersTab, 'push');
@@ -1060,97 +1269,105 @@ classdef simulationApp < matlab.apps.AppBase
             % Create TargetingTab
             app.TargetingTab = uitab(app.TabGroup);
             app.TargetingTab.Title = 'Targeting';
+            app.TargetingTab.ButtonDownFcn = createCallbackFcn(app, @TargetingTabButtonDown, true);
 
-            % Create Transducer1Panel_2
-            app.Transducer1Panel_2 = uipanel(app.TargetingTab);
-            app.Transducer1Panel_2.Title = 'Transducer 1';
-            app.Transducer1Panel_2.Position = [291 278 383 229];
+            % Create TargetManPanel
+            app.TargetManPanel = uipanel(app.TargetingTab);
+            app.TargetManPanel.Title = 'Target 1';
+            app.TargetManPanel.Position = [291 278 383 229];
 
             % Create FocusPositionLabel
-            app.FocusPositionLabel = uilabel(app.Transducer1Panel_2);
+            app.FocusPositionLabel = uilabel(app.TargetManPanel);
             app.FocusPositionLabel.Position = [149 179 84 22];
             app.FocusPositionLabel.Text = 'Focus Position';
 
             % Create xEditField_4Label
-            app.xEditField_4Label = uilabel(app.Transducer1Panel_2);
+            app.xEditField_4Label = uilabel(app.TargetManPanel);
             app.xEditField_4Label.HorizontalAlignment = 'right';
             app.xEditField_4Label.Position = [55 149 25 22];
             app.xEditField_4Label.Text = 'x';
 
             % Create focusxEditField
-            app.focusxEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.focusxEditField = uieditfield(app.TargetManPanel, 'numeric');
             app.focusxEditField.Position = [90 149 37 22];
             app.focusxEditField.Value = -18;
 
             % Create yEditField_4Label
-            app.yEditField_4Label = uilabel(app.Transducer1Panel_2);
+            app.yEditField_4Label = uilabel(app.TargetManPanel);
             app.yEditField_4Label.HorizontalAlignment = 'right';
             app.yEditField_4Label.Position = [135 149 25 22];
             app.yEditField_4Label.Text = 'y';
 
             % Create focusyEditField
-            app.focusyEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.focusyEditField = uieditfield(app.TargetManPanel, 'numeric');
             app.focusyEditField.Position = [170 149 37 22];
             app.focusyEditField.Value = 30;
 
             % Create zEditField_4Label
-            app.zEditField_4Label = uilabel(app.Transducer1Panel_2);
+            app.zEditField_4Label = uilabel(app.TargetManPanel);
             app.zEditField_4Label.HorizontalAlignment = 'right';
             app.zEditField_4Label.Position = [219 149 25 22];
             app.zEditField_4Label.Text = 'z';
 
             % Create focuszEditField
-            app.focuszEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.focuszEditField = uieditfield(app.TargetManPanel, 'numeric');
             app.focuszEditField.Position = [254 149 37 22];
             app.focuszEditField.Value = -27;
 
             % Create FocusRadiusmmEditFieldLabel
-            app.FocusRadiusmmEditFieldLabel = uilabel(app.Transducer1Panel_2);
+            app.FocusRadiusmmEditFieldLabel = uilabel(app.TargetManPanel);
             app.FocusRadiusmmEditFieldLabel.HorizontalAlignment = 'right';
             app.FocusRadiusmmEditFieldLabel.Position = [43 80 110 22];
             app.FocusRadiusmmEditFieldLabel.Text = 'Focus Radius (mm)';
 
             % Create FocusRadiusmmEditField
-            app.FocusRadiusmmEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.FocusRadiusmmEditField = uieditfield(app.TargetManPanel, 'numeric');
             app.FocusRadiusmmEditField.Position = [164 80 40 22];
             app.FocusRadiusmmEditField.Value = 7;
 
             % Create PressureAmplitudekPaEditFieldLabel
-            app.PressureAmplitudekPaEditFieldLabel = uilabel(app.Transducer1Panel_2);
+            app.PressureAmplitudekPaEditFieldLabel = uilabel(app.TargetManPanel);
             app.PressureAmplitudekPaEditFieldLabel.HorizontalAlignment = 'right';
             app.PressureAmplitudekPaEditFieldLabel.Position = [12 47 141 22];
             app.PressureAmplitudekPaEditFieldLabel.Text = 'Pressure Amplitude (kPa)';
 
             % Create PressureAmplitudekPaEditField
-            app.PressureAmplitudekPaEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.PressureAmplitudekPaEditField = uieditfield(app.TargetManPanel, 'numeric');
             app.PressureAmplitudekPaEditField.Position = [164 47 40 22];
             app.PressureAmplitudekPaEditField.Value = 300;
 
             % Create MinPointDistancemmEditFieldLabel
-            app.MinPointDistancemmEditFieldLabel = uilabel(app.Transducer1Panel_2);
+            app.MinPointDistancemmEditFieldLabel = uilabel(app.TargetManPanel);
             app.MinPointDistancemmEditFieldLabel.HorizontalAlignment = 'right';
             app.MinPointDistancemmEditFieldLabel.Position = [7 17 140 22];
             app.MinPointDistancemmEditFieldLabel.Text = 'Min. Point Distance (mm)';
 
             % Create MinPointDistancemmEditField
-            app.MinPointDistancemmEditField = uieditfield(app.Transducer1Panel_2, 'numeric');
+            app.MinPointDistancemmEditField = uieditfield(app.TargetManPanel, 'numeric');
             app.MinPointDistancemmEditField.Position = [163 17 43 22];
             app.MinPointDistancemmEditField.Value = 5;
 
             % Create todeclaredPressureSwitch_2Label
-            app.todeclaredPressureSwitch_2Label = uilabel(app.Transducer1Panel_2);
+            app.todeclaredPressureSwitch_2Label = uilabel(app.TargetManPanel);
             app.todeclaredPressureSwitch_2Label.HorizontalAlignment = 'center';
-            app.todeclaredPressureSwitch_2Label.Position = [251 39 116 22];
+            app.todeclaredPressureSwitch_2Label.Position = [249 69 116 22];
             app.todeclaredPressureSwitch_2Label.Text = 'to declared Pressure';
 
-            % Create todeclaredPressureSwitch_2
-            app.todeclaredPressureSwitch_2 = uiswitch(app.Transducer1Panel_2, 'slider');
-            app.todeclaredPressureSwitch_2.Items = {'Force', 'Limit'};
-            app.todeclaredPressureSwitch_2.Position = [285 67 45 20];
-            app.todeclaredPressureSwitch_2.Value = 'Force';
+            % Create todeclaredPressureSwitch
+            app.todeclaredPressureSwitch = uiswitch(app.TargetManPanel, 'slider');
+            app.todeclaredPressureSwitch.Items = {'Force', 'Limit'};
+            app.todeclaredPressureSwitch.Position = [283 97 45 20];
+            app.todeclaredPressureSwitch.Value = 'Force';
+
+            % Create ConfirmManTargetButton
+            app.ConfirmManTargetButton = uibutton(app.TargetManPanel, 'push');
+            app.ConfirmManTargetButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmManTargetButtonPushed, true);
+            app.ConfirmManTargetButton.Position = [260 17 100 23];
+            app.ConfirmManTargetButton.Text = 'Confirm';
 
             % Create AddManualTargetButton
             app.AddManualTargetButton = uibutton(app.TargetingTab, 'push');
+            app.AddManualTargetButton.ButtonPushedFcn = createCallbackFcn(app, @AddManualTargetButtonPushed, true);
             app.AddManualTargetButton.Position = [112 401 122 23];
             app.AddManualTargetButton.Text = 'Add Manual Target';
 
@@ -1168,63 +1385,71 @@ classdef simulationApp < matlab.apps.AppBase
             % Create ManualTargetDropDown
             app.ManualTargetDropDown = uidropdown(app.TargetingTab);
             app.ManualTargetDropDown.Items = {'1'};
+            app.ManualTargetDropDown.ValueChangedFcn = createCallbackFcn(app, @ManualTargetDropDownValueChanged, true);
             app.ManualTargetDropDown.Position = [121 461 100 22];
             app.ManualTargetDropDown.Value = '1';
 
-            % Create Transducer1Panel_3
-            app.Transducer1Panel_3 = uipanel(app.TargetingTab);
-            app.Transducer1Panel_3.Title = 'Transducer 1';
-            app.Transducer1Panel_3.Visible = 'off';
-            app.Transducer1Panel_3.Position = [292 84 383 175];
+            % Create TargetRegPanel
+            app.TargetRegPanel = uipanel(app.TargetingTab);
+            app.TargetRegPanel.Title = 'Target 1';
+            app.TargetRegPanel.Visible = 'off';
+            app.TargetRegPanel.Position = [292 84 383 175];
 
             % Create BrainRegionDropDownLabel
-            app.BrainRegionDropDownLabel = uilabel(app.Transducer1Panel_3);
+            app.BrainRegionDropDownLabel = uilabel(app.TargetRegPanel);
             app.BrainRegionDropDownLabel.HorizontalAlignment = 'right';
-            app.BrainRegionDropDownLabel.Position = [79 115 74 22];
+            app.BrainRegionDropDownLabel.Position = [30 115 74 22];
             app.BrainRegionDropDownLabel.Text = 'Brain Region';
 
             % Create BrainRegionDropDown
-            app.BrainRegionDropDown = uidropdown(app.Transducer1Panel_3);
+            app.BrainRegionDropDown = uidropdown(app.TargetRegPanel);
             app.BrainRegionDropDown.Items = {};
-            app.BrainRegionDropDown.Position = [168 115 100 22];
+            app.BrainRegionDropDown.Position = [119 115 237 22];
             app.BrainRegionDropDown.Value = {};
 
             % Create MinPointDistancemmEditField_2Label
-            app.MinPointDistancemmEditField_2Label = uilabel(app.Transducer1Panel_3);
+            app.MinPointDistancemmEditField_2Label = uilabel(app.TargetRegPanel);
             app.MinPointDistancemmEditField_2Label.HorizontalAlignment = 'right';
             app.MinPointDistancemmEditField_2Label.Position = [15 34 140 22];
             app.MinPointDistancemmEditField_2Label.Text = 'Min. Point Distance (mm)';
 
-            % Create MinPointDistancemmEditField_2
-            app.MinPointDistancemmEditField_2 = uieditfield(app.Transducer1Panel_3, 'numeric');
-            app.MinPointDistancemmEditField_2.Position = [171 34 43 22];
-            app.MinPointDistancemmEditField_2.Value = 5;
+            % Create MinPointDistancemmEditFieldReg
+            app.MinPointDistancemmEditFieldReg = uieditfield(app.TargetRegPanel, 'numeric');
+            app.MinPointDistancemmEditFieldReg.Position = [171 34 43 22];
+            app.MinPointDistancemmEditFieldReg.Value = 5;
 
             % Create todeclaredPressureSwitchLabel
-            app.todeclaredPressureSwitchLabel = uilabel(app.Transducer1Panel_3);
+            app.todeclaredPressureSwitchLabel = uilabel(app.TargetRegPanel);
             app.todeclaredPressureSwitchLabel.HorizontalAlignment = 'center';
-            app.todeclaredPressureSwitchLabel.Position = [253 38 116 22];
+            app.todeclaredPressureSwitchLabel.Position = [252 50 116 22];
             app.todeclaredPressureSwitchLabel.Text = 'to declared Pressure';
 
-            % Create todeclaredPressureSwitch
-            app.todeclaredPressureSwitch = uiswitch(app.Transducer1Panel_3, 'slider');
-            app.todeclaredPressureSwitch.Items = {'Force', 'Limit'};
-            app.todeclaredPressureSwitch.Position = [287 67 45 20];
-            app.todeclaredPressureSwitch.Value = 'Force';
+            % Create todeclaredPressureSwitchReg
+            app.todeclaredPressureSwitchReg = uiswitch(app.TargetRegPanel, 'slider');
+            app.todeclaredPressureSwitchReg.Items = {'Force', 'Limit'};
+            app.todeclaredPressureSwitchReg.Position = [286 79 45 20];
+            app.todeclaredPressureSwitchReg.Value = 'Force';
 
             % Create PressureAmplitudekPaEditField_2Label
-            app.PressureAmplitudekPaEditField_2Label = uilabel(app.Transducer1Panel_3);
+            app.PressureAmplitudekPaEditField_2Label = uilabel(app.TargetRegPanel);
             app.PressureAmplitudekPaEditField_2Label.HorizontalAlignment = 'right';
             app.PressureAmplitudekPaEditField_2Label.Position = [20 65 141 22];
             app.PressureAmplitudekPaEditField_2Label.Text = 'Pressure Amplitude (kPa)';
 
-            % Create PressureAmplitudekPaEditField_2
-            app.PressureAmplitudekPaEditField_2 = uieditfield(app.Transducer1Panel_3, 'numeric');
-            app.PressureAmplitudekPaEditField_2.Position = [172 65 40 22];
-            app.PressureAmplitudekPaEditField_2.Value = 300;
+            % Create PressureAmplitudekPaEditFieldReg
+            app.PressureAmplitudekPaEditFieldReg = uieditfield(app.TargetRegPanel, 'numeric');
+            app.PressureAmplitudekPaEditFieldReg.Position = [172 65 40 22];
+            app.PressureAmplitudekPaEditFieldReg.Value = 300;
+
+            % Create ConfirmRegTargetButton
+            app.ConfirmRegTargetButton = uibutton(app.TargetRegPanel, 'push');
+            app.ConfirmRegTargetButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmRegTargetButtonPushed, true);
+            app.ConfirmRegTargetButton.Position = [259 10 100 23];
+            app.ConfirmRegTargetButton.Text = 'Confirm';
 
             % Create AddRegionTargetButton
             app.AddRegionTargetButton = uibutton(app.TargetingTab, 'push');
+            app.AddRegionTargetButton.ButtonPushedFcn = createCallbackFcn(app, @AddRegionTargetButtonPushed, true);
             app.AddRegionTargetButton.Position = [113 153 122 23];
             app.AddRegionTargetButton.Text = 'Add Region Target';
 
@@ -1242,13 +1467,15 @@ classdef simulationApp < matlab.apps.AppBase
             % Create RegionTargetDropDown
             app.RegionTargetDropDown = uidropdown(app.TargetingTab);
             app.RegionTargetDropDown.Items = {};
+            app.RegionTargetDropDown.ValueChangedFcn = createCallbackFcn(app, @RegionTargetDropDownValueChanged, true);
             app.RegionTargetDropDown.Position = [122 213 100 22];
             app.RegionTargetDropDown.Value = {};
 
-            % Create UpdateButtonTargeting
-            app.UpdateButtonTargeting = uibutton(app.TargetingTab, 'push');
-            app.UpdateButtonTargeting.Position = [574 24 100 23];
-            app.UpdateButtonTargeting.Text = 'Update';
+            % Create UpdateTargetingButton
+            app.UpdateTargetingButton = uibutton(app.TargetingTab, 'push');
+            app.UpdateTargetingButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateTargetingButtonPushed, true);
+            app.UpdateTargetingButton.Position = [574 24 100 23];
+            app.UpdateTargetingButton.Text = 'Update';
 
             % Create MaxPressurekPaEditFieldLabel
             app.MaxPressurekPaEditFieldLabel = uilabel(app.TargetingTab);
@@ -1263,27 +1490,29 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create LimitIntracranialOffTargetPressureCheckBox
             app.LimitIntracranialOffTargetPressureCheckBox = uicheckbox(app.TargetingTab);
+            app.LimitIntracranialOffTargetPressureCheckBox.ValueChangedFcn = createCallbackFcn(app, @LimitIntracranialOffTargetPressureCheckBoxValueChanged, true);
             app.LimitIntracranialOffTargetPressureCheckBox.Text = 'Limit Intracranial Off-Target Pressure';
             app.LimitIntracranialOffTargetPressureCheckBox.Position = [50 50 219 22];
             app.LimitIntracranialOffTargetPressureCheckBox.Value = true;
 
             % Create LimitSkullPressureCheckBox
             app.LimitSkullPressureCheckBox = uicheckbox(app.TargetingTab);
+            app.LimitSkullPressureCheckBox.ValueChangedFcn = createCallbackFcn(app, @LimitSkullPressureCheckBoxValueChanged, true);
             app.LimitSkullPressureCheckBox.Text = 'Limit Skull Pressure';
-            app.LimitSkullPressureCheckBox.Position = [333 50 128 22];
+            app.LimitSkullPressureCheckBox.Position = [317 50 128 22];
 
-            % Create MaxPressurekPaEditField_2Label
-            app.MaxPressurekPaEditField_2Label = uilabel(app.TargetingTab);
-            app.MaxPressurekPaEditField_2Label.HorizontalAlignment = 'right';
-            app.MaxPressurekPaEditField_2Label.Visible = 'off';
-            app.MaxPressurekPaEditField_2Label.Position = [333 24 114 22];
-            app.MaxPressurekPaEditField_2Label.Text = 'Max. Pressure (kPa)';
+            % Create MaxPressurekPaSkullEditFieldLabel
+            app.MaxPressurekPaSkullEditFieldLabel = uilabel(app.TargetingTab);
+            app.MaxPressurekPaSkullEditFieldLabel.HorizontalAlignment = 'right';
+            app.MaxPressurekPaSkullEditFieldLabel.Visible = 'off';
+            app.MaxPressurekPaSkullEditFieldLabel.Position = [333 24 114 22];
+            app.MaxPressurekPaSkullEditFieldLabel.Text = 'Max. Pressure (kPa)';
 
-            % Create MaxPressurekPaEditField_2
-            app.MaxPressurekPaEditField_2 = uieditfield(app.TargetingTab, 'numeric');
-            app.MaxPressurekPaEditField_2.Visible = 'off';
-            app.MaxPressurekPaEditField_2.Position = [458 24 44 22];
-            app.MaxPressurekPaEditField_2.Value = 1000;
+            % Create MaxPressurekPaSkullEditField
+            app.MaxPressurekPaSkullEditField = uieditfield(app.TargetingTab, 'numeric');
+            app.MaxPressurekPaSkullEditField.Visible = 'off';
+            app.MaxPressurekPaSkullEditField.Position = [458 24 44 22];
+            app.MaxPressurekPaSkullEditField.Value = 1000;
 
             % Create OptimizeTab
             app.OptimizeTab = uitab(app.TabGroup);
