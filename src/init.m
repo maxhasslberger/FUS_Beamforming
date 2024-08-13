@@ -148,9 +148,7 @@ if kgrid.dim == 2
 else
     % Planar Array
     t_name = "std_orig";
-
     sparsity_name = "sparsity_ids";
-    num_elements = 128;
 
     % Transducer coordinates and alignment- in Scan coordinate system
     if isempty(t1w_filename)
@@ -174,7 +172,7 @@ else
     t_rot = [t1_rot, t2_rot];
     active_tr_ids = [1, 2];
 
-    [karray_t, t_mask_ps, active_ids, mask2el] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
+    [karray_t, t_mask_ps, active_ids, num_elements, mask2el] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids);
 
     el_per_t = num_elements * ones(1, length(active_tr_ids));
 

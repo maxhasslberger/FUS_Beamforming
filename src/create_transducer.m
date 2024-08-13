@@ -1,4 +1,4 @@
-function [karray_t, t_mask_ps, active_ids, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids)
+function [karray_t, t_mask_ps, active_ids, num_elements, mask2el_delayFiles] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids)
 
 % Init
 element_pos = load(fullfile("..", "Array_Positions", t_name + ".mat")).ElementPosition'; % flat transducer array centered at [0, 0, 0] along the xy-plane
@@ -8,6 +8,8 @@ if ~strcmp(sparsity_name, "")
     sparsity_ids = load(fullfile("..", "Array_Positions", sparsity_name + ".mat")).numbers; % sparsity ids -> element_pos
     element_pos = element_pos(:, sparsity_ids);
 end
+
+num_elements = length(element_pos);
 
 karray_t = kWaveArray(); % real array elements including the geometry
 karray_t_ps = kWaveArray(); % approximation with point sources for optimization
