@@ -81,6 +81,8 @@ dx_factor = dx_scan / kgrid.dx;
 %% Segment the brain
 if ~isempty(t1w_filename)
     [segment_ids] = segment_space(t1w_filename, dx_scan);
+    segment_labels = unique(segment_ids(:));
+
     if abs(dx_factor) < 0.99 || abs(dx_factor) > 1.01
         % Interpolate to adapt to grid size
         grid_sz = size(kgrid.k);
@@ -182,8 +184,6 @@ end
 %% Define (intracranial) Beamforming Pattern
 
 logical_dom_ids = false(numel(medium.sound_speed), 1);
-
-cross_pixRadius = 5;
 
 if kgrid.dim == 2
     % Mask brain slice
