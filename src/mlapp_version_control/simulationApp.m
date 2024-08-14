@@ -176,6 +176,7 @@ classdef simulationApp < matlab.apps.AppBase
         medium
         sensor
         sensor_mask
+        dx_factor_init
         dx_factor
         grid_size
         t1w_filename
@@ -186,6 +187,9 @@ classdef simulationApp < matlab.apps.AppBase
         segment_labels
         slice_grid_2D
         logical_dom_ids
+        input_args
+        use_greens_fctn
+        current_datetime
         t_pos
         t_rot
         tr_len
@@ -193,6 +197,7 @@ classdef simulationApp < matlab.apps.AppBase
         t_mask_ps
         mask2el
         karray_t
+        preplot_arg
         active_ids
         point_pos_m
         point_pos
@@ -207,7 +212,11 @@ classdef simulationApp < matlab.apps.AppBase
         b_mask
         full_bmask
         b_des
-        b_des_pl
+        b_ip_des
+        ip
+        skull_ids
+        vol_ids
+        init_ids
     end
     
     methods (Access = private)
@@ -223,6 +232,48 @@ classdef simulationApp < matlab.apps.AppBase
 
             % List entries
             entries = {items(matches).name};
+        end
+        
+        function evaluate_results(app, p, plot_title)
+            %% Obtain pressure distribution
+            b = app.ip.A * p;
+            b = reshape(b, size(app.kgrid.k));
+            % ip.b(~domain_ids) = 0.0;
+            % ip.b(~domain_ids & ~skull_ids) = 0.0;
+
+            %% Plot results
+            plot_thr = min(app.b_ip_des) +  1e3; % 1 kPa tolerance
+            save_results = false;
+
+            plot_results(app.kgrid, p, b, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
+                app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value);
+
+            plot_results(app.kgrid, [], abs(b) > plot_thr, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
+                app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
+                app.SliceIndexEditField.Value, 'colorbar', true, 'cmap', gray()); % plot mask with pressure above off-target limit
+
+            %% Evaluate pressure distribution
+            real_ip = abs(reshape(b, [], 1));
+            
+            offTar_real_ip = real_ip;
+            offTar_real_ip(app.vol_ids | ~app.logical_dom_ids) = [];
+            
+            skull_real_ip = real_ip(app.skull_ids);
+            
+            init_real_ip = real_ip(app.init_ids);
+            
+            fprintf("\nInverse Problem Init Points (kPa):\n")
+            disp(init_real_ip' * 1e-3)
+            
+            fprintf("\nInverse Problem Skull max. Pressure (kPa):\n")
+            disp(max(skull_real_ip) * 1e-3)
+            
+            fprintf("\nInverse Problem max Off-Target Pressure (kPa):\n")
+            disp(max(offTar_real_ip) * 1e-3)
+        end
+        
+        function get_initial_solution(app)
+            app.ip.p_init = pinv(app.ip.A(app.init_ids, :)) * app.b_ip_des(app.init_ids);
         end
     end
     
@@ -274,7 +325,7 @@ classdef simulationApp < matlab.apps.AppBase
             end
 
             [app.kgrid, app.medium, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, ...
-                'dx_factor', app.dx_factor, 'ct_scan', ct_filename, ...
+                'dx_factor', app.dx_factor_init, 'ct_scan', ct_filename, ...
                 'slice_idx', round(app.plot_offset(2) + app.SliceIndexEditField.Value), ...
                 'dx_scan', app.dx_scan, 'constants', const);
             [app.sensor, app.sensor_mask] = init_sensor(app.kgrid, ppp);
@@ -328,6 +379,13 @@ classdef simulationApp < matlab.apps.AppBase
                     'colorbar', false, 'cmap', hot());
             end
 
+            %% Set global options
+            app.input_args = {'PMLSize', app.PMLsizeEditField.Value, 'PMLInside', app.PMLinsideCheckBox.Value, ...
+                'PlotPML', true, 'DisplayMask', 'off', 'RecordMovie', false};
+            app.use_greens_fctn = app.GreensFunctionbasedCheckBox.Value & max(app.medium.sound_speed(:)) ...
+                == min(app.medium.sound_speed(:)); % Update green's fctn flag
+            app.current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
+
             disp("Init successful")
         end
 
@@ -337,14 +395,14 @@ classdef simulationApp < matlab.apps.AppBase
             
             dx_std = app.c0msEditField.Value / (app.CenterFreqkHzEditField.Value * 1e3) / app.ppwEditField.Value;
             if value <= 0 || dx_std < value
-                app.dx_factor = 1;
+                app.dx_factor_init = 1;
                 dx = dx_std;
                 if dx_std < value
                     app.RealdxLabel.Text = strcat("Spatial Aliasing Warning! -> Real: ", num2str(dx * 1e3, 3), " mm");
                     return;
                 end
             else
-                app.dx_factor = dx_std / value;
+                app.dx_factor_init = dx_std / value;
                 dx = value;
             end
 
@@ -385,7 +443,6 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Value changed function: CenterFreqkHzEditField
         function CenterFreqkHzEditFieldValueChanged(app, event)
-            value = app.CenterFreqkHzEditField.Value;
             SimSpatialResolutionmmEditFieldValueChanged(app);
         end
 
@@ -409,8 +466,6 @@ classdef simulationApp < matlab.apps.AppBase
 
             A_entries = getDropdownEntries(app, A_path, A_pattern, file_ending);
             app.PropagationMatrixAfilenameDropDown.Items = [{''}, A_entries(:)'];
-
-            app.ConfirmButtonPushed();
         end
 
         % Value changed function: ElementGeometrySwitch
@@ -430,7 +485,9 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.TransducerDropDown.Value = {new_item};
             app.ConfirmButtonPushed();
+
             app.Transducer1Panel.Title = strcat("Transducer ", num2str(str2num(app.TransducerDropDown.Value)));
+            app.Transducer1Panel.Visible = true;
         end
 
         % Button pushed function: UpdateButtonTransducer
@@ -443,11 +500,13 @@ classdef simulationApp < matlab.apps.AppBase
                 app.t_mask_ps = false(app.kgrid.Nx, app.kgrid.Ny);
                 app.el_per_t = zeros(1, n_trs);
                 t_ids = [];
+                tr_len_grid = app.tr_len * 1e-3 / app.kgrid.dx;
+
                 for i = 1:n_trs
                     x_offset = round((app.plot_offset(1) + app.t_pos(1, i)) * app.dx_factor); % grid points
                     y_offset = round((app.plot_offset(3) + app.t_pos(3, i)) * app.dx_factor); % tangential shift in grid points
                 
-                    new_arr = create_linear_array(app.kgrid, app.tr_len(i) * 1e-3, x_offset, y_offset, spacing, app.t_rot(2, i));
+                    new_arr = create_linear_array(app.kgrid, tr_len_grid(i), x_offset, y_offset, spacing, app.t_rot(2, i));
             
                     app.el_per_t(i) = sum(new_arr(:));
                     t_ids = [t_ids; find(new_arr)];
@@ -473,8 +532,30 @@ classdef simulationApp < matlab.apps.AppBase
                 app.el_per_t = num_elements * ones(1, length(active_tr_ids));
             end
 
-            disp('Transducer init successful')
+            %% Obtain or load propagation matrix
+            if strcmp(app.PropagationMatrixAfilenameDropDown.Value, "")
+                get_current_A = false;
+            else
+                get_current_A = app.PropagationMatrixAfilenameDropDown.Value(1:end-4);
+            end
+            app.ip.A = obtain_linear_propagator(app.kgrid, app.medium, app.sensor, app.sensor_mask, app.input_args, ...
+                app.t_mask_ps, app.karray_t, app.CenterFreqkHzEditField.Value * 1e3, get_current_A, app.use_greens_fctn, ...
+                'active_ids', app.active_ids);
 
+            % Create preview plot
+            app.preplot_arg = zeros(size(app.kgrid.k));
+            app.preplot_arg(logical(app.t_mask_ps)) = 1.0;
+            
+            if ~isscalar(app.medium.sound_speed)
+                skull_arg = app.medium.sound_speed / max(app.medium.sound_speed(:));
+                skull_arg = skull_arg - min(skull_arg(:));
+                app.preplot_arg = app.preplot_arg + skull_arg;
+            end
+
+            plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, app.plot_offset, ...
+                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot());
+
+            disp('Transducer init successful')
         end
 
         % Value changed function: TransducerDropDown
@@ -492,6 +573,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.TransducerLengthmmEditField.Value = app.tr_len(value);
 
             app.Transducer1Panel.Title = strcat("Transducer ", num2str(value));
+            app.Transducer1Panel.Visible = true;
         end
 
         % Button pushed function: ConfirmButton
@@ -518,6 +600,8 @@ classdef simulationApp < matlab.apps.AppBase
             app.ManualTargetDropDown.Value = {new_item};
             app.ConfirmManTargetButtonPushed();
             app.TargetManPanel.Title = strcat("Target ", num2str(str2num(app.ManualTargetDropDown.Value)));
+
+            app.TargetManPanel.Visible = true;
         end
 
         % Button pushed function: ConfirmManTargetButton
@@ -625,25 +709,22 @@ classdef simulationApp < matlab.apps.AppBase
             if ~isempty(app.segment_labels)
                 app.BrainRegionDropDown.Items = app.segment_labels;
             end
-
-            app.ConfirmManTargetButtonPushed();
         end
 
         % Button pushed function: UpdateTargetingButton
         function UpdateTargetingButtonPushed(app, event)
+            
+            plot_offset_rep = repmat(app.plot_offset(:), 1, length(app.ManualTargetDropDown.Items));
+            app.point_pos = round((plot_offset_rep + app.point_pos_m) * app.dx_factor);
+
             if app.n_dim == 2
 
                 % Define targets
                 if ~isempty(app.ManualTargetDropDown.Items)
-                    % Focal points - in Scan coordinate system
-%                     point_pos_m.x = scan_focus_x;
-%                     point_pos_m.y = scan_focus_z;
                     amp_in = app.des_pressures' * 1e3; % Pa
                 
-                    app.point_pos = round((repmat(app.plot_offset(:), 1, 2) + app.point_pos_m(:, [1, 3])) * app.dx_factor);
-                
                     % Assign amplitude acc. to closest position
-                    idx = sub2ind([app.kgrid.Nx, app.kgrid.Ny], app.point_pos(:, 1), app.point_pos(:, 3));
+                    idx = sub2ind([app.kgrid.Nx, app.kgrid.Ny], app.point_pos(1, :), app.point_pos(3, :));
                     [~, order] = sort(idx);
                     amp_in = amp_in(order);
                 else
@@ -656,8 +737,8 @@ classdef simulationApp < matlab.apps.AppBase
             
                 % Stimulate Disc pattern
                 for i = 1:length(app.des_pressures)
-                    disc = makeDisc(app.kgrid.Nx, app.kgrid.Ny, app.point_pos(i, 1), app.point_pos(i, 3), ...
-                        round(app.focus_radius(i) / app.kgrid.dx), false);
+                    disc = makeDisc(app.kgrid.Nx, app.kgrid.Ny, app.point_pos(1, i), app.point_pos(3, i), ...
+                        round(app.focus_radius(i) * 1e-3 / app.kgrid.dx), false);
                     amp_vol(logical(disc)) = amp_in(i) * ones(sum(disc(:)), 1);
                     app.b_mask(:, :, i) = disc;
                 end
@@ -684,11 +765,9 @@ classdef simulationApp < matlab.apps.AppBase
                 if ~isempty(app.ManualTargetDropDown.Items)
                     amp_in = app.des_pressures' * 1e3; % Pa
                 
-                    app.point_pos = round((repmat(app.plot_offset(:), 1, 3) + app.point_pos_m) * app.dx_factor);
-                
                     % Assign amplitude acc. to closest position
                     idx = sub2ind([app.kgrid.Nx, app.kgrid.Ny, app.kgrid.Nz], ...
-                        app.point_pos(:, 1), app.point_pos(:, 2), app.point_pos(:, 3));
+                        app.point_pos(1, :), app.point_pos(2, :), app.point_pos(3, :));
                     [~, order] = sort(idx);
                     amp_in = amp_in(order);
                 else
@@ -701,8 +780,8 @@ classdef simulationApp < matlab.apps.AppBase
             
                 % Stimulate Disc pattern
                 for i = 1:length(app.des_pressures)
-                    ball = makeBall(app.kgrid.Nx, app.kgrid.Ny, app.kgrid.Nz, app.point_pos(i, 1), app.point_pos(i, 2), ...
-                        app.point_pos(i, 3), round(app.focus_radius(i) / app.kgrid.dx), false);
+                    ball = makeBall(app.kgrid.Nx, app.kgrid.Ny, app.kgrid.Nz, app.point_pos(1, i), app.point_pos(2, i), ...
+                        app.point_pos(3, i), round(app.focus_radius(i) * 1e-3 / app.kgrid.dx), false);
                     amp_vol(logical(ball)) = amp_in(i) * ones(sum(ball(:)), 1);
                     app.b_mask(:, :, :, i) = ball;
                 end
@@ -725,33 +804,36 @@ classdef simulationApp < matlab.apps.AppBase
             end
             app.b_mask = logical(app.b_mask);
             
-            % Create preview plot
-            preplot_arg = reshape(b_cross, size(app.kgrid.k));
-            preplot_arg(logical(app.t_mask_ps)) = max(b_cross(:));
-            
-            if ~isscalar(app.medium.sound_speed)
-                skull_arg = app.medium.sound_speed / max(app.medium.sound_speed(:));
-                skull_arg = skull_arg - min(skull_arg(:));
-                preplot_arg = preplot_arg + skull_arg * max(b_cross(:));
-            end
-            
-            plot_results(app.kgrid, [], preplot_arg, 'Plot Preview', [], app.t1w_filename, app.plot_offset, app.grid_size, ...
-                app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot());
-
-            preplot_arg(logical(app.t_mask_ps)) = 0.0; % Do not show transducers in second pre-plot
-            
-            % Create desired signal
+            %% Create signal vector
             phase = zeros(length(amp_in), 1); % Zero phase for entire observation plane
             
             app.b_des = amp_in .* exp(1j*phase); % only observed elements
             app.full_bmask = sum(app.b_mask, app.n_dim + 1);
             app.full_bmask = logical(app.full_bmask);
             
-            b_max = max(abs(app.b_des));
-            app.b_des_pl = sidelobe_tol/100 * b_max * ones(numel(app.kgrid.k), 1); % Entire plane max amp
-            app.b_des_pl(app.full_bmask) = app.b_des; % Target amp
-            app.b_des_pl(logical(reshape(app.medium.sound_speed > min(app.medium.sound_speed(:)), [], 1)) & ~app.logical_dom_ids) ...
-                = max_skull_pressure * 1e3; % Skull max amp
+%             b_max = max(abs(app.b_des));
+            app.b_ip_des = app.MaxPressurekPaEditField.Value * 1e3 * ones(numel(app.kgrid.k), 1); % Entire plane max amp
+            app.b_ip_des(app.full_bmask) = app.b_des; % Target amp
+
+            skullMask = app.medium.sound_speed > min(app.medium.sound_speed(:));
+            app.skull_ids = logical(reshape(skullMask, [], 1));
+            app.b_ip_des(app.skull_ids & ~app.logical_dom_ids) ...
+                = app.MaxPressurekPaSkullEditField.Value * 1e3; % Skull max amp
+
+            %% Introduce constraints and prepare optimization
+            app.vol_ids = reshape(logical(app.full_bmask), numel(app.full_bmask), 1); % Indices that correspond to the target volume(s)
+            
+            [app.init_ids, ~, b_mask_plot] = get_init_ids(app.kgrid, ...
+                min(app.medium.sound_speed(:)) / (app.CenterFreqkHzEditField.Value * 1e3), app.b_mask, ...
+                find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values given
+            app.ip.beta = 0.0;
+            
+            % Create preview plot
+            b_mask_plot = b_mask_plot + app.full_bmask;
+            preplot_arg2 = app.preplot_arg + b_mask_plot / max(b_mask_plot(:));
+
+            plot_results(app.kgrid, [], preplot_arg2, 'Target Preview', app.mask2el, app.t1w_filename, app.plot_offset, ...
+                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot());
 
             disp('Target init successful')
         end
@@ -781,6 +863,37 @@ classdef simulationApp < matlab.apps.AppBase
                 app.MaxPressurekPaEditField.Visible = false;
                 app.MaxPressurekPaEditFieldLabel.Visible = false;
             end
+        end
+
+        % Button pushed function: ComputeInitialSolutionButton
+        function ComputeInitialSolutionButtonPushed(app, event)
+            get_initial_solution(app);
+            evaluate_results(app, app.ip.p_init, "Initial Solution");
+        end
+
+        % Button pushed function: OptimizeButton
+        function OptimizeButtonPushed(app, event)
+            get_initial_solution(app);
+
+            %% Get ids considered in inequality constraints
+            dom_active = app.LimitIntracranialOffTargetPressureCheckBox.Value;
+            skull_active = app.LimitSkullPressureCheckBox.Value;
+
+            ineq_active = skull_active || dom_active;
+            cons_ids = (skull_active & app.skull_ids) | (dom_active & app.logical_dom_ids);
+
+            %% Optimize
+            tic
+            if app.OptimizeforTransducerPhasesandAmplitudesButton.Value
+                app.ip.p = solvePhasesAmp(app.ip.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active);
+            else
+                app.ip.p = solvePhasesOnly(app.ip.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active, app.mask2el, app.el_per_t, true);
+            end
+
+            app.ip.t_solve = toc;
+            disp("Time until solver converged: " + string(app.ip.t_solve / 60) + " min")
+
+            evaluate_results(app, app.ip.p, "Inverse Problem");
         end
     end
 
@@ -1198,14 +1311,15 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create TransducerDropDown
             app.TransducerDropDown = uidropdown(app.TransducersTab);
-            app.TransducerDropDown.Items = {'1'};
+            app.TransducerDropDown.Items = {};
             app.TransducerDropDown.ValueChangedFcn = createCallbackFcn(app, @TransducerDropDownValueChanged, true);
             app.TransducerDropDown.Position = [138 311 100 22];
-            app.TransducerDropDown.Value = '1';
+            app.TransducerDropDown.Value = {};
 
             % Create Transducer1Panel
             app.Transducer1Panel = uipanel(app.TransducersTab);
             app.Transducer1Panel.Title = 'Transducer 1';
+            app.Transducer1Panel.Visible = 'off';
             app.Transducer1Panel.Position = [294 159 383 229];
 
             % Create FacePositionCenterLabel
@@ -1401,6 +1515,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create TargetManPanel
             app.TargetManPanel = uipanel(app.TargetingTab);
             app.TargetManPanel.Title = 'Target 1';
+            app.TargetManPanel.Visible = 'off';
             app.TargetManPanel.Position = [291 278 383 229];
 
             % Create FocusPositionLabel
@@ -1511,10 +1626,10 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create ManualTargetDropDown
             app.ManualTargetDropDown = uidropdown(app.TargetingTab);
-            app.ManualTargetDropDown.Items = {'1'};
+            app.ManualTargetDropDown.Items = {};
             app.ManualTargetDropDown.ValueChangedFcn = createCallbackFcn(app, @ManualTargetDropDownValueChanged, true);
             app.ManualTargetDropDown.Position = [121 461 100 22];
-            app.ManualTargetDropDown.Value = '1';
+            app.ManualTargetDropDown.Value = {};
 
             % Create TargetRegPanel
             app.TargetRegPanel = uipanel(app.TargetingTab);
@@ -1652,11 +1767,13 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create ComputeInitialSolutionButton
             app.ComputeInitialSolutionButton = uibutton(app.OptimizeTab, 'push');
+            app.ComputeInitialSolutionButton.ButtonPushedFcn = createCallbackFcn(app, @ComputeInitialSolutionButtonPushed, true);
             app.ComputeInitialSolutionButton.Position = [329 478 142 23];
             app.ComputeInitialSolutionButton.Text = 'Compute Initial Solution';
 
             % Create OptimizeButton
             app.OptimizeButton = uibutton(app.OptimizeTab, 'push');
+            app.OptimizeButton.ButtonPushedFcn = createCallbackFcn(app, @OptimizeButtonPushed, true);
             app.OptimizeButton.Position = [329 423 142 45];
             app.OptimizeButton.Text = 'Optimize';
 
