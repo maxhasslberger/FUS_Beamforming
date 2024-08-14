@@ -7,7 +7,7 @@ perform_fft = true; % perform fft on summed signal
 smoothen_pulse = false; % smooth pulses
 zero_padding = false; % apply zero padding to beginning of the signal
 compute_waveform = true;
-apply_factoring = true; 
+apply_factoring = false; 
 
 % Plotting
 plot_continuous = true;
@@ -135,6 +135,7 @@ if compute_waveform
             xlabel('Time (s)');
             ylabel('Amplitude (Pa)');
             grid on;
+            ylim([-1.5e5 1.5e5]);
         end
     
         envelope = zeros(1, length(t));

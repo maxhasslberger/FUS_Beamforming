@@ -96,7 +96,7 @@ if ~isempty(t1w_filename)
         [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
         [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz(1)), linspace(1, seg_sz(2), grid_sz(2)), linspace(1, seg_sz(3), grid_sz(3)));
         seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
-    
+        
         % Map back to strings
         seg_nums = round(seg_nums); % Ensure indices are integers
         segment_ids = uniqueStrings(seg_nums);
