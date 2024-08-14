@@ -182,6 +182,7 @@ classdef simulationApp < matlab.apps.AppBase
         dx_factor
         grid_size
         t1w_filename
+        ct_filename
         dx_scan
         plot_offset
         tr_offset_karr 
@@ -249,7 +250,7 @@ classdef simulationApp < matlab.apps.AppBase
                 b(excl_ids) = 0.0;
             end
 
-            plot_thr = min(app.b_ip_des) +  1e3; % 1 kPa tolerance
+            plot_thr = app.MaskPressurePlotkPaEditField.Value * 1e3;
             save_results = false;
 
             plot_results(app.kgrid, p, b, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
@@ -257,7 +258,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             plot_results(app.kgrid, [], abs(b) > plot_thr, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'colorbar', true, 'cmap', gray()); % plot mask with pressure above off-target limit
+                app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray()); % plot mask with pressure above off-target limit
 
             %% Evaluate pressure distribution
             real_ip = abs(reshape(b, [], 1));
@@ -269,13 +270,13 @@ classdef simulationApp < matlab.apps.AppBase
             
             init_real_ip = real_ip(app.init_ids);
             
-            fprintf("\nInverse Problem Init Points (kPa):\n")
+            fprintf(strcat("\n", plot_title, " Init Points (kPa):\n"))
             disp(init_real_ip' * 1e-3)
             
-            fprintf("\nInverse Problem Skull max. Pressure (kPa):\n")
+            fprintf(strcat("\n", plot_title, " max. Skull Pressure (kPa):\n"))
             disp(max(skull_real_ip) * 1e-3)
             
-            fprintf("\nInverse Problem max Off-Target Pressure (kPa):\n")
+            fprintf(strcat("\n", plot_title, " max. Off-Target Pressure (kPa):\n"))
             disp(max(offTar_real_ip) * 1e-3)
         end
         
@@ -318,21 +319,21 @@ classdef simulationApp < matlab.apps.AppBase
             if strcmp(app.MediumSwitch.Value, 'Homogeneous')
                 app.grid_size = [app.xHomEditField.Value, app.HomyEditField.Value, app.HomzEditField.Value] * 1e-3;
                 app.t1w_filename = [];
-                ct_filename = [];
+                app.ct_filename = [];
                 app.dx_scan = 1e-3; % m
 
                 app.plot_offset = app.grid_size / app.dx_scan / 2; % Offset to center
             else
                 app.grid_size = [];
                 app.t1w_filename = fullfile('..', 'Scans', app.T1wfilenameDropDown.Value);
-                ct_filename = fullfile('..', 'Scans', app.CTfilenameDropDown.Value);
+                app.ct_filename = fullfile('..', 'Scans', app.CTfilenameDropDown.Value);
                 app.dx_scan = app.ScanSpatialResolutionmmEditField.Value * 1e-3;
 
                 app.plot_offset = [-app.scanxEditField.Value, -app.scanyEditField.Value, -app.scanzEditField.Value] + 1;
             end
 
             [app.kgrid, app.medium, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, ...
-                'dx_factor', app.dx_factor_init, 'ct_scan', ct_filename, ...
+                'dx_factor', app.dx_factor_init, 'ct_scan', app.ct_filename, ...
                 'slice_idx', round(app.plot_offset(2) + app.SliceIndexEditField.Value), ...
                 'dx_scan', app.dx_scan, 'constants', const);
             [app.sensor, app.sensor_mask] = init_sensor(app.kgrid, ppp);
@@ -901,6 +902,57 @@ classdef simulationApp < matlab.apps.AppBase
             disp("Time until solver converged: " + string(app.ip.t_solve / 60) + " min")
 
             evaluate_results(app, app.ip.p, "Inverse Problem");
+        end
+
+        % Value changed function: MaxPressurekPaEditField
+        function MaxPressurekPaEditFieldValueChanged(app, event)
+            value = app.MaxPressurekPaEditField.Value;
+            
+        end
+
+        % Button pushed function: DoGroundTruthSimulationButton
+        function DoGroundTruthSimulationButtonPushed(app, event)
+            f0 = app.CenterFreqkHzEditField.Value * 1e3;
+
+            %% Compute GT solution
+            [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
+            ~, ~, ~, ~, ~, plot_offsetP, ~, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
+            init(f0, app.n_dim, app.dx_factor_init * app.GroundTruthResolutionFactorEditField.Value, ...
+            't1_scan', app.t1w_filename, 'ct_scan', app.ct_filename);
+        
+            if app.use_greens_fctn
+                [amp_in, phase_in] = get_amp_phase_mask(app.kgrid, f0, app.ip.p, t_mask_psP, karray_tP);
+                b_gt = acousticFieldPropagator(amp_in, phase_in, app.kgrid.dx, f0, app.medium.sound_speed);
+            else
+                b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, input_argsP, ...
+                    'karray_t', karray_tP);
+                b_gt = reshape(b_gt, size(kgridP.k));
+            end
+
+            %% Plot
+            save_results = false;
+            plot_thr = app.MaskPressurePlotkPaEditField.Value * 1e3;
+
+            if app.GroundTruthResolutionFactorEditField.Value == 1 && ...
+                    app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value
+
+                excl_ids = ~(app.LimittoIntracranialFieldCheckBox.Value & app.logical_dom_ids) & ...
+                ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
+
+                b_gt(excl_ids) = 0.0;
+            end
+
+            plot_results(kgridP, [], b_gt, 'Ground Truth', app.mask2el, app.t1w_filename, plot_offsetP, grid_sizeP, ...
+                dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value);
+
+            plot_results(kgridP, [], abs(b_gt) > plot_thr, 'Ground Truth', app.mask2el, app.t1w_filename, plot_offsetP, ...
+                grid_sizeP, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
+                'colorbar', false, 'cmap', gray());
+        end
+
+        % Button down function: OptimizeTab
+        function OptimizeTabButtonDown(app, event)
+            app.MaskPressurePlotkPaEditField.Value = app.MaxPressurekPaEditField.Value + 1;
         end
     end
 
@@ -1734,6 +1786,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create MaxPressurekPaEditField
             app.MaxPressurekPaEditField = uieditfield(app.TargetingTab, 'numeric');
+            app.MaxPressurekPaEditField.ValueChangedFcn = createCallbackFcn(app, @MaxPressurekPaEditFieldValueChanged, true);
             app.MaxPressurekPaEditField.Position = [191 24 44 22];
             app.MaxPressurekPaEditField.Value = 200;
 
@@ -1766,9 +1819,11 @@ classdef simulationApp < matlab.apps.AppBase
             % Create OptimizeTab
             app.OptimizeTab = uitab(app.TabGroup);
             app.OptimizeTab.Title = 'Optimize';
+            app.OptimizeTab.ButtonDownFcn = createCallbackFcn(app, @OptimizeTabButtonDown, true);
 
             % Create DoGroundTruthSimulationButton
             app.DoGroundTruthSimulationButton = uibutton(app.OptimizeTab, 'push');
+            app.DoGroundTruthSimulationButton.ButtonPushedFcn = createCallbackFcn(app, @DoGroundTruthSimulationButtonPushed, true);
             app.DoGroundTruthSimulationButton.Position = [545 478 164 23];
             app.DoGroundTruthSimulationButton.Text = 'Do Ground Truth Simulation';
 
