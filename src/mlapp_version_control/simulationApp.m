@@ -3,10 +3,10 @@ classdef simulationApp < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
-        SlicexLabel                     matlab.ui.control.Label
-        UpdateSliceButton               matlab.ui.control.Button
         TabGroup                        matlab.ui.container.TabGroup
         InitTab                         matlab.ui.container.Tab
+        UpdateSliceButton               matlab.ui.control.Button
+        SlicexLabel                     matlab.ui.control.Label
         UpdateButtonInit                matlab.ui.control.Button
         MediumPanel                     matlab.ui.container.Panel
         hetPanel                        matlab.ui.container.Panel
@@ -169,6 +169,8 @@ classdef simulationApp < matlab.apps.AppBase
         OptimizeButton                  matlab.ui.control.Button
         ComputeInitialSolutionButton    matlab.ui.control.Button
         DoGroundTruthSimulationButton   matlab.ui.control.Button
+        UIAxesData                      matlab.ui.control.UIAxes
+        UIAxesParam                     matlab.ui.control.UIAxes
     end
 
     
@@ -220,6 +222,8 @@ classdef simulationApp < matlab.apps.AppBase
         skull_ids
         vol_ids
         init_ids
+        p_curr
+        plot_title_curr
     end
     
     methods (Access = private)
@@ -254,11 +258,13 @@ classdef simulationApp < matlab.apps.AppBase
             save_results = false;
 
             plot_results(app.kgrid, p, b, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
-                app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value);
+                app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
+                'axes', []);%app.UIAxesParam);
 
+            % Plot mask with pressure above off-target limit
             plot_results(app.kgrid, [], abs(b) > plot_thr, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray()); % plot mask with pressure above off-target limit
+                app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
 
             %% Evaluate pressure distribution
             real_ip = abs(reshape(b, [], 1));
@@ -278,6 +284,9 @@ classdef simulationApp < matlab.apps.AppBase
             
             fprintf(strcat("\n", plot_title, " max. Off-Target Pressure (kPa):\n"))
             disp(max(offTar_real_ip) * 1e-3)
+
+            app.p_curr = p;
+            app.plot_title_curr = plot_title;
         end
         
         function get_initial_solution(app)
@@ -481,8 +490,10 @@ classdef simulationApp < matlab.apps.AppBase
             value = app.ElementGeometrySwitch.Value;
             if strcmp(value, 'Rect')
                 app.WidthmmEditField.Visible = true;
+                app.WidthmmEditFieldLabel.Visible = true;
             else
                 app.WidthmmEditField.Visible = false;
+                app.WidthmmEditFieldLabel.Visible = false;
             end
         end
 
@@ -528,8 +539,8 @@ classdef simulationApp < matlab.apps.AppBase
                 app.active_ids = [];
             else
                 % Planar Array
-                t_name = app.ArrayElementsPositionsfilenameDropDown.Value;
-                sparsity_name = app.SparsityfilenameDropDown.Value;
+                t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
+                sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
 
                 t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + app.tr_offset_karr;
                 active_tr_ids = 1:n_trs;
@@ -561,7 +572,8 @@ classdef simulationApp < matlab.apps.AppBase
             end
 
             plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, app.plot_offset, ...
-                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot());
+                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot()...
+                );
 
             disp('Transducer init successful')
         end
@@ -797,7 +809,7 @@ classdef simulationApp < matlab.apps.AppBase
                 if ~isempty(app.t1w_filename)
                     
                     % Stimulate brain region
-                    amp_in_reg = des_pressures_region' * 1e3; % Pa
+                    amp_in_reg = app.des_pressures_reg' * 1e3; % Pa
                     stim_regions = app.segment_ids;
                     for j = 1:length(app.tar_reg_labels)
                         reg_mask = stim_regions == app.tar_reg_labels(j);
@@ -841,7 +853,8 @@ classdef simulationApp < matlab.apps.AppBase
             preplot_arg2 = app.preplot_arg + b_mask_plot / max(b_mask_plot(:));
 
             plot_results(app.kgrid, [], preplot_arg2, 'Target Preview', app.mask2el, app.t1w_filename, app.plot_offset, ...
-                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot());
+                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, ...
+                'cmap', hot());
 
             disp('Target init successful')
         end
@@ -918,15 +931,18 @@ classdef simulationApp < matlab.apps.AppBase
             [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
             ~, ~, ~, ~, ~, plot_offsetP, ~, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
             init(f0, app.n_dim, app.dx_factor_init * app.GroundTruthResolutionFactorEditField.Value, ...
-            't1_scan', app.t1w_filename, 'ct_scan', app.ct_filename);
+            't1_scan', app.t1w_filename, 'ct_scan', app.ct_filename); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
             if app.use_greens_fctn
                 [amp_in, phase_in] = get_amp_phase_mask(app.kgrid, f0, app.ip.p, t_mask_psP, karray_tP);
                 b_gt = acousticFieldPropagator(amp_in, phase_in, app.kgrid.dx, f0, app.medium.sound_speed);
             else
-                b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, input_argsP, ...
-                    'karray_t', karray_tP);
-                b_gt = reshape(b_gt, size(kgridP.k));
+%                 b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, input_argsP, ...
+%                     'karray_t', karray_tP);
+%                 b_gt = reshape(b_gt, size(kgridP.k));
+                b_gt = sim_exe(app.kgrid, app.medium, app.sensor, f0, app.ip.p, app.t_mask_ps, app.sensor_mask, true, app.input_args, ...
+                    'karray_t', app.karray_t);
+                b_gt = reshape(b_gt, size(app.kgrid.k));
             end
 
             %% Plot
@@ -947,12 +963,37 @@ classdef simulationApp < matlab.apps.AppBase
 
             plot_results(kgridP, [], abs(b_gt) > plot_thr, 'Ground Truth', app.mask2el, app.t1w_filename, plot_offsetP, ...
                 grid_sizeP, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'colorbar', false, 'cmap', gray());
+                'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
         end
 
         % Button down function: OptimizeTab
         function OptimizeTabButtonDown(app, event)
             app.MaskPressurePlotkPaEditField.Value = app.MaxPressurekPaEditField.Value + 1;
+        end
+
+        % Button pushed function: UpdateSliceButton
+        function UpdateSliceButtonPushed(app, event)
+            evaluate_results(app, app.p_curr, app.plot_title_curr);
+        end
+
+        % Value changed function: DimSwitch
+        function DimSwitchValueChanged(app, event)
+            app.n_dim = 2 + (app.DimSwitch.Value == "3D");
+
+            true_val = app.n_dim == 3;
+
+            app.HomyEditField.Visible = true_val;
+            app.yEditField_2Label.Visible = true_val;
+
+            app.trPosyEditField.Visible = true_val;
+            app.yEditField_3Label.Visible = true_val;
+            app.alphaEditField.Visible = true_val;
+            app.alphaEditFieldLabel.Visible = true_val;
+            app.gammaEditField.Visible = true_val;
+            app.gammaEditFieldLabel.Visible = true_val;
+
+            app.focusyEditField.Visible = true_val;
+            app.yEditField_4Label.Visible = true_val;
         end
     end
 
@@ -964,7 +1005,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 1064 550];
+            app.UIFigure.Position = [400 300 723 550];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create TabGroup
@@ -1149,6 +1190,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create DimSwitch
             app.DimSwitch = uiswitch(app.GeneralPanel, 'slider');
             app.DimSwitch.Items = {'2D', '3D'};
+            app.DimSwitch.ValueChangedFcn = createCallbackFcn(app, @DimSwitchValueChanged, true);
             app.DimSwitch.Position = [30 172 45 20];
             app.DimSwitch.Value = '2D';
 
@@ -1302,7 +1344,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create homPanel
             app.homPanel = uipanel(app.hetPanel);
-            app.homPanel.Position = [-1 14 308 219];
+            app.homPanel.Position = [-1 13 308 219];
 
             % Create GreensFunctionbasedCheckBox
             app.GreensFunctionbasedCheckBox = uicheckbox(app.homPanel);
@@ -1330,12 +1372,14 @@ classdef simulationApp < matlab.apps.AppBase
             % Create yEditField_2Label
             app.yEditField_2Label = uilabel(app.homPanel);
             app.yEditField_2Label.HorizontalAlignment = 'right';
+            app.yEditField_2Label.Visible = 'off';
             app.yEditField_2Label.Position = [114 62 25 22];
             app.yEditField_2Label.Text = 'y';
 
             % Create HomyEditField
             app.HomyEditField = uieditfield(app.homPanel, 'numeric');
             app.HomyEditField.Limits = [0 Inf];
+            app.HomyEditField.Visible = 'off';
             app.HomyEditField.Position = [149 62 37 22];
             app.HomyEditField.Value = 256;
 
@@ -1356,6 +1400,19 @@ classdef simulationApp < matlab.apps.AppBase
             app.UpdateButtonInit.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonInitPushed, true);
             app.UpdateButtonInit.Position = [602 182 100 23];
             app.UpdateButtonInit.Text = 'Update';
+
+            % Create SlicexLabel
+            app.SlicexLabel = uilabel(app.InitTab);
+            app.SlicexLabel.Visible = 'off';
+            app.SlicexLabel.Position = [380 182 40 22];
+            app.SlicexLabel.Text = 'Slice x';
+
+            % Create UpdateSliceButton
+            app.UpdateSliceButton = uibutton(app.InitTab, 'push');
+            app.UpdateSliceButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateSliceButtonPushed, true);
+            app.UpdateSliceButton.Visible = 'off';
+            app.UpdateSliceButton.Position = [402 182 100 23];
+            app.UpdateSliceButton.Text = 'Update Slice';
 
             % Create TransducersTab
             app.TransducersTab = uitab(app.TabGroup);
@@ -1400,11 +1457,13 @@ classdef simulationApp < matlab.apps.AppBase
             % Create yEditField_3Label
             app.yEditField_3Label = uilabel(app.Transducer1Panel);
             app.yEditField_3Label.HorizontalAlignment = 'right';
+            app.yEditField_3Label.Visible = 'off';
             app.yEditField_3Label.Position = [135 149 25 22];
             app.yEditField_3Label.Text = 'y';
 
             % Create trPosyEditField
             app.trPosyEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.trPosyEditField.Visible = 'off';
             app.trPosyEditField.Position = [170 149 37 22];
             app.trPosyEditField.Value = 30;
 
@@ -1427,11 +1486,13 @@ classdef simulationApp < matlab.apps.AppBase
             % Create alphaEditFieldLabel
             app.alphaEditFieldLabel = uilabel(app.Transducer1Panel);
             app.alphaEditFieldLabel.HorizontalAlignment = 'right';
+            app.alphaEditFieldLabel.Visible = 'off';
             app.alphaEditFieldLabel.Position = [42 75 34 22];
             app.alphaEditFieldLabel.Text = 'alpha';
 
             % Create alphaEditField
             app.alphaEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.alphaEditField.Visible = 'off';
             app.alphaEditField.Position = [86 75 37 22];
 
             % Create betaEditFieldLabel
@@ -1448,11 +1509,13 @@ classdef simulationApp < matlab.apps.AppBase
             % Create gammaEditFieldLabel
             app.gammaEditFieldLabel = uilabel(app.Transducer1Panel);
             app.gammaEditFieldLabel.HorizontalAlignment = 'right';
+            app.gammaEditFieldLabel.Visible = 'off';
             app.gammaEditFieldLabel.Position = [233 75 45 22];
             app.gammaEditFieldLabel.Text = 'gamma';
 
             % Create gammaEditField
             app.gammaEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.gammaEditField.Visible = 'off';
             app.gammaEditField.Position = [288 75 37 22];
             app.gammaEditField.Value = 180;
 
@@ -1596,11 +1659,13 @@ classdef simulationApp < matlab.apps.AppBase
             % Create yEditField_4Label
             app.yEditField_4Label = uilabel(app.TargetManPanel);
             app.yEditField_4Label.HorizontalAlignment = 'right';
+            app.yEditField_4Label.Visible = 'off';
             app.yEditField_4Label.Position = [135 149 25 22];
             app.yEditField_4Label.Text = 'y';
 
             % Create focusyEditField
             app.focusyEditField = uieditfield(app.TargetManPanel, 'numeric');
+            app.focusyEditField.Visible = 'off';
             app.focusyEditField.Position = [170 149 37 22];
             app.focusyEditField.Value = 30;
 
@@ -1821,28 +1886,44 @@ classdef simulationApp < matlab.apps.AppBase
             app.OptimizeTab.Title = 'Optimize';
             app.OptimizeTab.ButtonDownFcn = createCallbackFcn(app, @OptimizeTabButtonDown, true);
 
+            % Create UIAxesParam
+            app.UIAxesParam = uiaxes(app.OptimizeTab);
+            title(app.UIAxesParam, 'Title')
+            xlabel(app.UIAxesParam, 'X')
+            ylabel(app.UIAxesParam, 'Y')
+            zlabel(app.UIAxesParam, 'Z')
+            app.UIAxesParam.Position = [40 79 300 185];
+
+            % Create UIAxesData
+            app.UIAxesData = uiaxes(app.OptimizeTab);
+            title(app.UIAxesData, 'Title')
+            xlabel(app.UIAxesData, 'X')
+            ylabel(app.UIAxesData, 'Y')
+            zlabel(app.UIAxesData, 'Z')
+            app.UIAxesData.Position = [389 26 302 350];
+
             % Create DoGroundTruthSimulationButton
             app.DoGroundTruthSimulationButton = uibutton(app.OptimizeTab, 'push');
             app.DoGroundTruthSimulationButton.ButtonPushedFcn = createCallbackFcn(app, @DoGroundTruthSimulationButtonPushed, true);
-            app.DoGroundTruthSimulationButton.Position = [545 478 164 23];
+            app.DoGroundTruthSimulationButton.Position = [534 496 164 23];
             app.DoGroundTruthSimulationButton.Text = 'Do Ground Truth Simulation';
 
             % Create ComputeInitialSolutionButton
             app.ComputeInitialSolutionButton = uibutton(app.OptimizeTab, 'push');
             app.ComputeInitialSolutionButton.ButtonPushedFcn = createCallbackFcn(app, @ComputeInitialSolutionButtonPushed, true);
-            app.ComputeInitialSolutionButton.Position = [329 478 142 23];
+            app.ComputeInitialSolutionButton.Position = [311 481 142 23];
             app.ComputeInitialSolutionButton.Text = 'Compute Initial Solution';
 
             % Create OptimizeButton
             app.OptimizeButton = uibutton(app.OptimizeTab, 'push');
             app.OptimizeButton.ButtonPushedFcn = createCallbackFcn(app, @OptimizeButtonPushed, true);
-            app.OptimizeButton.Position = [329 423 142 45];
+            app.OptimizeButton.Position = [311 426 142 45];
             app.OptimizeButton.Text = 'Optimize';
 
             % Create OptimizationModeButtonGroup
             app.OptimizationModeButtonGroup = uibuttongroup(app.OptimizeTab);
             app.OptimizationModeButtonGroup.Title = 'Optimization Mode';
-            app.OptimizationModeButtonGroup.Position = [12 412 224 106];
+            app.OptimizationModeButtonGroup.Position = [14 413 224 106];
 
             % Create OptimizeforTransducerPhasesandAmplitudesButton
             app.OptimizeforTransducerPhasesandAmplitudesButton = uiradiobutton(app.OptimizationModeButtonGroup);
@@ -1858,48 +1939,38 @@ classdef simulationApp < matlab.apps.AppBase
             % Create LimittoIntracranialFieldCheckBox
             app.LimittoIntracranialFieldCheckBox = uicheckbox(app.OptimizeTab);
             app.LimittoIntracranialFieldCheckBox.Text = 'Limit to Intracranial Field';
-            app.LimittoIntracranialFieldCheckBox.Position = [15 377 153 22];
+            app.LimittoIntracranialFieldCheckBox.Position = [25 379 153 22];
 
             % Create LimittoSkullCheckBox
             app.LimittoSkullCheckBox = uicheckbox(app.OptimizeTab);
             app.LimittoSkullCheckBox.Text = 'Limit to Skull';
-            app.LimittoSkullCheckBox.Position = [190 377 90 22];
+            app.LimittoSkullCheckBox.Position = [200 379 90 22];
 
             % Create GroundTruthResolutionFactorEditFieldLabel
             app.GroundTruthResolutionFactorEditFieldLabel = uilabel(app.OptimizeTab);
             app.GroundTruthResolutionFactorEditFieldLabel.HorizontalAlignment = 'right';
-            app.GroundTruthResolutionFactorEditFieldLabel.Position = [562 435 99 30];
+            app.GroundTruthResolutionFactorEditFieldLabel.Position = [551 455 99 30];
             app.GroundTruthResolutionFactorEditFieldLabel.Text = {'Ground Truth '; 'Resolution Factor'};
 
             % Create GroundTruthResolutionFactorEditField
             app.GroundTruthResolutionFactorEditField = uieditfield(app.OptimizeTab, 'numeric');
-            app.GroundTruthResolutionFactorEditField.Position = [673 443 34 22];
+            app.GroundTruthResolutionFactorEditField.Position = [662 463 34 22];
             app.GroundTruthResolutionFactorEditField.Value = 1;
 
             % Create SaveSimulationResultsButton
             app.SaveSimulationResultsButton = uibutton(app.OptimizeTab, 'push');
-            app.SaveSimulationResultsButton.Position = [545 390 162 23];
+            app.SaveSimulationResultsButton.Position = [535 414 162 23];
             app.SaveSimulationResultsButton.Text = 'Save Simulation Results';
 
             % Create MaskPressurePlotkPaEditFieldLabel
             app.MaskPressurePlotkPaEditFieldLabel = uilabel(app.OptimizeTab);
             app.MaskPressurePlotkPaEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaskPressurePlotkPaEditFieldLabel.Position = [12 346 141 22];
+            app.MaskPressurePlotkPaEditFieldLabel.Position = [20 331 141 22];
             app.MaskPressurePlotkPaEditFieldLabel.Text = 'Mask Pressure Plot (kPa)';
 
             % Create MaskPressurePlotkPaEditField
             app.MaskPressurePlotkPaEditField = uieditfield(app.OptimizeTab, 'numeric');
-            app.MaskPressurePlotkPaEditField.Position = [162 346 52 22];
-
-            % Create UpdateSliceButton
-            app.UpdateSliceButton = uibutton(app.UIFigure, 'push');
-            app.UpdateSliceButton.Position = [868 25 100 23];
-            app.UpdateSliceButton.Text = 'Update Slice';
-
-            % Create SlicexLabel
-            app.SlicexLabel = uilabel(app.UIFigure);
-            app.SlicexLabel.Position = [898 71 40 22];
-            app.SlicexLabel.Text = 'Slice x';
+            app.MaskPressurePlotkPaEditField.Position = [170 331 52 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

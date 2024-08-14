@@ -1,5 +1,4 @@
 function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
-
 %% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
@@ -7,6 +6,8 @@ slice_dim = 2;
 scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
+ax = [];
+fig_pos = {[1150 75 650 300], [1150,475,302,350]};
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -21,18 +22,28 @@ if ~isempty(varargin)
                 plot_colorbar = varargin{arg_idx+1};
             case 'cmap'
                 cmap = varargin{arg_idx+1};
+            case 'axes'
+                ax = varargin{arg_idx+1};
+            case 'fig_pos'
+                fig_pos = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
     end
 end
 
+% if ~isempty(fig_pos{1})
+%     close all;
+% end
+
 %% Plot magnitude and phase of array elements
 if ~isempty(excitation)
     excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
     
-    f_param = figure('color','w');
-    f_param.Position = [700 50 650 350];
+    if isempty(ax)
+        f_param = figure('color','w');
+        f_param.Position = fig_pos{1};
+    end
 
     subplot(2, 1, 1)
     plot(abs(excitation * 1e-3), '.')
@@ -67,8 +78,12 @@ plot_vecx = linspace(0, grid_size(1)-kgrid.dx, p_sz(1)) / dx_scan;
 plot_vecy = plot_vecy - plot_offset(3) + kgrid.dy / dx_scan;
 plot_vecx = plot_vecx - plot_offset(1) + kgrid.dx / dx_scan;
 
-f_data = figure('color','w');
-f_data.Position = [1400 50 484 512];
+% if isempty(ax)
+    f_data = figure('color','w');
+%     f_data.Position = [1400 50 484 512];
+    f_data.Position = fig_pos{2};
+%     ax = axes;
+% end
 
 % Include a t1w scan
 if ~isempty(t1w_filename)
@@ -89,6 +104,7 @@ if ~isempty(t1w_filename)
     ax1 = axes;
     imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(t1w_plot, -90)), [50,500]);
     hold all;
+%     hold(ax1,'all')
     ax2 = axes;
     im2 = imagesc(ax2, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90)));
     im2.AlphaData = 0.5;
@@ -130,7 +146,9 @@ end
 fontsize(f_data, 12,"points")
 
 if kgrid.dim == 3
-    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
+    f_3D = figure('color','w');
+    f_3D.Position = [125,475,302,350];
+    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
     if plot_colorbar
         cb3 = colorbar;
         xlabel(cb3, 'Pressure (kPa)');

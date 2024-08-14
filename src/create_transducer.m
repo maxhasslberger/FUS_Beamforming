@@ -58,6 +58,7 @@ for i = 1:length(elementAll_pos)
 end
 
 t_mask_ps = karray_t_ps.getArrayBinaryMask(kgrid);
+t_mask_ps = karray_t.getArrayBinaryMask(kgrid);
 
 % voxelPlot(double(t_mask_ps))
 
