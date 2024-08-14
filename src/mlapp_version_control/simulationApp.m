@@ -156,11 +156,13 @@ classdef simulationApp < matlab.apps.AppBase
         xEditField_4Label               matlab.ui.control.Label
         FocusPositionLabel              matlab.ui.control.Label
         OptimizeTab                     matlab.ui.container.Tab
+        MaskPressurePlotkPaEditField    matlab.ui.control.NumericEditField
+        MaskPressurePlotkPaEditFieldLabel  matlab.ui.control.Label
         SaveSimulationResultsButton     matlab.ui.control.Button
         GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
         GroundTruthResolutionFactorEditFieldLabel  matlab.ui.control.Label
-        PlotSkullCheckBox               matlab.ui.control.CheckBox
-        PlotEntireDomainCheckBox        matlab.ui.control.CheckBox
+        LimittoSkullCheckBox            matlab.ui.control.CheckBox
+        LimittoIntracranialFieldCheckBox  matlab.ui.control.CheckBox
         OptimizationModeButtonGroup     matlab.ui.container.ButtonGroup
         OptimizeforPhasesand1AmpperTransducerButton  matlab.ui.control.RadioButton
         OptimizeforTransducerPhasesandAmplitudesButton  matlab.ui.control.RadioButton
@@ -238,10 +240,15 @@ classdef simulationApp < matlab.apps.AppBase
             %% Obtain pressure distribution
             b = app.ip.A * p;
             b = reshape(b, size(app.kgrid.k));
-            % ip.b(~domain_ids) = 0.0;
-            % ip.b(~domain_ids & ~skull_ids) = 0.0;
 
             %% Plot results
+            if app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value
+                excl_ids = ~(app.LimittoIntracranialFieldCheckBox.Value & app.logical_dom_ids) & ...
+                ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
+
+                b(excl_ids) = 0.0;
+            end
+
             plot_thr = min(app.b_ip_des) +  1e3; % 1 kPa tolerance
             save_results = false;
 
@@ -1793,15 +1800,15 @@ classdef simulationApp < matlab.apps.AppBase
             app.OptimizeforPhasesand1AmpperTransducerButton.Text = {'Optimize for Phases '; 'and 1 Amp per Transducer'};
             app.OptimizeforPhasesand1AmpperTransducerButton.Position = [11 15 163 30];
 
-            % Create PlotEntireDomainCheckBox
-            app.PlotEntireDomainCheckBox = uicheckbox(app.OptimizeTab);
-            app.PlotEntireDomainCheckBox.Text = 'Plot Entire Domain';
-            app.PlotEntireDomainCheckBox.Position = [15 377 122 22];
+            % Create LimittoIntracranialFieldCheckBox
+            app.LimittoIntracranialFieldCheckBox = uicheckbox(app.OptimizeTab);
+            app.LimittoIntracranialFieldCheckBox.Text = 'Limit to Intracranial Field';
+            app.LimittoIntracranialFieldCheckBox.Position = [15 377 153 22];
 
-            % Create PlotSkullCheckBox
-            app.PlotSkullCheckBox = uicheckbox(app.OptimizeTab);
-            app.PlotSkullCheckBox.Text = 'Plot Skull';
-            app.PlotSkullCheckBox.Position = [163 377 72 22];
+            % Create LimittoSkullCheckBox
+            app.LimittoSkullCheckBox = uicheckbox(app.OptimizeTab);
+            app.LimittoSkullCheckBox.Text = 'Limit to Skull';
+            app.LimittoSkullCheckBox.Position = [190 377 90 22];
 
             % Create GroundTruthResolutionFactorEditFieldLabel
             app.GroundTruthResolutionFactorEditFieldLabel = uilabel(app.OptimizeTab);
@@ -1818,6 +1825,16 @@ classdef simulationApp < matlab.apps.AppBase
             app.SaveSimulationResultsButton = uibutton(app.OptimizeTab, 'push');
             app.SaveSimulationResultsButton.Position = [545 390 162 23];
             app.SaveSimulationResultsButton.Text = 'Save Simulation Results';
+
+            % Create MaskPressurePlotkPaEditFieldLabel
+            app.MaskPressurePlotkPaEditFieldLabel = uilabel(app.OptimizeTab);
+            app.MaskPressurePlotkPaEditFieldLabel.HorizontalAlignment = 'right';
+            app.MaskPressurePlotkPaEditFieldLabel.Position = [12 346 141 22];
+            app.MaskPressurePlotkPaEditFieldLabel.Text = 'Mask Pressure Plot (kPa)';
+
+            % Create MaskPressurePlotkPaEditField
+            app.MaskPressurePlotkPaEditField = uieditfield(app.OptimizeTab, 'numeric');
+            app.MaskPressurePlotkPaEditField.Position = [162 346 52 22];
 
             % Create UpdateSliceButton
             app.UpdateSliceButton = uibutton(app.UIFigure, 'push');
