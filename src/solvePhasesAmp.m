@@ -1,9 +1,9 @@
-function p = solvePhasesAmp(A, b, domain_ids, skull_ids, vol_ids, p_init, init_ids, beta, ineq_active)
+function p = solvePhasesAmp(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active)
 p_init = double(p_init);
 
 if ineq_active
     % Separate A and b
-    [A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, domain_ids | skull_ids, vol_ids, init_ids);
+    [A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, cons_ids, vol_ids, init_ids);
 else
     A1 = double(A(init_ids, :));
     b1 = double(b(init_ids));
