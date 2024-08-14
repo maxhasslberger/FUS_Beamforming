@@ -980,20 +980,24 @@ classdef simulationApp < matlab.apps.AppBase
         function DimSwitchValueChanged(app, event)
             app.n_dim = 2 + (app.DimSwitch.Value == "3D");
 
-            true_val = app.n_dim == 3;
+            true_3D = app.n_dim == 3;
 
-            app.HomyEditField.Visible = true_val;
-            app.yEditField_2Label.Visible = true_val;
+            app.HomyEditField.Visible = true_3D;
+            app.yEditField_2Label.Visible = true_3D;
 
-            app.trPosyEditField.Visible = true_val;
-            app.yEditField_3Label.Visible = true_val;
-            app.alphaEditField.Visible = true_val;
-            app.alphaEditFieldLabel.Visible = true_val;
-            app.gammaEditField.Visible = true_val;
-            app.gammaEditFieldLabel.Visible = true_val;
+            app.trPosyEditField.Visible = true_3D;
+            app.yEditField_3Label.Visible = true_3D;
+            app.alphaEditField.Visible = true_3D;
+            app.alphaEditFieldLabel.Visible = true_3D;
+            app.gammaEditField.Visible = true_3D;
+            app.gammaEditFieldLabel.Visible = true_3D;
 
-            app.focusyEditField.Visible = true_val;
-            app.yEditField_4Label.Visible = true_val;
+            app.focusyEditField.Visible = true_3D;
+            app.yEditField_4Label.Visible = true_3D;
+            app.TransducerLengthmmEditField.Visible = ~true_3D;
+            app.TransducerLengthmmEditFieldLabel.Visible = ~true_3D;
+
+            app.GeneralPanel_2.Visible = true_3D;
         end
     end
 
@@ -1568,6 +1572,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create GeneralPanel_2
             app.GeneralPanel_2 = uipanel(app.TransducersTab);
             app.GeneralPanel_2.Title = 'General';
+            app.GeneralPanel_2.Visible = 'off';
             app.GeneralPanel_2.Position = [28 414 649 104];
 
             % Create ArrayElementsPositionsfilenameDropDownLabel
