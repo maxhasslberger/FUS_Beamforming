@@ -6,13 +6,14 @@ use_cw_signals = false; % use kWave continuous wave function
 perform_fft = true; % perform fft on summed signal
 smoothen_pulse = false; % smooth pulses
 zero_padding = false; % apply zero padding to beginning of the signal
-compute_waveform = false;
+compute_waveform = true;
+apply_factoring = true; 
 
 % Plotting
 plot_continuous = true;
 plot_envelope = false;
 plot_burst = false;
-plot_pulse_durations = true;
+plot_pulse_durations = false;
 
 save_csv = true; % export signal to csv file
 
@@ -96,9 +97,9 @@ end
 if compute_waveform
     if ~use_cw_signals
         ctr_freq = 470; % kHz
-        lowest_freq = ctr_freq - 20;
-        highest_freq = ctr_freq + 20;
-        f0 = [lowest_freq:10:highest_freq] * 1e3; 
+        lowest_freq = ctr_freq - 10;
+        highest_freq = ctr_freq + 10;
+        f0 = [lowest_freq:5:highest_freq] * 1e3; 
         T_m = find_mixed_period(f0);
         nfreq = length(f0);
         T = 1/(min(f0));
@@ -107,7 +108,12 @@ if compute_waveform
         dt = 1/Fs;
         % t = 0:dt:60*T;  
         w = 2 * pi * f0; % Angular frequencies
-        amp = 20 * 1e3; % Pa
+        if apply_factoring
+            amp = [((1/.97)*20),((1/.99)*20),20,((1/.99)*20),((1/.97)*20)] * 1e3; % Pa
+        else
+            amp = 20 * 1e3;
+        end
+        
     
         npulses = 4;
         % pulse_train_duration = 37.5 * T; % 37.5 * T
@@ -118,7 +124,7 @@ if compute_waveform
         duty_cycle = 0.5;
         
         % Construct signals
-        signals_tmp = amp .* cos(w' .* t);
+        signals_tmp = amp' .* cos(w' .* t);
         % Sum signals of different frequencies along the first dimension to get summed signals matrix
         result_signal = sum(signals_tmp, 1);
         
