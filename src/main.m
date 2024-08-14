@@ -2,7 +2,7 @@ clear;
 close all;
 
 %% Init
-f0 = [450:10:490] * 1e3; % Hz - transducer frequency
+f0 = [490:5:510] * 1e3; % Hz - transducer frequency
 n_dim = 2;
 dx = 1e-3; % set dx manually since we are using 500 kHz
 % dx = [];
@@ -13,7 +13,7 @@ ct_filename = fullfile('..', 'Scans', 'dummy_pseudoCT.nii');
 % t1w_filename = [];
 % ct_filename = [];
 
-sidelobe_tol = 49; % percent of max amplitude
+sidelobe_tol = 50; % percent of max amplitude
 
 % Simulation config
 only_focus_opt = false; % Optimize only for focal spots or entire observation domain
@@ -25,7 +25,8 @@ do_time_reversal = false; % Phase retrieval with time reversal as comparison
 do_ground_truth = false; % Ground truth k-wave simulation -> plot_dx_factor
 ineq_active = true; % Activate inequality constraints
 save_results = false;
-get_excitation_vec = true; % Use precomputed excitation vector
+get_excitation_vec = false; % Use precomputed excitation vector
+get_5kHz_spacing_A = true; % Temporary - get A matrices for 5 kHz freq spacing config
 
 if isempty(dx)
     dx_factor = 1;
@@ -95,8 +96,12 @@ if ~exist('A', 'var')
         % disp("Loading precomputed Propagation Matrix...")
         % A = load(fullfile("..", "Lin_Prop_Matrices", "A_current.mat")).A;
         % disp("Propagation Matrix loaded successfully!")
-        A_cells = load(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat")).A_cells;        
-        disp("A_cells (contains individual propagation matrices for each frequency) loaded successfully!")  
+        if get_5kHz_spacing_A
+            A_cells = load(fullfile("..", "Lin_Prop_Matrices/5kHz_spacing", "A_cells_current.mat")).A_cells;        
+        else
+            A_cells = load(fullfile("..", "Lin_Prop_Matrices", "A_cells_current.mat")).A_cells;                    
+        end
+        disp("A_cells (contains individual propagation matrices for each frequency) loaded successfully!")
     end
 end
 
@@ -211,7 +216,7 @@ nfreq = size(A_cells,2);
 % ip.b = A * ip.p;
 % Multifreq
 ip.b = timeDomainSum(f0, A_cells, ip.p);
-plot_focalpt_waveform(f0,A_cells,ip.p,init_ids);
+% plot_focalpt_waveform(f0,A_cells,ip.p,init_ids);
 
 disp("pressures at the foci:")
 disp(double(ip.b(domain_ids &  init_ids)))
