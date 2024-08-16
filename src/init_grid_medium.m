@@ -67,7 +67,7 @@ if ~isempty(ct_filename)
     Ny = round(skull_sz(2) * skull_res_factor);
     Nz = round(skull_sz(3) * skull_res_factor);
 
-    grid_size = [Nx, Ny, Nz] * dx;
+    grid_size = skull_sz * dx_scan;
 else
     Nx = round(grid_size(1)/dx);
     Ny = round(grid_size(2)/dx);

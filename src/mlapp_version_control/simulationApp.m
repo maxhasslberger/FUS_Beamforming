@@ -292,14 +292,9 @@ classdef simulationApp < matlab.apps.AppBase
         function get_initial_solution(app)
             app.ip.p_init = pinv(app.ip.A(app.init_ids, :)) * app.b_ip_des(app.init_ids);
         end
-    end
-    
-
-    % Callbacks that handle component events
-    methods (Access = private)
-
-        % Button pushed function: UpdateButtonInit
-        function UpdateButtonInitPushed(app, event)
+        
+        function [kgrid_out, medium_out, sensor_out, sensor_mask_out, dx_factor_out, seg_ids_out, log_dom_ids_out, ...
+                tr_offset_karr_out, slice_grid_2D_out] = init_general(app, dx_factor_in)
             f0 = app.CenterFreqkHzEditField.Value * 1e3; % Hz
             app.n_dim = 2 + (app.DimSwitch.Value == "3D");
 
@@ -323,7 +318,10 @@ classdef simulationApp < matlab.apps.AppBase
             const.cfl = app.cflEditField.Value;
 
             %% Define Grid and Medium
-            SimSpatialResolutionmmEditFieldValueChanged(app);
+            if isempty(dx_factor_in)
+                SimSpatialResolutionmmEditFieldValueChanged(app);
+                dx_factor_in = app.dx_factor_init;
+            end
 
             if strcmp(app.MediumSwitch.Value, 'Homogeneous')
                 app.grid_size = [app.xHomEditField.Value, app.HomyEditField.Value, app.HomzEditField.Value] * 1e-3;
@@ -341,28 +339,28 @@ classdef simulationApp < matlab.apps.AppBase
                 app.plot_offset = [-app.scanxEditField.Value, -app.scanyEditField.Value, -app.scanzEditField.Value] + 1;
             end
 
-            [app.kgrid, app.medium, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, ...
-                'dx_factor', app.dx_factor_init, 'ct_scan', app.ct_filename, ...
+            [kgrid_out, medium_out, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, ...
+                'dx_factor', dx_factor_in, 'ct_scan', app.ct_filename, ...
                 'slice_idx', round(app.plot_offset(2) + app.SliceIndexEditField.Value), ...
                 'dx_scan', app.dx_scan, 'constants', const);
-            [app.sensor, app.sensor_mask] = init_sensor(app.kgrid, ppp);
+            [sensor_out, sensor_mask_out] = init_sensor(kgrid_out, ppp);
 
-            app.dx_factor = app.dx_scan / app.kgrid.dx;
+            dx_factor_out = app.dx_scan / kgrid_out.dx;
 
             %% Segment the brain
             if ~isempty(app.t1w_filename)
-                [app.segment_ids] = segment_space(app.t1w_filename, app.dx_scan);
-                app.segment_labels = unique(app.segment_ids(:));
-                if abs(app.dx_factor) < 0.99 || abs(app.dx_factor) > 1.01
+                [seg_ids_out] = segment_space(app.t1w_filename, app.dx_scan);
+                app.segment_labels = unique(seg_ids_out(:));
+                if abs(dx_factor_out) ~= 1.0
                     % Interpolate to adapt to grid size
-                    grid_sz_all = size(app.kgrid.k);
-                    seg_sz = size(app.segment_ids);
-                    [uniqueStrings, ~, seg_nums] = unique(app.segment_ids);
-                    seg_nums = reshape(seg_nums, size(app.segment_ids)); % Ensure it has the same shape as the original 3D array
+                    grid_sz_all = size(kgrid_out.k);
+                    seg_sz = size(seg_ids_out);
+                    [uniqueStrings, ~, seg_nums] = unique(seg_ids_out);
+                    seg_nums = reshape(seg_nums, size(seg_ids_out)); % Ensure it has the same shape as the original 3D array
                 
                     if app.n_dim == 2
                         [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(3));
-                        [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(3)));
+                        [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(2)));
                         seg_nums = interp2(X, Z, double(seg_nums)', Xq, Zq, "nearest")';
                     else
                         [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
@@ -373,24 +371,95 @@ classdef simulationApp < matlab.apps.AppBase
                 
                     % Map back to strings
                     seg_nums = round(seg_nums); % Ensure indices are integers
-                    app.segment_ids = uniqueStrings(seg_nums);
+                    seg_ids_out = uniqueStrings(seg_nums);
                 end
-                domain_ids = app.segment_ids ~= "background"; % Mask entire brain
+                domain_ids = seg_ids_out ~= "background"; % Mask entire brain
             else
-                app.segment_ids = [];
-                domain_ids = ones(size(app.kgrid.k));
+                seg_ids_out = [];
+                domain_ids = ones(size(kgrid_out.k));
             end
 
-            app.logical_dom_ids = false(numel(app.medium.sound_speed), 1);
+            log_dom_ids_out = false(numel(medium_out.sound_speed), 1);
             if app.n_dim == 3
-                app.tr_offset_karr = (app.plot_offset * app.dx_scan - app.grid_size / 2 - app.kgrid.dx)'; % Offset for karray
+                tr_offset_karr_out = (app.plot_offset * app.dx_scan - app.grid_size / 2 - kgrid_out.dx)'; % Offset for karray
                 app.grid_size = [app.grid_size(1), app.grid_size(3)]; % plane size for plots
 
-                app.logical_dom_ids(domain_ids) = true;
+                log_dom_ids_out(domain_ids) = true;
             else
-                app.slice_grid_2D = round((app.plot_offset(2) + app.SliceIndexEditField.Value) * app.dx_factor);
-                app.logical_dom_ids(squeeze(domain_ids(:, app.slice_grid_2D, :))) = true;
+                tr_offset_karr_out = [];
+
+                slice_grid_2D_out = round((app.plot_offset(2) + app.SliceIndexEditField.Value) * dx_factor_out);
+                log_dom_ids_out(squeeze(domain_ids(:, slice_grid_2D_out, :))) = true;
             end
+
+            %% Set global options
+            app.input_args = {'PMLSize', app.PMLsizeEditField.Value, 'PMLInside', app.PMLinsideCheckBox.Value, ...
+                'PlotPML', true, 'DisplayMask', 'off', 'RecordMovie', false};
+            app.use_greens_fctn = app.GreensFunctionbasedCheckBox.Value & max(medium_out.sound_speed(:)) ...
+                == min(medium_out.sound_speed(:)); % Update green's fctn flag
+
+            disp("Init successful")
+        end
+        
+        function [t_mask_ps_out, karray_t_out, el_per_t_out, active_ids_out] = transducer_geometry_init(app, kgrid_in, ...
+                dx_factor_in, tr_offset_karr_in)
+            n_trs = length(app.TransducerDropDown.Items);
+
+            if app.n_dim == 2
+                spacing = 1;
+            
+                t_mask_ps_out = false(kgrid_in.Nx, kgrid_in.Ny);
+                el_per_t_out = zeros(1, n_trs);
+                t_ids = [];
+                tr_len_grid = app.tr_len * 1e-3 / kgrid_in.dx;
+
+                for i = 1:n_trs
+                    x_offset = round((app.plot_offset(1) + app.t_pos(1, i)) * dx_factor_in); % grid points
+                    y_offset = round((app.plot_offset(3) + app.t_pos(3, i)) * dx_factor_in); % tangential shift in grid points
+                
+                    new_arr = create_linear_array(kgrid_in, tr_len_grid(i), x_offset, y_offset, spacing, app.t_rot(2, i));
+            
+                    el_per_t_out(i) = sum(new_arr(:));
+                    t_ids = [t_ids; find(new_arr)];
+                    t_mask_ps_out = t_mask_ps_out | logical(new_arr);
+                end
+                
+                [~, el2mask_ids] = sort(t_ids);
+                [~, app.mask2el] = sort(el2mask_ids);
+            
+                karray_t_out = [];
+                active_ids_out = [];
+            else
+                % Planar Array
+                t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
+                sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
+
+                t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + tr_offset_karr_in; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                active_tr_ids = 1:n_trs;
+
+                if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
+                    el_sz = [app.LengthmmEditField.Value, app.WidthmmEditField.Value];
+                else
+                    el_sz = app.LengthmmEditField.Value;
+                end
+            
+                [karray_t_out, t_mask_ps_out, active_ids_out, num_elements, app.mask2el] = create_transducer(kgrid_in, t_name, ...
+                    sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
+            
+                el_per_t_out = num_elements * ones(1, length(active_tr_ids));
+            end
+        end
+    end
+    
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Button pushed function: UpdateButtonInit
+        function UpdateButtonInitPushed(app, event)
+            app.current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
+            [app.kgrid, app.medium, app.sensor, app.sensor_mask, app.dx_factor, app.segment_ids, app.logical_dom_ids, ...
+                app.tr_offset_karr, app.slice_grid_2D] = init_general(app, []);
 
             %% Show Skull and Scan in Preview
             if ~strcmp(app.MediumSwitch.Value, 'Homogeneous')
@@ -401,15 +470,6 @@ classdef simulationApp < matlab.apps.AppBase
                     app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
                     'colorbar', false, 'cmap', hot());
             end
-
-            %% Set global options
-            app.input_args = {'PMLSize', app.PMLsizeEditField.Value, 'PMLInside', app.PMLinsideCheckBox.Value, ...
-                'PlotPML', true, 'DisplayMask', 'off', 'RecordMovie', false};
-            app.use_greens_fctn = app.GreensFunctionbasedCheckBox.Value & max(app.medium.sound_speed(:)) ...
-                == min(app.medium.sound_speed(:)); % Update green's fctn flag
-            app.current_datetime = string(datestr(now, 'yyyymmddHHMMSS'));
-
-            disp("Init successful")
         end
 
         % Value changed function: SimSpatialResolutionmmEditField
@@ -517,51 +577,54 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: UpdateButtonTransducer
         function UpdateButtonTransducerPushed(app, event)
-            n_trs = length(app.TransducerDropDown.Items);
-
-            if app.n_dim == 2
-                spacing = 1;
+            [app.t_mask_ps, app.karray_t, app.el_per_t, app.active_ids] = transducer_geometry_init(app, app.kgrid, ...
+                app.dx_factor, app.tr_offset_karr);
             
-                app.t_mask_ps = false(app.kgrid.Nx, app.kgrid.Ny);
-                app.el_per_t = zeros(1, n_trs);
-                t_ids = [];
-                tr_len_grid = app.tr_len * 1e-3 / app.kgrid.dx;
-
-                for i = 1:n_trs
-                    x_offset = round((app.plot_offset(1) + app.t_pos(1, i)) * app.dx_factor); % grid points
-                    y_offset = round((app.plot_offset(3) + app.t_pos(3, i)) * app.dx_factor); % tangential shift in grid points
-                
-                    new_arr = create_linear_array(app.kgrid, tr_len_grid(i), x_offset, y_offset, spacing, app.t_rot(2, i));
-            
-                    app.el_per_t(i) = sum(new_arr(:));
-                    t_ids = [t_ids; find(new_arr)];
-                    app.t_mask_ps = app.t_mask_ps | logical(new_arr);
-                end
-                
-                [~, el2mask_ids] = sort(t_ids);
-                [~, app.mask2el] = sort(el2mask_ids);
-            
-                app.karray_t = [];
-                app.active_ids = [];
-            else
-                % Planar Array
-                t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
-                sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
-
-                t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + app.tr_offset_karr;
-                active_tr_ids = 1:n_trs;
-
-                if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
-                    el_sz = [app.LengthmmEditField.Value, app.WidthmmEditField.Value];
-                else
-                    el_sz = app.LengthmmEditField.Value;
-                end
-            
-                [app.karray_t, app.t_mask_ps, app.active_ids, num_elements, app.mask2el] = create_transducer(app.kgrid, t_name, ...
-                    sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
-            
-                app.el_per_t = num_elements * ones(1, length(active_tr_ids));
-            end
+%             n_trs = length(app.TransducerDropDown.Items);
+% 
+%             if app.n_dim == 2
+%                 spacing = 1;
+%             
+%                 app.t_mask_ps = false(app.kgrid.Nx, app.kgrid.Ny);
+%                 app.el_per_t = zeros(1, n_trs);
+%                 t_ids = [];
+%                 tr_len_grid = app.tr_len * 1e-3 / app.kgrid.dx;
+% 
+%                 for i = 1:n_trs
+%                     x_offset = round((app.plot_offset(1) + app.t_pos(1, i)) * app.dx_factor); % grid points
+%                     y_offset = round((app.plot_offset(3) + app.t_pos(3, i)) * app.dx_factor); % tangential shift in grid points
+%                 
+%                     new_arr = create_linear_array(app.kgrid, tr_len_grid(i), x_offset, y_offset, spacing, app.t_rot(2, i));
+%             
+%                     app.el_per_t(i) = sum(new_arr(:));
+%                     t_ids = [t_ids; find(new_arr)];
+%                     app.t_mask_ps = app.t_mask_ps | logical(new_arr);
+%                 end
+%                 
+%                 [~, el2mask_ids] = sort(t_ids);
+%                 [~, app.mask2el] = sort(el2mask_ids);
+%             
+%                 app.karray_t = [];
+%                 app.active_ids = [];
+%             else
+%                 % Planar Array
+%                 t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
+%                 sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
+% 
+%                 t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + app.tr_offset_karr;
+%                 active_tr_ids = 1:n_trs;
+% 
+%                 if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
+%                     el_sz = [app.LengthmmEditField.Value, app.WidthmmEditField.Value];
+%                 else
+%                     el_sz = app.LengthmmEditField.Value;
+%                 end
+%             
+%                 [app.karray_t, app.t_mask_ps, app.active_ids, num_elements, app.mask2el] = create_transducer(app.kgrid, t_name, ...
+%                     sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
+%             
+%                 app.el_per_t = num_elements * ones(1, length(active_tr_ids));
+%             end
 
             %% Obtain or load propagation matrix
             if strcmp(app.PropagationMatrixAfilenameDropDown.Value, "")
@@ -745,14 +808,14 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: UpdateTargetingButton
         function UpdateTargetingButtonPushed(app, event)
-            
-            plot_offset_rep = repmat(app.plot_offset(:), 1, length(app.ManualTargetDropDown.Items));
-            app.point_pos = round((plot_offset_rep + app.point_pos_m) * app.dx_factor);
 
             if app.n_dim == 2
 
                 % Define targets
                 if ~isempty(app.ManualTargetDropDown.Items)
+                    plot_offset_rep = repmat(app.plot_offset(:), 1, length(app.ManualTargetDropDown.Items));
+                    app.point_pos = round((plot_offset_rep + app.point_pos_m) * app.dx_factor);
+
                     amp_in = app.des_pressures' * 1e3; % Pa
                 
                     % Assign amplitude acc. to closest position
@@ -795,6 +858,9 @@ classdef simulationApp < matlab.apps.AppBase
                 
                 % Define targets
                 if ~isempty(app.ManualTargetDropDown.Items)
+                    plot_offset_rep = repmat(app.plot_offset(:), 1, length(app.ManualTargetDropDown.Items));
+                    app.point_pos = round((plot_offset_rep + app.point_pos_m) * app.dx_factor);
+
                     amp_in = app.des_pressures' * 1e3; % Pa
                 
                     % Assign amplitude acc. to closest position
@@ -940,11 +1006,16 @@ classdef simulationApp < matlab.apps.AppBase
             f0 = app.CenterFreqkHzEditField.Value * 1e3;
 
             %% Compute GT solution
-            [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
-            ~, ~, ~, ~, ~, plot_offsetP, ~, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
-            init(f0, app.n_dim, app.dx_factor_init * app.GroundTruthResolutionFactorEditField.Value, ...
-            't1_scan', app.t1w_filename, 'ct_scan', app.ct_filename); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
+%             ~, ~, ~, ~, ~, plot_offsetP, ~, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
+%             init(f0, app.n_dim, app.dx_factor_init * app.GroundTruthResolutionFactorEditField.Value, ...
+%             't1_scan', app.t1w_filename, 'ct_scan', app.ct_filename); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
+            [kgridP, mediumP, sensorP, sensor_maskP, dx_factorP, app.segment_ids, ~, tr_offset_karrP, ~] ...
+                = init_general(app, app.dx_factor_init * app.GroundTruthResolutionFactorEditField.Value);
+
+            [t_mask_psP, karray_tP, ~, ~] = transducer_geometry_init(app, kgridP, dx_factorP, tr_offset_karrP);
+
             if app.use_greens_fctn
                 [amp_in, phase_in] = get_amp_phase_mask(app.kgrid, f0, app.ip.p, t_mask_psP, karray_tP);
                 b_gt = acousticFieldPropagator(amp_in, phase_in, app.kgrid.dx, f0, app.medium.sound_speed);
@@ -952,8 +1023,8 @@ classdef simulationApp < matlab.apps.AppBase
 %                 b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, input_argsP, ...
 %                     'karray_t', karray_tP);
 %                 b_gt = reshape(b_gt, size(kgridP.k));
-                b_gt = sim_exe(app.kgrid, app.medium, app.sensor, f0, app.ip.p, app.t_mask_ps, app.sensor_mask, true, app.input_args, ...
-                    'karray_t', app.karray_t);
+                b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, app.input_args, ...
+                    'karray_t', karray_tP);
                 b_gt = reshape(b_gt, size(app.kgrid.k));
             end
 
@@ -970,11 +1041,11 @@ classdef simulationApp < matlab.apps.AppBase
                 b_gt(excl_ids) = 0.0;
             end
 
-            plot_results(kgridP, [], b_gt, 'Ground Truth', app.mask2el, app.t1w_filename, plot_offsetP, grid_sizeP, ...
+            plot_results(kgridP, [], b_gt, 'Ground Truth', app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
                 dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value);
 
-            plot_results(kgridP, [], abs(b_gt) > plot_thr, 'Ground Truth', app.mask2el, app.t1w_filename, plot_offsetP, ...
-                grid_sizeP, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
+            plot_results(kgridP, [], abs(b_gt) > plot_thr, 'Ground Truth', app.mask2el, app.t1w_filename, app.plot_offset, ...
+                app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
                 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
         end
 
