@@ -544,9 +544,15 @@ classdef simulationApp < matlab.apps.AppBase
 
                 t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + app.tr_offset_karr;
                 active_tr_ids = 1:n_trs;
+
+                if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
+                    el_sz = [app.LengthmmEditField.Value, app.WidthmmEditField.Value];
+                else
+                    el_sz = app.LengthmmEditField.Value;
+                end
             
                 [app.karray_t, app.t_mask_ps, app.active_ids, num_elements, app.mask2el] = create_transducer(app.kgrid, t_name, ...
-                    sparsity_name, t_pos_3D, app.t_rot, active_tr_ids);
+                    sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
             
                 app.el_per_t = num_elements * ones(1, length(active_tr_ids));
             end
