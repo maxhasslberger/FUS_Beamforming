@@ -76,6 +76,7 @@ classdef simulationApp < matlab.apps.AppBase
         c0msEditField                   matlab.ui.control.NumericEditField
         c0msEditFieldLabel              matlab.ui.control.Label
         TransducersTab                  matlab.ui.container.Tab
+        RemoveTransducerButton          matlab.ui.control.Button
         GeneralPanel_2                  matlab.ui.container.Panel
         WidthmmEditField                matlab.ui.control.NumericEditField
         WidthmmEditFieldLabel           matlab.ui.control.Label
@@ -90,7 +91,6 @@ classdef simulationApp < matlab.apps.AppBase
         PropagationMatrixAfilenameDropDown  matlab.ui.control.DropDown
         PropagationMatrixAfilenameDropDownLabel  matlab.ui.control.Label
         UpdateButtonTransducer          matlab.ui.control.Button
-        RemoveTransducerButton          matlab.ui.control.Button
         AddTransducerButton             matlab.ui.control.Button
         Transducer1Panel                matlab.ui.container.Panel
         ConfirmButton                   matlab.ui.control.Button
@@ -549,6 +549,11 @@ classdef simulationApp < matlab.apps.AppBase
 
             A_entries = getDropdownEntries(app, A_path, A_pattern, file_ending);
             app.PropagationMatrixAfilenameDropDown.Items = [{''}, A_entries(:)'];
+
+            % Add first transducer automatically
+            if isempty(app.TransducerDropDown.Items)
+                AddTransducerButtonPushed(app);
+            end
         end
 
         % Value changed function: ElementGeometrySwitch
@@ -580,52 +585,6 @@ classdef simulationApp < matlab.apps.AppBase
             [app.t_mask_ps, app.karray_t, app.el_per_t, app.active_ids] = transducer_geometry_init(app, app.kgrid, ...
                 app.dx_factor, app.tr_offset_karr);
             
-%             n_trs = length(app.TransducerDropDown.Items);
-% 
-%             if app.n_dim == 2
-%                 spacing = 1;
-%             
-%                 app.t_mask_ps = false(app.kgrid.Nx, app.kgrid.Ny);
-%                 app.el_per_t = zeros(1, n_trs);
-%                 t_ids = [];
-%                 tr_len_grid = app.tr_len * 1e-3 / app.kgrid.dx;
-% 
-%                 for i = 1:n_trs
-%                     x_offset = round((app.plot_offset(1) + app.t_pos(1, i)) * app.dx_factor); % grid points
-%                     y_offset = round((app.plot_offset(3) + app.t_pos(3, i)) * app.dx_factor); % tangential shift in grid points
-%                 
-%                     new_arr = create_linear_array(app.kgrid, tr_len_grid(i), x_offset, y_offset, spacing, app.t_rot(2, i));
-%             
-%                     app.el_per_t(i) = sum(new_arr(:));
-%                     t_ids = [t_ids; find(new_arr)];
-%                     app.t_mask_ps = app.t_mask_ps | logical(new_arr);
-%                 end
-%                 
-%                 [~, el2mask_ids] = sort(t_ids);
-%                 [~, app.mask2el] = sort(el2mask_ids);
-%             
-%                 app.karray_t = [];
-%                 app.active_ids = [];
-%             else
-%                 % Planar Array
-%                 t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
-%                 sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
-% 
-%                 t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + app.tr_offset_karr;
-%                 active_tr_ids = 1:n_trs;
-% 
-%                 if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
-%                     el_sz = [app.LengthmmEditField.Value, app.WidthmmEditField.Value];
-%                 else
-%                     el_sz = app.LengthmmEditField.Value;
-%                 end
-%             
-%                 [app.karray_t, app.t_mask_ps, app.active_ids, num_elements, app.mask2el] = create_transducer(app.kgrid, t_name, ...
-%                     sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
-%             
-%                 app.el_per_t = num_elements * ones(1, length(active_tr_ids));
-%             end
-
             %% Obtain or load propagation matrix
             if strcmp(app.PropagationMatrixAfilenameDropDown.Value, "")
                 get_current_A = false;
@@ -636,7 +595,7 @@ classdef simulationApp < matlab.apps.AppBase
                 app.t_mask_ps, app.karray_t, app.CenterFreqkHzEditField.Value * 1e3, get_current_A, app.use_greens_fctn, ...
                 'active_ids', app.active_ids);
 
-            % Create preview plot
+            %% Create preview plot
             app.preplot_arg = zeros(size(app.kgrid.k));
             app.preplot_arg(logical(app.t_mask_ps)) = 1.0;
             
@@ -1082,6 +1041,43 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.GeneralPanel_2.Visible = true_3D;
         end
+
+        % Callback function: not associated with a component
+        function RemoveTransducerButtonPushed(app, event)
+
+        end
+
+        % Button pushed function: RemoveTransducerButton
+        function RemoveTransducerButtonPushed2(app, event)
+            curr_item = str2num(app.TransducerDropDown.Value);
+
+            n_trs = length(app.TransducerDropDown.Items) - 1;
+            if n_trs > 0
+                % Delete item in global variables
+                app.t_pos(:, curr_item) = [];
+                app.t_rot(:, curr_item) = [];
+                app.tr_len(curr_item) = [];
+    
+                % Delete item in Dropdown and assign new indices from 1 to N
+                rem_items = num2str( (1:n_trs)' );
+                app.TransducerDropDown.Items = cellstr(rem_items)';
+    
+                app.TransducerDropDown.Value = '1';
+                TransducerDropDownValueChanged(app);
+            else
+                disp('At least one transducer is required!');
+            end
+        end
+
+        % Button pushed function: RemoveManualTransducerButton
+        function RemoveManualTransducerButtonPushed(app, event)
+            
+        end
+
+        % Button pushed function: RemoveRegionTargetButton
+        function RemoveRegionTargetButtonPushed(app, event)
+            
+        end
     end
 
     % Component initialization
@@ -1522,7 +1518,6 @@ classdef simulationApp < matlab.apps.AppBase
             % Create Transducer1Panel
             app.Transducer1Panel = uipanel(app.TransducersTab);
             app.Transducer1Panel.Title = 'Transducer 1';
-            app.Transducer1Panel.Visible = 'off';
             app.Transducer1Panel.Position = [294 159 383 229];
 
             % Create FacePositionCenterLabel
@@ -1629,11 +1624,6 @@ classdef simulationApp < matlab.apps.AppBase
             app.AddTransducerButton.Position = [129 251 122 23];
             app.AddTransducerButton.Text = 'Add Transducer';
 
-            % Create RemoveTransducerButton
-            app.RemoveTransducerButton = uibutton(app.TransducersTab, 'push');
-            app.RemoveTransducerButton.Position = [128 221 123 23];
-            app.RemoveTransducerButton.Text = 'Remove Transducer';
-
             % Create UpdateButtonTransducer
             app.UpdateButtonTransducer = uibutton(app.TransducersTab, 'push');
             app.UpdateButtonTransducer.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonTransducerPushed, true);
@@ -1716,6 +1706,12 @@ classdef simulationApp < matlab.apps.AppBase
             app.WidthmmEditField = uieditfield(app.GeneralPanel_2, 'numeric');
             app.WidthmmEditField.Position = [608 17 33 22];
             app.WidthmmEditField.Value = 3;
+
+            % Create RemoveTransducerButton
+            app.RemoveTransducerButton = uibutton(app.TransducersTab, 'push');
+            app.RemoveTransducerButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveTransducerButtonPushed2, true);
+            app.RemoveTransducerButton.Position = [129 213 122 23];
+            app.RemoveTransducerButton.Text = 'Remove Transducer';
 
             % Create TargetingTab
             app.TargetingTab = uitab(app.TabGroup);
@@ -1827,6 +1823,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create RemoveManualTransducerButton
             app.RemoveManualTransducerButton = uibutton(app.TargetingTab, 'push');
+            app.RemoveManualTransducerButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveManualTransducerButtonPushed, true);
             app.RemoveManualTransducerButton.Position = [90 371 166 23];
             app.RemoveManualTransducerButton.Text = 'Remove Manual Transducer';
 
@@ -1909,6 +1906,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create RemoveRegionTargetButton
             app.RemoveRegionTargetButton = uibutton(app.TargetingTab, 'push');
+            app.RemoveRegionTargetButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveRegionTargetButtonPushed, true);
             app.RemoveRegionTargetButton.Position = [105 123 138 23];
             app.RemoveRegionTargetButton.Text = 'Remove Region Target';
 
