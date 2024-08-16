@@ -83,16 +83,22 @@ if ~isempty(t1w_filename)
     [segment_ids] = segment_space(t1w_filename, dx_scan);
     segment_labels = unique(segment_ids(:));
 
-    if abs(dx_factor) < 0.99 || abs(dx_factor) > 1.01
+    if abs(dx_factor) == 1.0
         % Interpolate to adapt to grid size
-        grid_sz = size(kgrid.k);
+        grid_sz_all = size(kgrid.k);
         seg_sz = size(segment_ids);
         [uniqueStrings, ~, seg_nums] = unique(segment_ids);
         seg_nums = reshape(seg_nums, size(segment_ids)); % Ensure it has the same shape as the original 3D array
     
-        [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
-        [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz(1)), linspace(1, seg_sz(2), grid_sz(2)), linspace(1, seg_sz(3), grid_sz(3)));
-        seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
+        if kgrid.dim == 2
+            [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(3));
+            [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(3)));
+            seg_nums = interp2(X, Z, double(seg_nums)', Xq, Zq, "nearest")';
+        else
+            [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
+            [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(2), grid_sz_all(2)), linspace(1, seg_sz(3), grid_sz_all(3)));
+            seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
+        end
     
         % Map back to strings
         seg_nums = round(seg_nums); % Ensure indices are integers
