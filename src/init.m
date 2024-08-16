@@ -83,7 +83,7 @@ if ~isempty(t1w_filename)
     [segment_ids] = segment_space(t1w_filename, dx_scan);
     segment_labels = unique(segment_ids(:));
 
-    if abs(dx_factor) == 1.0
+    if abs(dx_factor) ~= 1.0
         % Interpolate to adapt to grid size
         grid_sz_all = size(kgrid.k);
         seg_sz = size(segment_ids);
@@ -92,7 +92,7 @@ if ~isempty(t1w_filename)
     
         if kgrid.dim == 2
             [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(3));
-            [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(3)));
+            [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(2)));
             seg_nums = interp2(X, Z, double(seg_nums)', Xq, Zq, "nearest")';
         else
             [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
