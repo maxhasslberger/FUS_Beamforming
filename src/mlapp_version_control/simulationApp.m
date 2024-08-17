@@ -549,11 +549,6 @@ classdef simulationApp < matlab.apps.AppBase
 
             A_entries = getDropdownEntries(app, A_path, A_pattern, file_ending);
             app.PropagationMatrixAfilenameDropDown.Items = [{''}, A_entries(:)'];
-
-            % Add first transducer automatically
-            if isempty(app.TransducerDropDown.Items)
-                AddTransducerButtonPushed(app);
-            end
         end
 
         % Value changed function: ElementGeometrySwitch
@@ -1052,12 +1047,13 @@ classdef simulationApp < matlab.apps.AppBase
             curr_item = str2num(app.TransducerDropDown.Value);
 
             n_trs = length(app.TransducerDropDown.Items) - 1;
+
+            % Delete item in global variables
+            app.t_pos(:, curr_item) = [];
+            app.t_rot(:, curr_item) = [];
+            app.tr_len(curr_item) = [];
+
             if n_trs > 0
-                % Delete item in global variables
-                app.t_pos(:, curr_item) = [];
-                app.t_rot(:, curr_item) = [];
-                app.tr_len(curr_item) = [];
-    
                 % Delete item in Dropdown and assign new indices from 1 to N
                 rem_items = num2str( (1:n_trs)' );
                 app.TransducerDropDown.Items = cellstr(rem_items)';
@@ -1065,18 +1061,63 @@ classdef simulationApp < matlab.apps.AppBase
                 app.TransducerDropDown.Value = '1';
                 TransducerDropDownValueChanged(app);
             else
-                disp('At least one transducer is required!');
+                app.TransducerDropDown.Items = {};
+                app.Transducer1Panel.Visible = false;
             end
         end
 
         % Button pushed function: RemoveManualTransducerButton
         function RemoveManualTransducerButtonPushed(app, event)
-            
+            curr_item = str2num(app.ManualTargetDropDown.Value);
+
+            n_man_tars = length(app.ManualTargetDropDown.Items) - 1;
+
+            % Delete item in global variables
+            app.point_pos_m(:, curr_item) = [];
+
+            app.focus_radius(curr_item) = [];
+            app.des_pressures(curr_item) = [];
+            app.min_dist(curr_item) = [];
+
+            app.force_pressures(curr_item) = [];
+
+            if n_man_tars > 0
+                % Delete item in Dropdown and assign new indices from 1 to N
+                rem_items = num2str( (1:n_man_tars)' );
+                app.ManualTargetDropDown.Items = cellstr(rem_items)';
+    
+                app.ManualTargetDropDown.Value = '1';
+                ManualTargetDropDownValueChanged(app);
+            else
+                app.ManualTargetDropDown.Items = {};
+                app.TargetManPanel.Visible = false;
+            end
         end
 
         % Button pushed function: RemoveRegionTargetButton
         function RemoveRegionTargetButtonPushed(app, event)
-            
+            curr_item = str2num(app.RegionTargetDropDown.Value);
+
+            n_reg_tars = length(app.RegionTargetDropDown.Items) - 1;
+
+            % Delete item in global variables
+            app.tar_reg_labels(curr_item) = [];
+            app.des_pressures_reg(curr_item) = [];
+            app.min_dist_reg(curr_item) = [];
+
+            app.force_pressures_reg(curr_item) = [];
+
+            if n_reg_tars > 0
+                % Delete item in Dropdown and assign new indices from 1 to N
+                rem_items = num2str( (1:n_reg_tars)' );
+                app.RegionTargetDropDown.Items = cellstr(rem_items)';
+    
+                app.RegionTargetDropDown.Value = '1';
+                RegionTargetDropDownValueChanged(app);
+            else
+                app.RegionTargetDropDown.Items = {};
+                app.TargetRegPanel.Visible = false;
+            end
         end
     end
 
@@ -1518,6 +1559,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create Transducer1Panel
             app.Transducer1Panel = uipanel(app.TransducersTab);
             app.Transducer1Panel.Title = 'Transducer 1';
+            app.Transducer1Panel.Visible = 'off';
             app.Transducer1Panel.Position = [294 159 383 229];
 
             % Create FacePositionCenterLabel
