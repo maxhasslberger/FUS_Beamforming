@@ -509,6 +509,12 @@ classdef simulationApp < matlab.apps.AppBase
             
             if strcmp(value, "Homogeneous")
                 app.homPanel.Visible = true;
+
+                % Exclude Region targets
+                app.RegionTargetDropDown.Visible = false;
+                app.RegionTargetDropDownLabel.Visible = false;
+                app.AddRegionTargetButton.Visible = false;
+                app.RemoveRegionTargetButton.Visible = false;
             else
                 app.homPanel.Visible = false;
 
@@ -521,6 +527,12 @@ classdef simulationApp < matlab.apps.AppBase
                 % Assign to t1 and ct dropdown menus
                 app.T1wfilenameDropDown.Items = getDropdownEntries(app, scan_path, t1_pattern, scan_pattern);
                 app.CTfilenameDropDown.Items = getDropdownEntries(app, scan_path, ct_pattern, scan_pattern);
+
+                % Include Region targets
+                app.RegionTargetDropDown.Visible = true;
+                app.RegionTargetDropDownLabel.Visible = true;
+                app.AddRegionTargetButton.Visible = true;
+                app.RemoveRegionTargetButton.Visible = true;
             end
         end
 
@@ -1037,86 +1049,92 @@ classdef simulationApp < matlab.apps.AppBase
             app.GeneralPanel_2.Visible = true_3D;
         end
 
-        % Callback function: not associated with a component
+        % Callback function
         function RemoveTransducerButtonPushed(app, event)
 
         end
 
         % Button pushed function: RemoveTransducerButton
         function RemoveTransducerButtonPushed2(app, event)
-            curr_item = str2num(app.TransducerDropDown.Value);
-
             n_trs = length(app.TransducerDropDown.Items) - 1;
 
-            % Delete item in global variables
-            app.t_pos(:, curr_item) = [];
-            app.t_rot(:, curr_item) = [];
-            app.tr_len(curr_item) = [];
-
-            if n_trs > 0
-                % Delete item in Dropdown and assign new indices from 1 to N
-                rem_items = num2str( (1:n_trs)' );
-                app.TransducerDropDown.Items = cellstr(rem_items)';
+            if n_trs >= 0
+                curr_item = str2num(app.TransducerDropDown.Value);
     
-                app.TransducerDropDown.Value = '1';
-                TransducerDropDownValueChanged(app);
-            else
-                app.TransducerDropDown.Items = {};
-                app.Transducer1Panel.Visible = false;
+                % Delete item in global variables
+                app.t_pos(:, curr_item) = [];
+                app.t_rot(:, curr_item) = [];
+                app.tr_len(curr_item) = [];
+    
+                if n_trs > 0
+                    % Delete item in Dropdown and assign new indices from 1 to N
+                    rem_items = num2str( (1:n_trs)' );
+                    app.TransducerDropDown.Items = cellstr(rem_items)';
+        
+                    app.TransducerDropDown.Value = '1';
+                    TransducerDropDownValueChanged(app);
+                else
+                    app.TransducerDropDown.Items = {};
+                    app.Transducer1Panel.Visible = false;
+                end
             end
         end
 
         % Button pushed function: RemoveManualTransducerButton
         function RemoveManualTransducerButtonPushed(app, event)
-            curr_item = str2num(app.ManualTargetDropDown.Value);
-
             n_man_tars = length(app.ManualTargetDropDown.Items) - 1;
 
-            % Delete item in global variables
-            app.point_pos_m(:, curr_item) = [];
-
-            app.focus_radius(curr_item) = [];
-            app.des_pressures(curr_item) = [];
-            app.min_dist(curr_item) = [];
-
-            app.force_pressures(curr_item) = [];
-
-            if n_man_tars > 0
-                % Delete item in Dropdown and assign new indices from 1 to N
-                rem_items = num2str( (1:n_man_tars)' );
-                app.ManualTargetDropDown.Items = cellstr(rem_items)';
+            if n_man_tars >= 0
+                curr_item = str2num(app.ManualTargetDropDown.Value);
     
-                app.ManualTargetDropDown.Value = '1';
-                ManualTargetDropDownValueChanged(app);
-            else
-                app.ManualTargetDropDown.Items = {};
-                app.TargetManPanel.Visible = false;
+                % Delete item in global variables
+                app.point_pos_m(:, curr_item) = [];
+    
+                app.focus_radius(curr_item) = [];
+                app.des_pressures(curr_item) = [];
+                app.min_dist(curr_item) = [];
+    
+                app.force_pressures(curr_item) = [];
+    
+                if n_man_tars > 0
+                    % Delete item in Dropdown and assign new indices from 1 to N
+                    rem_items = num2str( (1:n_man_tars)' );
+                    app.ManualTargetDropDown.Items = cellstr(rem_items)';
+        
+                    app.ManualTargetDropDown.Value = '1';
+                    ManualTargetDropDownValueChanged(app);
+                else
+                    app.ManualTargetDropDown.Items = {};
+                    app.TargetManPanel.Visible = false;
+                end
             end
         end
 
         % Button pushed function: RemoveRegionTargetButton
         function RemoveRegionTargetButtonPushed(app, event)
-            curr_item = str2num(app.RegionTargetDropDown.Value);
-
             n_reg_tars = length(app.RegionTargetDropDown.Items) - 1;
 
-            % Delete item in global variables
-            app.tar_reg_labels(curr_item) = [];
-            app.des_pressures_reg(curr_item) = [];
-            app.min_dist_reg(curr_item) = [];
-
-            app.force_pressures_reg(curr_item) = [];
-
-            if n_reg_tars > 0
-                % Delete item in Dropdown and assign new indices from 1 to N
-                rem_items = num2str( (1:n_reg_tars)' );
-                app.RegionTargetDropDown.Items = cellstr(rem_items)';
+            if n_reg_tars >= 0
+                curr_item = str2num(app.RegionTargetDropDown.Value);
     
-                app.RegionTargetDropDown.Value = '1';
-                RegionTargetDropDownValueChanged(app);
-            else
-                app.RegionTargetDropDown.Items = {};
-                app.TargetRegPanel.Visible = false;
+                % Delete item in global variables
+                app.tar_reg_labels(curr_item) = [];
+                app.des_pressures_reg(curr_item) = [];
+                app.min_dist_reg(curr_item) = [];
+    
+                app.force_pressures_reg(curr_item) = [];
+    
+                if n_reg_tars > 0
+                    % Delete item in Dropdown and assign new indices from 1 to N
+                    rem_items = num2str( (1:n_reg_tars)' );
+                    app.RegionTargetDropDown.Items = cellstr(rem_items)';
+        
+                    app.RegionTargetDropDown.Value = '1';
+                    RegionTargetDropDownValueChanged(app);
+                else
+                    app.RegionTargetDropDown.Items = {};
+                    app.TargetRegPanel.Visible = false;
+                end
             end
         end
     end
@@ -1943,18 +1961,21 @@ classdef simulationApp < matlab.apps.AppBase
             % Create AddRegionTargetButton
             app.AddRegionTargetButton = uibutton(app.TargetingTab, 'push');
             app.AddRegionTargetButton.ButtonPushedFcn = createCallbackFcn(app, @AddRegionTargetButtonPushed, true);
+            app.AddRegionTargetButton.Visible = 'off';
             app.AddRegionTargetButton.Position = [113 153 122 23];
             app.AddRegionTargetButton.Text = 'Add Region Target';
 
             % Create RemoveRegionTargetButton
             app.RemoveRegionTargetButton = uibutton(app.TargetingTab, 'push');
             app.RemoveRegionTargetButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveRegionTargetButtonPushed, true);
+            app.RemoveRegionTargetButton.Visible = 'off';
             app.RemoveRegionTargetButton.Position = [105 123 138 23];
             app.RemoveRegionTargetButton.Text = 'Remove Region Target';
 
             % Create RegionTargetDropDownLabel
             app.RegionTargetDropDownLabel = uilabel(app.TargetingTab);
             app.RegionTargetDropDownLabel.HorizontalAlignment = 'right';
+            app.RegionTargetDropDownLabel.Visible = 'off';
             app.RegionTargetDropDownLabel.Position = [17 213 90 22];
             app.RegionTargetDropDownLabel.Text = 'Region Target #';
 
@@ -1962,6 +1983,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.RegionTargetDropDown = uidropdown(app.TargetingTab);
             app.RegionTargetDropDown.Items = {};
             app.RegionTargetDropDown.ValueChangedFcn = createCallbackFcn(app, @RegionTargetDropDownValueChanged, true);
+            app.RegionTargetDropDown.Visible = 'off';
             app.RegionTargetDropDown.Position = [122 213 100 22];
             app.RegionTargetDropDown.Value = {};
 
