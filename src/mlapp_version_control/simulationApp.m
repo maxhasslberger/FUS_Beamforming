@@ -267,16 +267,14 @@ classdef simulationApp < matlab.apps.AppBase
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
                 app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
 
-            % Save results in mat file
-            app.ip.p = p;
-            app.ip.b = b;
-            save_results_mat(app);
-
             %% Evaluate pressure distribution
             evaluate_pressure_dist(app, plot_title, b, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
 
             app.p_curr = p;
             app.plot_title_curr = plot_title;
+
+            % Save results in mat file
+            save_results_mat(app);
         end
         
         function get_initial_solution(app)
@@ -441,11 +439,71 @@ classdef simulationApp < matlab.apps.AppBase
         end
         
         function save_results_mat(app)
-            matrix_name = app.PropagationMatrixAfilenameDropDown.Value;
-
             res_filename = "results";
             if app.SaveResultsCheckBox.Value
-                save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "app", "matrix_name");
+
+                % Std param
+                dim_switch = app.DimSwitch.Value;
+                f0 = app.CenterFreqkHzEditField.Value;
+                slice_direction = app.SliceDirectionDropDown.Value;
+                slice_index = app.SliceIndexEditField.Value;
+                dx = app.SimSpatialResolutionmmEditField.Value;
+
+                medium_type = app.MediumSwitch.Value; MediumSwitchValueChanged(app);
+                green_function = app.GreensFunctionbasedCheckBox.Value;
+                hom_coord = [app.xHomEditField.Value, app.HomyEditField.Value, app.HomzEditField.Value];
+                t1w_file = app.T1wfilenameDropDown.Value;
+                ct_file = app.CTfilenameDropDown.Value;
+                het_coord = [app.scanxEditField.Value, app.scanyEditField.Value, app.scanzEditField.Value];
+                dx_t1w = app.ScanSpatialResolutionmmEditField.Value;
+                
+                % Transducer param
+                TransducersTabButtonDown(app);
+                dropdowns = [];
+                if ~isempty(app.ArrayElementsPositionsfilenameDropDown.Items)
+                    dropdowns.array_pos = app.ArrayElementsPositionsfilenameDropDown.Value;
+                end
+                if ~isempty(app.SparsityfilenameDropDown.Items)
+                    dropdowns.sparsity = app.SparsityfilenameDropDown.Value;
+                end
+
+                array.geom = app.ElementGeometrySwitch.Value;
+                array.len = app.LengthmmEditField.Value;
+                array.wid = app.WidthmmEditField.Value;
+                tr.pos = app.t_pos;
+                tr.rot = app.t_rot;
+                tr.length = app.tr_len;
+                matrix_name = app.PropagationMatrixAfilenameDropDown.Value;
+
+                % Target param
+                man.points = app.point_pos_m;
+                man.radius = app.focus_radius;
+                man.pressure = app.des_pressures;
+                man.min_dist = app.min_dist;
+                man.force = app.force_pressures;
+                reg.labels = app.tar_reg_labels;
+                reg.pressure = app.des_pressures_reg;
+                reg.min_dist = app.min_dist_reg;
+                reg.force = app.force_pressures_reg;
+
+                ineq_flag = app.LimitIntracranialOffTargetPressureCheckBox.Value;
+                ineq_val = app.MaxPressurekPaEditField.Value;
+                skull_flag = app.LimitSkullPressureCheckBox.Value;
+                skull_val = app.MaxPressurekPaSkullEditField.Value;
+
+                % Optimization param
+                opt.phaseAmp = app.OptimizeforTransducerPhasesandAmplitudesButton.Value;
+                opt.phaseOnly = app.OptimizeforPhasesand1AmpperTransducerButton.Value;
+                opt.intracranial = app.LimittoIntracranialFieldCheckBox.Value;
+                opt.skull = app.LimittoSkullCheckBox.Value;
+                gt_dx_factor = app.GroundTruthResolutionFactorEditField.Value;
+
+                ip_sol = app.ip;
+
+                save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "dim_switch", "f0", "slice_direction", "slice_index", "dx", ...
+                    "medium_type", "green_function", "hom_coord", "t1w_file", "ct_file", "het_coord", "dx_t1w", "dropdowns", "array", "tr", "matrix_name", ...
+                    "man", "reg", "ineq_flag", "ineq_val", "skull_flag", "skull_val", "opt", "gt_dx_factor", "ip_sol");
+                
             end
         end
         
@@ -969,14 +1027,18 @@ classdef simulationApp < matlab.apps.AppBase
             %% Optimize
             tic
             if app.OptimizeforTransducerPhasesandAmplitudesButton.Value
-                app.ip.p = solvePhasesAmp(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active);
+                app.ip.p = solvePhasesAmp(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
+                    ineq_active);
             else
-                app.ip.p = solvePhasesOnly(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active, app.mask2el, app.el_per_t, true);
+                app.ip.p = solvePhasesOnly(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
+                    ineq_active, app.mask2el, app.el_per_t, true);
             end
 
             app.ip.t_solve = toc;
             disp("Time until solver converged: " + string(app.ip.t_solve / 60) + " min")
 
+            app.ip.b = app.A * app.ip.p;
+            app.ip.b = reshape(app.ip.b, size(app.kgrid.k));
             evaluate_results(app, app.ip.p, "Inverse Problem");
         end
 
@@ -1011,11 +1073,12 @@ classdef simulationApp < matlab.apps.AppBase
 
             plot_title = 'Ground Truth';
 
-            if app.GroundTruthResolutionFactorEditField.Value == 1 && ...
-                    app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value
+            if app.GroundTruthResolutionFactorEditField.Value == 1 % && ...
+                   % app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value
 
-                excl_ids = ~(app.LimittoIntracranialFieldCheckBox.Value & app.logical_dom_ids) & ...
-                ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
+                excl_ids = (app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value) & ...
+                    ~(app.LimittoIntracranialFieldCheckBox.Value & app.logical_dom_ids) & ...
+                    ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
 
                 b_gt(excl_ids) = 0.0;
 
@@ -1176,10 +1239,10 @@ classdef simulationApp < matlab.apps.AppBase
             value = app.LoadResultsfromFileDropDown.Value;
             if ~strcmp(value, '')
                 filename = fullfile("..", "Results", value);
-                a = load(filename).app;
+                dim_switch = load(filename).dim_switch;
                 matrix_name = load(filename).matrix_name;
 
-                app.DimSwitch = a.DimSwitch;
+                app.DimSwitch.Value = dim_switch;
             end
         end
     end
@@ -1550,7 +1613,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create homPanel
             app.homPanel = uipanel(app.hetPanel);
-            app.homPanel.Position = [-1 13 308 219];
+            app.homPanel.Position = [2 11 308 219];
 
             % Create GreensFunctionbasedCheckBox
             app.GreensFunctionbasedCheckBox = uicheckbox(app.homPanel);
