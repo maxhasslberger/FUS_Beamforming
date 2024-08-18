@@ -36,6 +36,9 @@ classdef simulationApp < matlab.apps.AppBase
         MediumSwitch                    matlab.ui.control.Switch
         DisplayAdvancedSettingsCheckBox  matlab.ui.control.CheckBox
         GeneralPanel                    matlab.ui.container.Panel
+        LoadResultsfromFileDropDown     matlab.ui.control.DropDown
+        LoadResultsfromFileDropDownLabel  matlab.ui.control.Label
+        SaveResultsCheckBox             matlab.ui.control.CheckBox
         SliceIndexEditField             matlab.ui.control.NumericEditField
         DSliceIndexEditFieldLabel       matlab.ui.control.Label
         SliceDirectionDropDown          matlab.ui.control.DropDown
@@ -158,7 +161,6 @@ classdef simulationApp < matlab.apps.AppBase
         OptimizeTab                     matlab.ui.container.Tab
         MaskPressurePlotkPaEditField    matlab.ui.control.NumericEditField
         MaskPressurePlotkPaEditFieldLabel  matlab.ui.control.Label
-        SaveSimulationResultsButton     matlab.ui.control.Button
         GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
         GroundTruthResolutionFactorEditFieldLabel  matlab.ui.control.Label
         LimittoSkullCheckBox            matlab.ui.control.CheckBox
@@ -169,8 +171,6 @@ classdef simulationApp < matlab.apps.AppBase
         OptimizeButton                  matlab.ui.control.Button
         ComputeInitialSolutionButton    matlab.ui.control.Button
         DoGroundTruthSimulationButton   matlab.ui.control.Button
-        UIAxesData                      matlab.ui.control.UIAxes
-        UIAxesParam                     matlab.ui.control.UIAxes
     end
 
     
@@ -219,6 +219,7 @@ classdef simulationApp < matlab.apps.AppBase
         b_des
         b_ip_des
         ip
+        A
         skull_ids
         vol_ids
         init_ids
@@ -243,7 +244,7 @@ classdef simulationApp < matlab.apps.AppBase
         
         function evaluate_results(app, p, plot_title)
             %% Obtain pressure distribution
-            b = app.ip.A * p;
+            b = app.A * p;
             b = reshape(b, size(app.kgrid.k));
 
             %% Plot results
@@ -255,7 +256,7 @@ classdef simulationApp < matlab.apps.AppBase
             end
 
             plot_thr = app.MaskPressurePlotkPaEditField.Value * 1e3;
-            save_results = false;
+            save_results = app.SaveResultsCheckBox.Value;
 
             plot_results(app.kgrid, p, b, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
                 app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
@@ -265,6 +266,11 @@ classdef simulationApp < matlab.apps.AppBase
             plot_results(app.kgrid, [], abs(b) > plot_thr, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
                 app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
+
+            % Save results in mat file
+            app.ip.p = p;
+            app.ip.b = b;
+            save_results_mat(app);
 
             %% Evaluate pressure distribution
             real_ip = abs(reshape(b, [], 1));
@@ -290,7 +296,7 @@ classdef simulationApp < matlab.apps.AppBase
         end
         
         function get_initial_solution(app)
-            app.ip.p_init = pinv(app.ip.A(app.init_ids, :)) * app.b_ip_des(app.init_ids);
+            app.ip.p_init = pinv(app.A(app.init_ids, :)) * app.b_ip_des(app.init_ids);
         end
         
         function [kgrid_out, medium_out, sensor_out, sensor_mask_out, dx_factor_out, seg_ids_out, log_dom_ids_out, ...
@@ -449,6 +455,13 @@ classdef simulationApp < matlab.apps.AppBase
                 el_per_t_out = num_elements * ones(1, length(active_tr_ids));
             end
         end
+        
+        function save_results_mat(app)
+            res_filename = "results";
+            if app.SaveResultsCheckBox.Value
+                save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "app");
+            end
+        end
     end
     
 
@@ -598,7 +611,7 @@ classdef simulationApp < matlab.apps.AppBase
             else
                 get_current_A = app.PropagationMatrixAfilenameDropDown.Value(1:end-4);
             end
-            app.ip.A = obtain_linear_propagator(app.kgrid, app.medium, app.sensor, app.sensor_mask, app.input_args, ...
+            app.A = obtain_linear_propagator(app.kgrid, app.medium, app.sensor, app.sensor_mask, app.input_args, ...
                 app.t_mask_ps, app.karray_t, app.CenterFreqkHzEditField.Value * 1e3, get_current_A, app.use_greens_fctn, ...
                 'active_ids', app.active_ids);
 
@@ -950,9 +963,9 @@ classdef simulationApp < matlab.apps.AppBase
             %% Optimize
             tic
             if app.OptimizeforTransducerPhasesandAmplitudesButton.Value
-                app.ip.p = solvePhasesAmp(app.ip.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active);
+                app.ip.p = solvePhasesAmp(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active);
             else
-                app.ip.p = solvePhasesOnly(app.ip.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active, app.mask2el, app.el_per_t, true);
+                app.ip.p = solvePhasesOnly(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ineq_active, app.mask2el, app.el_per_t, true);
             end
 
             app.ip.t_solve = toc;
@@ -995,7 +1008,7 @@ classdef simulationApp < matlab.apps.AppBase
             end
 
             %% Plot
-            save_results = false;
+            save_results = app.SaveResultsCheckBox.Value;
             plot_thr = app.MaskPressurePlotkPaEditField.Value * 1e3;
 
             if app.GroundTruthResolutionFactorEditField.Value == 1 && ...
@@ -1013,6 +1026,10 @@ classdef simulationApp < matlab.apps.AppBase
             plot_results(kgridP, [], abs(b_gt) > plot_thr, 'Ground Truth', app.mask2el, app.t1w_filename, app.plot_offset, ...
                 app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
                 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
+
+            % Save results in mat file
+            app.ip.b_gt = b_gt;
+            save_results_mat(app);
         end
 
         % Button down function: OptimizeTab
@@ -1316,71 +1333,88 @@ classdef simulationApp < matlab.apps.AppBase
             % Create GeneralPanel
             app.GeneralPanel = uipanel(app.InitTab);
             app.GeneralPanel.Title = 'General';
-            app.GeneralPanel.Position = [31 258 298 254];
+            app.GeneralPanel.Position = [31 221 298 291];
 
             % Create RealdxLabel
             app.RealdxLabel = uilabel(app.GeneralPanel);
-            app.RealdxLabel.Position = [47 20 238 22];
+            app.RealdxLabel.Position = [47 57 238 22];
             app.RealdxLabel.Text = '-> Real: 1 mm';
 
             % Create Label
             app.Label = uilabel(app.GeneralPanel);
             app.Label.HorizontalAlignment = 'center';
-            app.Label.Position = [40 202 26 22];
+            app.Label.Position = [40 239 26 22];
             app.Label.Text = 'Dim';
 
             % Create DimSwitch
             app.DimSwitch = uiswitch(app.GeneralPanel, 'slider');
             app.DimSwitch.Items = {'2D', '3D'};
             app.DimSwitch.ValueChangedFcn = createCallbackFcn(app, @DimSwitchValueChanged, true);
-            app.DimSwitch.Position = [30 172 45 20];
+            app.DimSwitch.Position = [30 209 45 20];
             app.DimSwitch.Value = '2D';
 
             % Create CenterFreqkHzEditFieldLabel
             app.CenterFreqkHzEditFieldLabel = uilabel(app.GeneralPanel);
             app.CenterFreqkHzEditFieldLabel.HorizontalAlignment = 'right';
-            app.CenterFreqkHzEditFieldLabel.Position = [126 172 101 22];
+            app.CenterFreqkHzEditFieldLabel.Position = [126 209 101 22];
             app.CenterFreqkHzEditFieldLabel.Text = 'Center Freq (kHz)';
 
             % Create CenterFreqkHzEditField
             app.CenterFreqkHzEditField = uieditfield(app.GeneralPanel, 'numeric');
             app.CenterFreqkHzEditField.ValueChangedFcn = createCallbackFcn(app, @CenterFreqkHzEditFieldValueChanged, true);
-            app.CenterFreqkHzEditField.Position = [239 172 46 22];
+            app.CenterFreqkHzEditField.Position = [239 209 46 22];
             app.CenterFreqkHzEditField.Value = 500;
 
             % Create SimSpatialResolutionmmEditFieldLabel
             app.SimSpatialResolutionmmEditFieldLabel = uilabel(app.GeneralPanel);
             app.SimSpatialResolutionmmEditFieldLabel.HorizontalAlignment = 'right';
-            app.SimSpatialResolutionmmEditFieldLabel.Position = [41 41 157 22];
+            app.SimSpatialResolutionmmEditFieldLabel.Position = [41 78 157 22];
             app.SimSpatialResolutionmmEditFieldLabel.Text = 'Sim Spatial Resolution (mm)';
 
             % Create SimSpatialResolutionmmEditField
             app.SimSpatialResolutionmmEditField = uieditfield(app.GeneralPanel, 'numeric');
             app.SimSpatialResolutionmmEditField.ValueChangedFcn = createCallbackFcn(app, @SimSpatialResolutionmmEditFieldValueChanged, true);
-            app.SimSpatialResolutionmmEditField.Position = [213 41 45 22];
+            app.SimSpatialResolutionmmEditField.Position = [213 78 45 22];
 
             % Create SliceDirectionDropDownLabel
             app.SliceDirectionDropDownLabel = uilabel(app.GeneralPanel);
             app.SliceDirectionDropDownLabel.HorizontalAlignment = 'right';
-            app.SliceDirectionDropDownLabel.Position = [41 122 90 22];
+            app.SliceDirectionDropDownLabel.Position = [41 159 90 22];
             app.SliceDirectionDropDownLabel.Text = 'Slice (Direction)';
 
             % Create SliceDirectionDropDown
             app.SliceDirectionDropDown = uidropdown(app.GeneralPanel);
             app.SliceDirectionDropDown.Items = {'X', 'Y', 'Z'};
-            app.SliceDirectionDropDown.Position = [146 122 45 22];
+            app.SliceDirectionDropDown.Position = [146 159 45 22];
             app.SliceDirectionDropDown.Value = 'Y';
 
             % Create DSliceIndexEditFieldLabel
             app.DSliceIndexEditFieldLabel = uilabel(app.GeneralPanel);
             app.DSliceIndexEditFieldLabel.HorizontalAlignment = 'right';
-            app.DSliceIndexEditFieldLabel.Position = [46 88 82 22];
+            app.DSliceIndexEditFieldLabel.Position = [46 125 82 22];
             app.DSliceIndexEditFieldLabel.Text = '2D Slice Index';
 
             % Create SliceIndexEditField
             app.SliceIndexEditField = uieditfield(app.GeneralPanel, 'numeric');
-            app.SliceIndexEditField.Position = [144 88 48 22];
+            app.SliceIndexEditField.Position = [144 125 48 22];
             app.SliceIndexEditField.Value = 30;
+
+            % Create SaveResultsCheckBox
+            app.SaveResultsCheckBox = uicheckbox(app.GeneralPanel);
+            app.SaveResultsCheckBox.Text = 'Save Results';
+            app.SaveResultsCheckBox.Position = [14 34 93 22];
+
+            % Create LoadResultsfromFileDropDownLabel
+            app.LoadResultsfromFileDropDownLabel = uilabel(app.GeneralPanel);
+            app.LoadResultsfromFileDropDownLabel.HorizontalAlignment = 'right';
+            app.LoadResultsfromFileDropDownLabel.Position = [9 8 125 22];
+            app.LoadResultsfromFileDropDownLabel.Text = 'Load Results from File';
+
+            % Create LoadResultsfromFileDropDown
+            app.LoadResultsfromFileDropDown = uidropdown(app.GeneralPanel);
+            app.LoadResultsfromFileDropDown.Items = {''};
+            app.LoadResultsfromFileDropDown.Position = [149 8 143 22];
+            app.LoadResultsfromFileDropDown.Value = '';
 
             % Create DisplayAdvancedSettingsCheckBox
             app.DisplayAdvancedSettingsCheckBox = uicheckbox(app.InitTab);
@@ -2036,22 +2070,6 @@ classdef simulationApp < matlab.apps.AppBase
             app.OptimizeTab.Title = 'Optimize';
             app.OptimizeTab.ButtonDownFcn = createCallbackFcn(app, @OptimizeTabButtonDown, true);
 
-            % Create UIAxesParam
-            app.UIAxesParam = uiaxes(app.OptimizeTab);
-            title(app.UIAxesParam, 'Title')
-            xlabel(app.UIAxesParam, 'X')
-            ylabel(app.UIAxesParam, 'Y')
-            zlabel(app.UIAxesParam, 'Z')
-            app.UIAxesParam.Position = [40 79 300 185];
-
-            % Create UIAxesData
-            app.UIAxesData = uiaxes(app.OptimizeTab);
-            title(app.UIAxesData, 'Title')
-            xlabel(app.UIAxesData, 'X')
-            ylabel(app.UIAxesData, 'Y')
-            zlabel(app.UIAxesData, 'Z')
-            app.UIAxesData.Position = [389 26 302 350];
-
             % Create DoGroundTruthSimulationButton
             app.DoGroundTruthSimulationButton = uibutton(app.OptimizeTab, 'push');
             app.DoGroundTruthSimulationButton.ButtonPushedFcn = createCallbackFcn(app, @DoGroundTruthSimulationButtonPushed, true);
@@ -2106,11 +2124,6 @@ classdef simulationApp < matlab.apps.AppBase
             app.GroundTruthResolutionFactorEditField = uieditfield(app.OptimizeTab, 'numeric');
             app.GroundTruthResolutionFactorEditField.Position = [662 463 34 22];
             app.GroundTruthResolutionFactorEditField.Value = 1;
-
-            % Create SaveSimulationResultsButton
-            app.SaveSimulationResultsButton = uibutton(app.OptimizeTab, 'push');
-            app.SaveSimulationResultsButton.Position = [535 414 162 23];
-            app.SaveSimulationResultsButton.Text = 'Save Simulation Results';
 
             % Create MaskPressurePlotkPaEditFieldLabel
             app.MaskPressurePlotkPaEditFieldLabel = uilabel(app.OptimizeTab);
