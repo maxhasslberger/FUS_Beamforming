@@ -9,7 +9,7 @@ b1 = double(b(eq_ids));
 if ineq_active
     ineq_ids = considered_ids & ~init_ids;
 else
-    ineq_ids = considered_ids & ~init_ids & vol_ids; % Still consider defined limited volumes
+    ineq_ids = vol_ids & ~init_ids; % Still consider limited volumes
 end
 
 A2 = double(A(ineq_ids, :));

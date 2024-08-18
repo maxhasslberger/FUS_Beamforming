@@ -1,20 +1,12 @@
 function p = solvePhasesOnly(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, mask2el, el_per_t, via_abs)
 p_init = double(p_init);
 
-if ineq_active
-    % Separate A and b
-    [A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, cons_ids, vol_ids, init_ids);
-else
-    A1 = double(A(init_ids, :));
-    b1 = double(b(init_ids));
-    A2 = [];
-    b2 = [];
-end
+% Separate A and b
+[A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, cons_ids, vol_ids, init_ids, ineq_active);
 
 clear A;
 
 % Add regularization and constraints
-[A1, b1] = add_L2_reg(A1, b1, beta(1));
 [A2, b2] = add_ineq(A2, b2, length(p_init));
 
 % Obtain sub matrices
@@ -45,7 +37,7 @@ if via_abs
 
     % Cost fctn and constraints
     fun = @(p)cost_fctn(p, A1_r, A1_i, b1, trx_ids);
-    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
+    nonlcon = @(p)unitdisk(p, A1_r, A1_i, b1, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 else
     % Define initial vector
     p_start = zeros(length(p_init) + n_amps, 1);
@@ -56,7 +48,7 @@ else
 
     % Cost fctn and constraints
     fun = @(p)cost_fctn2(p, A1, b1, amp_fac, trx_ids);
-    nonlcon = @(p)unitdisk(p, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
+    nonlcon = @(p)unitdisk(p, A1_r, A1_i, b1, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 end
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 
@@ -93,36 +85,38 @@ end
 
 function val = cost_fctn(p, A1_r, A1_i, b1, trx_ids)
 
-[x_r, x_i] = getElements_abs(p, trx_ids);
-val = norm(sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1);
+% [x_r, x_i] = getElements_abs(p, trx_ids);
+% val = norm(sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1);
+val = 0;
 
 end
 
 function val = cost_fctn2(p, A1, b1, amp_fac, trx_ids)
-n_amps = length(trx_ids);
-
-p_0 = zeros(size(A1, 2), 1);
-p_0 = getAmpPerElement(p_0, p, trx_ids);
-
-val = norm(amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b1);
-
-end
-
-
-function [x_r, x_i] = getElements_abs(p, trx_ids)
-
-n_amps = length(trx_ids);
-
-p_r = p(n_amps + (1:ceil((end-n_amps)/2)));
-p_i = p(n_amps + ceil((end-n_amps)/2) + 1:end);
-
-p_0 = zeros(size(p_r));
-p_0 = getAmpPerElement(p_0, p, trx_ids);
-
-x_r = p_0 .* p_r ./ sqrt(p_r.^2 + p_i.^2);
-x_i = p_0 .* p_i ./ sqrt(p_r.^2 + p_i.^2);
+% n_amps = length(trx_ids);
+% 
+% p_0 = zeros(size(A1, 2), 1);
+% p_0 = getAmpPerElement(p_0, p, trx_ids);
+% 
+% val = norm(amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b1);
+val = 0;
 
 end
+
+
+% function [x_r, x_i] = getElements_abs(p, trx_ids)
+% 
+% n_amps = length(trx_ids);
+% 
+% p_r = p(n_amps + (1:ceil((end-n_amps)/2)));
+% p_i = p(n_amps + ceil((end-n_amps)/2) + 1:end);
+% 
+% p_0 = zeros(size(p_r));
+% p_0 = getAmpPerElement(p_0, p, trx_ids);
+% 
+% x_r = p_0 .* p_r ./ sqrt(p_r.^2 + p_i.^2);
+% x_i = p_0 .* p_i ./ sqrt(p_r.^2 + p_i.^2);
+% 
+% end
 
 function p_0 = getAmpPerElement(p_0, p, trx_ids)
 
