@@ -273,23 +273,7 @@ classdef simulationApp < matlab.apps.AppBase
             save_results_mat(app);
 
             %% Evaluate pressure distribution
-            real_ip = abs(reshape(b, [], 1));
-            
-            offTar_real_ip = real_ip;
-            offTar_real_ip(app.vol_ids | ~app.logical_dom_ids) = [];
-            
-            skull_real_ip = real_ip(app.skull_ids);
-            
-            init_real_ip = real_ip(app.init_ids);
-            
-            fprintf(strcat("\n", plot_title, " Init Points (kPa):\n"))
-            disp(init_real_ip' * 1e-3)
-            
-            fprintf(strcat("\n", plot_title, " max. Skull Pressure (kPa):\n"))
-            disp(max(skull_real_ip) * 1e-3)
-            
-            fprintf(strcat("\n", plot_title, " max. Off-Target Pressure (kPa):\n"))
-            disp(max(offTar_real_ip) * 1e-3)
+            evaluate_pressure_dist(app, plot_title, b, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
 
             app.p_curr = p;
             app.plot_title_curr = plot_title;
@@ -461,6 +445,26 @@ classdef simulationApp < matlab.apps.AppBase
             if app.SaveResultsCheckBox.Value
                 save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "app");
             end
+        end
+        
+        function evaluate_pressure_dist(app, plot_title, b, vol_ids, logical_dom_ids, skull_ids, init_ids)
+            real_ip = abs(reshape(b, [], 1));
+            
+            offTar_real_ip = real_ip;
+            offTar_real_ip(vol_ids | ~logical_dom_ids) = [];
+            
+            skull_real_ip = real_ip(skull_ids);
+            
+            init_real_ip = real_ip(init_ids);
+            
+            fprintf(strcat("\n", plot_title, " Init Points (kPa):\n"))
+            disp(init_real_ip' * 1e-3)
+            
+            fprintf(strcat("\n", plot_title, " max. Skull Pressure (kPa):\n"))
+            disp(max(skull_real_ip) * 1e-3)
+            
+            fprintf(strcat("\n", plot_title, " max. Off-Target Pressure (kPa):\n"))
+            disp(max(offTar_real_ip) * 1e-3)
         end
     end
     
@@ -985,11 +989,6 @@ classdef simulationApp < matlab.apps.AppBase
             f0 = app.CenterFreqkHzEditField.Value * 1e3;
 
             %% Compute GT solution
-%             [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ...
-%             ~, ~, ~, ~, ~, plot_offsetP, ~, ~, grid_sizeP, dx_factorP, ~, ~, input_argsP] = ...
-%             init(f0, app.n_dim, app.dx_factor_init * app.GroundTruthResolutionFactorEditField.Value, ...
-%             't1_scan', app.t1w_filename, 'ct_scan', app.ct_filename); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
             [kgridP, mediumP, sensorP, sensor_maskP, dx_factorP, app.segment_ids, ~, tr_offset_karrP, ~] ...
                 = init_general(app, app.dx_factor_init * app.GroundTruthResolutionFactorEditField.Value);
 
@@ -999,9 +998,6 @@ classdef simulationApp < matlab.apps.AppBase
                 [amp_in, phase_in] = get_amp_phase_mask(app.kgrid, f0, app.ip.p, t_mask_psP, karray_tP);
                 b_gt = acousticFieldPropagator(amp_in, phase_in, app.kgrid.dx, f0, app.medium.sound_speed);
             else
-%                 b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, input_argsP, ...
-%                     'karray_t', karray_tP);
-%                 b_gt = reshape(b_gt, size(kgridP.k));
                 b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, app.input_args, ...
                     'karray_t', karray_tP);
                 b_gt = reshape(b_gt, size(app.kgrid.k));
@@ -1011,6 +1007,8 @@ classdef simulationApp < matlab.apps.AppBase
             save_results = app.SaveResultsCheckBox.Value;
             plot_thr = app.MaskPressurePlotkPaEditField.Value * 1e3;
 
+            plot_title = 'Ground Truth';
+
             if app.GroundTruthResolutionFactorEditField.Value == 1 && ...
                     app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value
 
@@ -1018,14 +1016,17 @@ classdef simulationApp < matlab.apps.AppBase
                 ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
 
                 b_gt(excl_ids) = 0.0;
+
+                % Evaluate Pressure Distribution
+                evaluate_pressure_dist(app, plot_title, b_gt, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
             end
 
-            plot_results(kgridP, [], b_gt, 'Ground Truth', app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
+            plot_results(kgridP, [], b_gt, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
                 dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value);
 
-            plot_results(kgridP, [], abs(b_gt) > plot_thr, 'Ground Truth', app.mask2el, app.t1w_filename, app.plot_offset, ...
-                app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
+            plot_results(kgridP, [], abs(b_gt) > plot_thr, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
+                app.plot_offset, app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', ...
+                app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]});
 
             % Save results in mat file
             app.ip.b_gt = b_gt;
