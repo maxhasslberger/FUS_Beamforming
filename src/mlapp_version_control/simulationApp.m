@@ -1130,6 +1130,8 @@ classdef simulationApp < matlab.apps.AppBase
             app.TransducerLengthmmEditFieldLabel.Visible = ~true_3D;
 
             app.GeneralPanel_2.Visible = true_3D;
+            app.GroundTruthResolutionFactorEditField.Visible = true_3D;
+            app.GroundTruthResolutionFactorEditFieldLabel.Visible = true_3D;
         end
 
         % Callback function
