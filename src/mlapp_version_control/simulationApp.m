@@ -424,7 +424,7 @@ classdef simulationApp < matlab.apps.AppBase
                 t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
                 sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
 
-                t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + tr_offset_karr_in; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + tr_offset_karr_in;
                 active_tr_ids = 1:n_trs;
 
                 if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
@@ -441,9 +441,11 @@ classdef simulationApp < matlab.apps.AppBase
         end
         
         function save_results_mat(app)
+            matrix_name = app.PropagationMatrixAfilenameDropDown.Value;
+
             res_filename = "results";
             if app.SaveResultsCheckBox.Value
-                save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "app");
+                save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "app", "matrix_name");
             end
         end
         
@@ -1155,6 +1157,31 @@ classdef simulationApp < matlab.apps.AppBase
                 end
             end
         end
+
+        % Clicked callback: LoadResultsfromFileDropDown
+        function LoadResultsfromFileDropDownClicked(app, event)
+            item = event.InteractionInformation.Item;
+            
+            % Get results file names for dropdown menu
+            res_path = fullfile('..', 'Results');
+            res_pattern = {'results'};
+            file_ending = '.mat';
+
+            result_files = getDropdownEntries(app, res_path, res_pattern, file_ending);
+            app.LoadResultsfromFileDropDown.Items = [{''}, result_files(:)'];
+        end
+
+        % Value changed function: LoadResultsfromFileDropDown
+        function LoadResultsfromFileDropDownValueChanged(app, event)
+            value = app.LoadResultsfromFileDropDown.Value;
+            if ~strcmp(value, '')
+                filename = fullfile("..", "Results", value);
+                a = load(filename).app;
+                matrix_name = load(filename).matrix_name;
+
+                app.DimSwitch = a.DimSwitch;
+            end
+        end
     end
 
     % Component initialization
@@ -1414,6 +1441,8 @@ classdef simulationApp < matlab.apps.AppBase
             % Create LoadResultsfromFileDropDown
             app.LoadResultsfromFileDropDown = uidropdown(app.GeneralPanel);
             app.LoadResultsfromFileDropDown.Items = {''};
+            app.LoadResultsfromFileDropDown.ValueChangedFcn = createCallbackFcn(app, @LoadResultsfromFileDropDownValueChanged, true);
+            app.LoadResultsfromFileDropDown.ClickedFcn = createCallbackFcn(app, @LoadResultsfromFileDropDownClicked, true);
             app.LoadResultsfromFileDropDown.Position = [149 8 143 22];
             app.LoadResultsfromFileDropDown.Value = '';
 

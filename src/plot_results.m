@@ -40,10 +40,8 @@ end
 if ~isempty(excitation)
     excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
     
-    if isempty(ax)
-        f_param = figure('color','w');
-        f_param.Position = fig_pos{1};
-    end
+    f_param = figure('color','w');
+    f_param.Position = fig_pos{1};
 
     subplot(2, 1, 1)
     plot(abs(excitation * 1e-3), '.')
@@ -158,7 +156,9 @@ end
 
 if save_results
     filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
-    export_fig(f_param, filename + "_param.pdf");
+    if ~isempty(excitation)
+        export_fig(f_param, filename + "_param.pdf");
+    end
     saveas(f_data, filename + "_data.pdf");
 end
 
