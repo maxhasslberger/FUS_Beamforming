@@ -372,6 +372,7 @@ classdef simulationApp < matlab.apps.AppBase
                 tr_offset_karr_out = (app.plot_offset * app.dx_scan - app.grid_size / 2 - kgrid_out.dx)'; % Offset for karray
                 app.grid_size = [app.grid_size(1), app.grid_size(3)]; % plane size for plots
 
+                slice_grid_2D_out = [];
                 log_dom_ids_out(domain_ids) = true;
             else
                 tr_offset_karr_out = [];
