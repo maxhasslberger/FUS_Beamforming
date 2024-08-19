@@ -6,9 +6,6 @@ p_init = double(p_init);
 
 clear A;
 
-% Add regularization and constraints
-[A2, b2] = add_ineq(A2, b2, length(p_init));
-
 % Obtain sub matrices
 A1_r = real(A1);
 A1_i = imag(A1);
@@ -50,8 +47,8 @@ else
     fun = @(p)cost_fctn2(p, A1, b1, amp_fac, trx_ids);
     nonlcon = @(p)unitdisk(p, A1_r, A1_i, b1, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
 end
-term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 
+term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
     'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
 options.MaxFunctionEvaluations = 2.5e5;

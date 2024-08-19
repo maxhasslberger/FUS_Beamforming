@@ -11,18 +11,55 @@ b0 = 0.0;
 
 % Add regularization
 [A0, b0] = add_L2_reg(A0, b0, beta(1));
-[A2, b2] = add_ineq(A2, b2, length(p_init));
 
-% Cost fctn and constraints
-fun = @(p)cost_fctn(p, A0, b0);
-nonlcon = @(p)ineq_const(p, A1, b1, A2, b2);
+% Optimization options
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, [], 1e-3);
-
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e6, 'ConstraintTolerance', 1e-3, ...
     'Algorithm','active-set');%, 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
 options.MaxFunctionEvaluations = 2.5e5;
 options.MaxIterations = 1e3;
 
+if false
+    [p, fval, exitflag, output] = solve_ip(A0, b0, A1, b1, A2, b2, p_init, options);
+else
+    A2_iter = zeros(1, length(p_init));
+    b2_iter = 0.0;
+
+    max_iter = 20;
+    tol = 1e3; % Pa
+    for iter = 1:max_iter
+        disp(strcat("Main iteration ", num2str(iter), "..."))
+
+        % Optimize and check if ineq constraints fulfilled
+        [p, fval, exitflag, output] = solve_ip(A0, b0, A1, b1, A2_iter, b2_iter, p_init, options);
+        b2_new = abs(A2 * p);
+
+        unful_ineq = b2_new > (b2 + tol);
+        if ~any(unful_ineq)
+            break; % successful
+        else
+            % Add inequalities that are not fulfilled
+            A2_iter = [A2_iter; A2(unful_ineq, :)];
+            b2_iter = [b2_iter; b2(unful_ineq)];
+        end
+    end
+
+    if any(unful_ineq)
+        disp("Optimization failed");
+    else
+        disp("Optimization successful");
+    end
+end
+
+end
+
+function [p, fval, exitflag, output] = solve_ip(A0, b0, A1, b1, A2, b2, p_init, options)
+
+% Cost fctn and constraints
+fun = @(p)cost_fctn(p, A0, b0);
+nonlcon = @(p)ineq_const(p, A1, b1, A2, b2);
+
+% Optimize
 [p_opt, fval, exitflag, output] = fmincon(fun, [real(p_init); imag(p_init)], [], [], [], [], [], [], nonlcon, options);
 
 p = getCompVec(p_opt);
