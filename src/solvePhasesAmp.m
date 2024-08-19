@@ -28,14 +28,15 @@ if false
 else
     A2_iter = zeros(1, length(p_init));
     b2_iter = 0.0;
+    p = p_init;
 
     max_iter = 20;
-    tol = 1e3; % Pa
+    tol = b2 / 1000; % Pa
     for iter = 1:max_iter
         disp(strcat("Main iteration ", num2str(iter), "..."))
 
         % Optimize and check if ineq constraints fulfilled
-        [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2_iter, b2_iter, p_init, options);
+        [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2_iter, b2_iter, p, options);
         b2_new = abs(A2 * p);
 
         unful_ineq = b2_new > (b2 + tol);
@@ -45,6 +46,7 @@ else
             % Add inequalities that are not fulfilled
             A2_iter = [A2_iter; A2(unful_ineq, :)];
             b2_iter = [b2_iter; b2(unful_ineq)];
+            disp(strcat("Violated Inequalities: ", num2str(sum(unful_ineq))))
         end
     end
 
