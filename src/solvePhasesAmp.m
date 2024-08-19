@@ -19,8 +19,12 @@ options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e6, 'Co
 options.MaxFunctionEvaluations = 2.5e5;
 options.MaxIterations = 1e3;
 
+% Define cost function
+fun = @(p)cost_fctn(p, A0, b0);
+
+% Optimize
 if false
-    [p, fval, exitflag, output] = solve_ip(A0, b0, A1, b1, A2, b2, p_init, options);
+    [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2, b2, p_init, options);
 else
     A2_iter = zeros(1, length(p_init));
     b2_iter = 0.0;
@@ -31,7 +35,7 @@ else
         disp(strcat("Main iteration ", num2str(iter), "..."))
 
         % Optimize and check if ineq constraints fulfilled
-        [p, fval, exitflag, output] = solve_ip(A0, b0, A1, b1, A2_iter, b2_iter, p_init, options);
+        [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2_iter, b2_iter, p_init, options);
         b2_new = abs(A2 * p);
 
         unful_ineq = b2_new > (b2 + tol);
@@ -53,10 +57,9 @@ end
 
 end
 
-function [p, fval, exitflag, output] = solve_ip(A0, b0, A1, b1, A2, b2, p_init, options)
+function [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2, b2, p_init, options)
 
-% Cost fctn and constraints
-fun = @(p)cost_fctn(p, A0, b0);
+% Update constraints
 nonlcon = @(p)ineq_const(p, A1, b1, A2, b2);
 
 % Optimize
