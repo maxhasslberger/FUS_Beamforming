@@ -39,27 +39,54 @@ for i = 1:nfreq
 end
 [A0, b0] = add_L2_reg(A0, b0, beta(1));
 
-
-% Cost fctn and constraints
-fun = @(p)cost_fctn(p, A0, b0);
-nonlcon = @(p)ineq_const(p, A1_cells, b1, A2_cells, b2, f0);
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
-
 
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
     'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
 options.MaxFunctionEvaluations = 2.5e5;
 options.MaxIterations = 1e3;
 
-[p_opt, fval, exitflag, output] = fmincon(fun, [real(p_init); imag(p_init)], [], [], [], [], [], [], nonlcon, options);
 
-p = getCompVec(p_opt); % What does the getCompVec function do?
-% The matlab optimizers cannot deal with complex numbers as input variables
-% which is why we always need to separate the real and imaginary part when
-% we pass p (see fmincon in line 22 -> the init vector is separated in real
-% and imaginary part and then stacked). That's why every time we dive into
-% the cost function and after the optimization, we need to reconvert p into
-% a complex number.
+% Define cost fctn
+fun = @(p)cost_fctn(p, A0, b0);
+
+if false
+    [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2, b2, p_init, f0, options);
+else
+    A2_iter = {};
+    for i = 1:nfreq
+        A2_iter{end + 1} = zeros(1, size(p_init,1));
+    end
+    b2_iter = 0.0;
+
+    max_iter = 20;
+    tol = 1e3; % Pa
+    p = p_init;
+    for iter = 1:max_iter
+        disp(strcat("Main iteration ", num2str(iter), "..."))
+
+        % Optimize and check if ineq constraints fulfilled
+        [p, fval, exitflag, output] = solve_ip(fun, A1_cells, b1, A2_iter, b2_iter, p, f0, options);
+        b2_new = abs(timeDomainSum(f0,A2_cells,p));
+
+        unful_ineq = b2_new > (b2 + tol);
+        if ~any(unful_ineq)
+            break; % successful
+        else
+            % Add inequalities that are not fulfilled
+            for i = 1:nfreq
+                A2_iter{i} = [A2_iter{i}; A2_cells{i}(unful_ineq, :)];
+            end
+            b2_iter = [b2_iter; b2(unful_ineq)];
+        end
+    end
+
+    if any(unful_ineq)
+        disp("Optimization failed");
+    else
+        disp("Optimization successful");
+    end
+end
 
 end
 
@@ -116,3 +143,14 @@ end
 %         y = [y + y_temp];
 %     end
 % end
+
+function [p, fval, exitflag, output] = solve_ip(fun, A1_cells, b1, A2_cells, b2, p_init, f0, options)
+
+% Update constraints
+nonlcon = @(p_init)ineq_const(p_init, A1_cells, b1, A2_cells, b2, f0);
+
+[p_opt, fval, exitflag, output] = fmincon(fun, [real(p_init); imag(p_init)], [], [], [], [], [], [], nonlcon, options);
+
+p = getCompVec(p_opt);
+
+end
