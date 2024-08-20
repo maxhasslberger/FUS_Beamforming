@@ -3,10 +3,9 @@ classdef simulationApp < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
+        Slice30Label                    matlab.ui.control.Label
         TabGroup                        matlab.ui.container.TabGroup
         InitTab                         matlab.ui.container.Tab
-        UpdateSliceButton               matlab.ui.control.Button
-        SlicexLabel                     matlab.ui.control.Label
         UpdateButtonInit                matlab.ui.control.Button
         MediumPanel                     matlab.ui.container.Panel
         hetPanel                        matlab.ui.container.Panel
@@ -1104,7 +1103,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.MaskPressurePlotkPaEditField.Value = app.MaxPressurekPaEditField.Value + 1;
         end
 
-        % Button pushed function: UpdateSliceButton
+        % Callback function: not associated with a component
         function UpdateSliceButtonPushed(app, event)
             evaluate_results(app, app.p_curr, app.plot_title_curr);
         end
@@ -1248,6 +1247,13 @@ classdef simulationApp < matlab.apps.AppBase
                 app.DimSwitch.Value = dim_switch;
             end
         end
+
+        % Value changed function: SliceIndexEditField
+        function SliceIndexEditFieldValueChanged(app, event)
+            value = app.SliceIndexEditField.Value;
+            app.SliceIndexEditField.Value = value;
+            app.Slice30Label.Value = strcat("Slice ", num2str(value));
+        end
     end
 
     % Component initialization
@@ -1258,12 +1264,12 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [400 300 723 550];
+            app.UIFigure.Position = [400 300 727 575];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.UIFigure);
-            app.TabGroup.Position = [1 1 727 550];
+            app.TabGroup.Position = [1 26 727 550];
 
             % Create InitTab
             app.InitTab = uitab(app.TabGroup);
@@ -1490,6 +1496,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create SliceIndexEditField
             app.SliceIndexEditField = uieditfield(app.GeneralPanel, 'numeric');
+            app.SliceIndexEditField.ValueChangedFcn = createCallbackFcn(app, @SliceIndexEditFieldValueChanged, true);
             app.SliceIndexEditField.Position = [144 125 48 22];
             app.SliceIndexEditField.Value = 30;
 
@@ -1672,19 +1679,6 @@ classdef simulationApp < matlab.apps.AppBase
             app.UpdateButtonInit.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonInitPushed, true);
             app.UpdateButtonInit.Position = [602 182 100 23];
             app.UpdateButtonInit.Text = 'Update';
-
-            % Create SlicexLabel
-            app.SlicexLabel = uilabel(app.InitTab);
-            app.SlicexLabel.Visible = 'off';
-            app.SlicexLabel.Position = [380 182 40 22];
-            app.SlicexLabel.Text = 'Slice x';
-
-            % Create UpdateSliceButton
-            app.UpdateSliceButton = uibutton(app.InitTab, 'push');
-            app.UpdateSliceButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateSliceButtonPushed, true);
-            app.UpdateSliceButton.Visible = 'off';
-            app.UpdateSliceButton.Position = [402 182 100 23];
-            app.UpdateSliceButton.Text = 'Update Slice';
 
             % Create TransducersTab
             app.TransducersTab = uitab(app.TabGroup);
@@ -2230,6 +2224,11 @@ classdef simulationApp < matlab.apps.AppBase
             % Create MaskPressurePlotkPaEditField
             app.MaskPressurePlotkPaEditField = uieditfield(app.OptimizeTab, 'numeric');
             app.MaskPressurePlotkPaEditField.Position = [170 331 52 22];
+
+            % Create Slice30Label
+            app.Slice30Label = uilabel(app.UIFigure);
+            app.Slice30Label.Position = [323 1 48 22];
+            app.Slice30Label.Text = 'Slice 30';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
