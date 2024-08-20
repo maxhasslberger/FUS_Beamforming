@@ -1049,10 +1049,10 @@ classdef simulationApp < matlab.apps.AppBase
             tic
             if app.OptimizeforTransducerPhasesandAmplitudesButton.Value
                 app.ip.p = solvePhasesAmp(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
-                    ineq_active);
+                    ineq_active, options);
             else
                 app.ip.p = solvePhasesOnly(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
-                    ineq_active, app.mask2el, app.el_per_t, true);
+                    ineq_active, app.mask2el, app.el_per_t, true, options);
             end
 
             app.ip.t_solve = toc;
@@ -1124,7 +1124,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.MaskPressurePlotkPaEditField.Value = app.MaxPressurekPaEditField.Value + 1;
         end
 
-        % Callback function: not associated with a component
+        % Callback function
         function UpdateSliceButtonPushed(app, event)
             evaluate_results(app, app.p_curr, app.plot_title_curr);
         end
@@ -1274,6 +1274,18 @@ classdef simulationApp < matlab.apps.AppBase
             value = app.SliceIndexEditField.Value;
             app.SliceIndexEditField.Value = value;
             app.Slice30Label.Value = strcat("Slice ", num2str(value));
+        end
+
+        % Value changed function: 
+        % DisplayAdvancedOptimizationOptionsCheckBox
+        function DisplayAdvancedOptimizationOptionsCheckBoxValueChanged(app, event)
+            value = app.DisplayAdvancedOptimizationOptionsCheckBox.Value;
+
+            if value
+                app.AdvancedOptimizationOptionsPanel.Visible = true;
+            else
+                app.AdvancedOptimizationOptionsPanel.Visible = false;
+            end
         end
     end
 
@@ -2253,6 +2265,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create DisplayAdvancedOptimizationOptionsCheckBox
             app.DisplayAdvancedOptimizationOptionsCheckBox = uicheckbox(app.OptimizeTab);
+            app.DisplayAdvancedOptimizationOptionsCheckBox.ValueChangedFcn = createCallbackFcn(app, @DisplayAdvancedOptimizationOptionsCheckBoxValueChanged, true);
             app.DisplayAdvancedOptimizationOptionsCheckBox.Text = 'Display Advanced Optimization Options';
             app.DisplayAdvancedOptimizationOptionsCheckBox.Position = [22 221 234 22];
 

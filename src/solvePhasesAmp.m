@@ -12,7 +12,7 @@ b0 = 0.0;
 % Add regularization
 [A0, b0] = add_L2_reg(A0, b0, beta(1));
 
-if ~isempty(options)
+if isempty(options)
     % Optimization options
     term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, [], 1e0);
     options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e6, 'ConstraintTolerance', 1e-3, ...
