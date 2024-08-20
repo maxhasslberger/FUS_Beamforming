@@ -158,6 +158,19 @@ classdef simulationApp < matlab.apps.AppBase
         xEditField_4Label               matlab.ui.control.Label
         FocusPositionLabel              matlab.ui.control.Label
         OptimizeTab                     matlab.ui.container.Tab
+        AdvancedOptimizationOptionsPanel  matlab.ui.container.Panel
+        MaxNoofIterationsEditField      matlab.ui.control.NumericEditField
+        MaxNoofIterationsEditFieldLabel  matlab.ui.control.Label
+        ConstraintViolationEditField    matlab.ui.control.NumericEditField
+        ConstraintViolationEditFieldLabel  matlab.ui.control.Label
+        AlgorithmDropDown               matlab.ui.control.DropDown
+        AlgorithmDropDownLabel          matlab.ui.control.Label
+        ConstraintToleranceEditField    matlab.ui.control.NumericEditField
+        ConstraintToleranceLabel        matlab.ui.control.Label
+        FunctionToleranceEditField      matlab.ui.control.NumericEditField
+        FunctionToleranceEditFieldLabel  matlab.ui.control.Label
+        DisplayAdvancedOptimizationOptionsCheckBox  matlab.ui.control.CheckBox
+        MinimizeArrrayAmplitudesCheckBox  matlab.ui.control.CheckBox
         MaskPressurePlotkPaEditField    matlab.ui.control.NumericEditField
         MaskPressurePlotkPaEditFieldLabel  matlab.ui.control.Label
         GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
@@ -967,7 +980,7 @@ classdef simulationApp < matlab.apps.AppBase
             [app.init_ids, ~, b_mask_plot] = get_init_ids(app.kgrid, ...
                 min(app.medium.sound_speed(:)) / (app.CenterFreqkHzEditField.Value * 1e3), app.b_mask, ...
                 find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values given
-            app.ip.beta = 0.0;
+            app.ip.beta = app.MinimizeArrrayAmplitudesCheckBox.Value;
             
             % Create preview plot
             b_mask_plot = b_mask_plot + app.full_bmask;
@@ -1023,6 +1036,14 @@ classdef simulationApp < matlab.apps.AppBase
 
             ineq_active = skull_active || dom_active;
             cons_ids = (skull_active & app.skull_ids) | (dom_active & app.logical_dom_ids);
+
+            %% Get Optimization Options
+            term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, [], app.ConstraintViolationEditField.Value);
+            options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', app.FunctionToleranceEditField.Value, ...
+                'ConstraintTolerance', app.ConstraintToleranceEditField.Value, 'Algorithm',app.AlgorithmDropDown.Value);
+            %, 'OutputFcn', term_fctn);
+
+            options.MaxIterations = app.MaxNoofIterationsEditField.Value;
 
             %% Optimize
             tic
@@ -2224,6 +2245,78 @@ classdef simulationApp < matlab.apps.AppBase
             % Create MaskPressurePlotkPaEditField
             app.MaskPressurePlotkPaEditField = uieditfield(app.OptimizeTab, 'numeric');
             app.MaskPressurePlotkPaEditField.Position = [170 331 52 22];
+
+            % Create MinimizeArrrayAmplitudesCheckBox
+            app.MinimizeArrrayAmplitudesCheckBox = uicheckbox(app.OptimizeTab);
+            app.MinimizeArrrayAmplitudesCheckBox.Text = 'Minimize Arrray Amplitudes';
+            app.MinimizeArrrayAmplitudesCheckBox.Position = [315 379 167 22];
+
+            % Create DisplayAdvancedOptimizationOptionsCheckBox
+            app.DisplayAdvancedOptimizationOptionsCheckBox = uicheckbox(app.OptimizeTab);
+            app.DisplayAdvancedOptimizationOptionsCheckBox.Text = 'Display Advanced Optimization Options';
+            app.DisplayAdvancedOptimizationOptionsCheckBox.Position = [22 221 234 22];
+
+            % Create AdvancedOptimizationOptionsPanel
+            app.AdvancedOptimizationOptionsPanel = uipanel(app.OptimizeTab);
+            app.AdvancedOptimizationOptionsPanel.Title = 'Advanced Optimization Options';
+            app.AdvancedOptimizationOptionsPanel.Visible = 'off';
+            app.AdvancedOptimizationOptionsPanel.Position = [22 13 236 187];
+
+            % Create FunctionToleranceEditFieldLabel
+            app.FunctionToleranceEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
+            app.FunctionToleranceEditFieldLabel.HorizontalAlignment = 'right';
+            app.FunctionToleranceEditFieldLabel.Position = [11 136 106 22];
+            app.FunctionToleranceEditFieldLabel.Text = 'Function Tolerance';
+
+            % Create FunctionToleranceEditField
+            app.FunctionToleranceEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
+            app.FunctionToleranceEditField.Position = [122 136 52 22];
+            app.FunctionToleranceEditField.Value = 1000000;
+
+            % Create ConstraintToleranceLabel
+            app.ConstraintToleranceLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
+            app.ConstraintToleranceLabel.HorizontalAlignment = 'right';
+            app.ConstraintToleranceLabel.Position = [2 106 115 22];
+            app.ConstraintToleranceLabel.Text = 'Constraint Tolerance';
+
+            % Create ConstraintToleranceEditField
+            app.ConstraintToleranceEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
+            app.ConstraintToleranceEditField.Position = [122 106 50 22];
+            app.ConstraintToleranceEditField.Value = 0.001;
+
+            % Create AlgorithmDropDownLabel
+            app.AlgorithmDropDownLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
+            app.AlgorithmDropDownLabel.HorizontalAlignment = 'right';
+            app.AlgorithmDropDownLabel.Position = [13 16 56 22];
+            app.AlgorithmDropDownLabel.Text = 'Algorithm';
+
+            % Create AlgorithmDropDown
+            app.AlgorithmDropDown = uidropdown(app.AdvancedOptimizationOptionsPanel);
+            app.AlgorithmDropDown.Items = {'active-set', 'interior-point', 'sqp', 'sqp-legacy'};
+            app.AlgorithmDropDown.Position = [83 16 112 22];
+            app.AlgorithmDropDown.Value = 'active-set';
+
+            % Create ConstraintViolationEditFieldLabel
+            app.ConstraintViolationEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
+            app.ConstraintViolationEditFieldLabel.HorizontalAlignment = 'right';
+            app.ConstraintViolationEditFieldLabel.Position = [9 75 109 22];
+            app.ConstraintViolationEditFieldLabel.Text = 'Constraint Violation';
+
+            % Create ConstraintViolationEditField
+            app.ConstraintViolationEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
+            app.ConstraintViolationEditField.Position = [123 75 50 22];
+            app.ConstraintViolationEditField.Value = 1;
+
+            % Create MaxNoofIterationsEditFieldLabel
+            app.MaxNoofIterationsEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
+            app.MaxNoofIterationsEditFieldLabel.HorizontalAlignment = 'right';
+            app.MaxNoofIterationsEditFieldLabel.Position = [2 46 116 22];
+            app.MaxNoofIterationsEditFieldLabel.Text = 'Max. No of Iterations';
+
+            % Create MaxNoofIterationsEditField
+            app.MaxNoofIterationsEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
+            app.MaxNoofIterationsEditField.Position = [123 46 50 22];
+            app.MaxNoofIterationsEditField.Value = 100;
 
             % Create Slice30Label
             app.Slice30Label = uilabel(app.UIFigure);

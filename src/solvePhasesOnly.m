@@ -1,4 +1,4 @@
-function p = solvePhasesOnly(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, mask2el, el_per_t, via_abs)
+function p = solvePhasesOnly(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, mask2el, el_per_t, via_abs, options)
 p_init = double(p_init);
 
 % Separate A and b
@@ -42,12 +42,13 @@ else
     nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
 end
 
-term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
-options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
-    'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
-options.MaxFunctionEvaluations = 2.5e5;
-options.MaxIterations = 1e3;
-
+if ~isempty(options)
+    term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
+    options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
+        'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
+    options.MaxFunctionEvaluations = 2.5e5;
+    options.MaxIterations = 1e3;
+end
 
 [p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);
 

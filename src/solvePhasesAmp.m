@@ -1,4 +1,4 @@
-function p = solvePhasesAmp(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active)
+function p = solvePhasesAmp(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, options)
 p_init = double(p_init);
 
 % Separate A and b
@@ -12,12 +12,14 @@ b0 = 0.0;
 % Add regularization
 [A0, b0] = add_L2_reg(A0, b0, beta(1));
 
-% Optimization options
-term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, [], 1e-3);
-options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e6, 'ConstraintTolerance', 1e-3, ...
-    'Algorithm','active-set');%, 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
-options.MaxFunctionEvaluations = 2.5e5;
-options.MaxIterations = 1e3;
+if ~isempty(options)
+    % Optimization options
+    term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, [], 1e0);
+    options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e6, 'ConstraintTolerance', 1e-3, ...
+        'Algorithm','active-set');%, 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
+    % options.MaxFunctionEvaluations = 2.5e5;
+    options.MaxIterations = 1e2;
+end
 
 % Define cost function
 fun = @(p)cost_fctn(p, A0, b0);
