@@ -6,12 +6,6 @@ p_init = double(p_init);
 
 clear A;
 
-% Obtain sub matrices
-A1_r = real(A1);
-A1_i = imag(A1);
-A2_r = real(A2);
-A2_i = imag(A2);
-
 % Define one amp per transducer
 n_amps = length(el_per_t);
 trx_ids = cell(1, n_amps);
@@ -33,8 +27,8 @@ if via_abs
     p_start(n_amps + ceil((end-n_amps)/2) + 1:end) = imag(p_init);
 
     % Cost fctn and constraints
-    fun = @(p)cost_fctn(p, A1_r, A1_i, b1, trx_ids);
-    nonlcon = @(p)unitdisk(p, A1_r, A1_i, b1, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
+    fun = @(p)cost_fctn(p, A1, b1, trx_ids);
+    nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
 else
     % Define initial vector
     p_start = zeros(length(p_init) + n_amps, 1);
@@ -45,7 +39,7 @@ else
 
     % Cost fctn and constraints
     fun = @(p)cost_fctn2(p, A1, b1, amp_fac, trx_ids);
-    nonlcon = @(p)unitdisk(p, A1_r, A1_i, b1, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids);
+    nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
 end
 
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
@@ -80,10 +74,10 @@ function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
 end
 
 
-function val = cost_fctn(p, A1_r, A1_i, b1, trx_ids)
+function val = cost_fctn(p, A1, b1, trx_ids)
 
 % [x_r, x_i] = getElements_abs(p, trx_ids);
-% val = norm(sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1);
+% val = norm(sqrt((real(A1) * x_r - imag(A1) * x_i).^2 + (imag(A1) * x_r + real(A1) * x_i).^2) - b1);
 val = 0;
 
 end

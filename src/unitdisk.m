@@ -1,15 +1,15 @@
-function [c,ceq] = unitdisk(p, A1_r, A1_i, b1, A2_r, A2_i, b2, via_abs, amp_fac, trx_ids)
+function [c,ceq] = unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids)
 
 if via_abs
     [x_r, x_i] = getElements_abs(p, trx_ids);
-    c = sqrt((A2_r * x_r - A2_i * x_i).^2 + (A2_i * x_r + A2_r * x_i).^2) - b2;
-    ceq = sqrt((A1_r * x_r - A1_i * x_i).^2 + (A1_i * x_r + A1_r * x_i).^2) - b1;
+    c = sqrt((real(A2) * x_r - imag(A2) * x_i).^2 + (imag(A2) * x_r + real(A2) * x_i).^2) - b2;
+    ceq = sqrt((real(A1) * x_r - imag(A1) * x_i).^2 + (imag(A1) * x_r + real(A1) * x_i).^2) - b1;
 else
     n_amps = length(trx_ids);
 
-    p_0 = zeros(size(A2_r, 2), 1);
+    p_0 = zeros(size(A2, 2), 1);
     p_0 = getAmpPerElement(p_0, p, trx_ids);
-    c = amp_fac * abs((A2_r + 1j * A2_i) * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b2;
+    c = amp_fac * abs(A2 * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b2;
     
     p_0 = zeros(size(A1, 2), 1);
     p_0 = getAmpPerElement(p_0, p, trx_ids);
