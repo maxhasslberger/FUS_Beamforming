@@ -3,6 +3,7 @@ classdef simulationApp < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
+        CloseallPlotsButton             matlab.ui.control.Button
         Slice30Label                    matlab.ui.control.Label
         TabGroup                        matlab.ui.container.TabGroup
         InitTab                         matlab.ui.container.Tab
@@ -158,11 +159,15 @@ classdef simulationApp < matlab.apps.AppBase
         xEditField_4Label               matlab.ui.control.Label
         FocusPositionLabel              matlab.ui.control.Label
         OptimizeTab                     matlab.ui.container.Tab
+        PlotPanel                       matlab.ui.container.Panel
+        MaskPressurePlotkPaEditField    matlab.ui.control.NumericEditField
+        MaskPressurePlotkPaEditFieldLabel  matlab.ui.control.Label
+        LimittoSkullCheckBox            matlab.ui.control.CheckBox
+        LimittoIntracranialFieldCheckBox  matlab.ui.control.CheckBox
         AdvancedOptimizationOptionsPanel  matlab.ui.container.Panel
+        MinimizeArrrayAmplitudesCheckBox  matlab.ui.control.CheckBox
         MaxNoofIterationsEditField      matlab.ui.control.NumericEditField
         MaxNoofIterationsEditFieldLabel  matlab.ui.control.Label
-        ConstraintViolationEditField    matlab.ui.control.NumericEditField
-        ConstraintViolationEditFieldLabel  matlab.ui.control.Label
         AlgorithmDropDown               matlab.ui.control.DropDown
         AlgorithmDropDownLabel          matlab.ui.control.Label
         ConstraintToleranceEditField    matlab.ui.control.NumericEditField
@@ -170,13 +175,8 @@ classdef simulationApp < matlab.apps.AppBase
         FunctionToleranceEditField      matlab.ui.control.NumericEditField
         FunctionToleranceEditFieldLabel  matlab.ui.control.Label
         DisplayAdvancedOptimizationOptionsCheckBox  matlab.ui.control.CheckBox
-        MinimizeArrrayAmplitudesCheckBox  matlab.ui.control.CheckBox
-        MaskPressurePlotkPaEditField    matlab.ui.control.NumericEditField
-        MaskPressurePlotkPaEditFieldLabel  matlab.ui.control.Label
         GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
         GroundTruthResolutionFactorEditFieldLabel  matlab.ui.control.Label
-        LimittoSkullCheckBox            matlab.ui.control.CheckBox
-        LimittoIntracranialFieldCheckBox  matlab.ui.control.CheckBox
         OptimizationModeButtonGroup     matlab.ui.container.ButtonGroup
         OptimizeforPhasesand1AmpperTransducerButton  matlab.ui.control.RadioButton
         OptimizeforTransducerPhasesandAmplitudesButton  matlab.ui.control.RadioButton
@@ -538,6 +538,9 @@ classdef simulationApp < matlab.apps.AppBase
             
             fprintf(strcat("\n", plot_title, " max. Off-Target Pressure (kPa):\n"))
             disp(max(offTar_real_ip) * 1e-3)
+
+            fprintf(strcat("\n", plot_title, " max. Pressure (kPa):\n"))
+            disp(max(real_ip) * 1e-3)
         end
     end
     
@@ -980,7 +983,7 @@ classdef simulationApp < matlab.apps.AppBase
             [app.init_ids, ~, b_mask_plot] = get_init_ids(app.kgrid, ...
                 min(app.medium.sound_speed(:)) / (app.CenterFreqkHzEditField.Value * 1e3), app.b_mask, ...
                 find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values given
-            app.ip.beta = app.MinimizeArrrayAmplitudesCheckBox.Value;
+            
             
             % Create preview plot
             b_mask_plot = b_mask_plot + app.full_bmask;
@@ -1038,21 +1041,20 @@ classdef simulationApp < matlab.apps.AppBase
             cons_ids = (skull_active & app.skull_ids) | (dom_active & app.logical_dom_ids);
 
             %% Get Optimization Options
-            term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, [], app.ConstraintViolationEditField.Value);
-            options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', app.FunctionToleranceEditField.Value, ...
-                'ConstraintTolerance', app.ConstraintToleranceEditField.Value, 'Algorithm',app.AlgorithmDropDown.Value);
-            %, 'OutputFcn', term_fctn);
-
-            options.MaxIterations = app.MaxNoofIterationsEditField.Value;
-
+            term.fun_tol = app.FunctionToleranceEditField.Value;
+            term.constr_tol = app.ConstraintToleranceEditField.Value;
+            term.iter_tol = 10;
+            term.iter_lim = max([term.iter_tol, app.MaxNoofIterationsEditField.Value - term.iter_tol]);
+            term.algorithm = app.AlgorithmDropDown.Value;
+            
             %% Optimize
             tic
             if app.OptimizeforTransducerPhasesandAmplitudesButton.Value
                 app.ip.p = solvePhasesAmp(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
-                    ineq_active, options);
+                    ineq_active, term);
             else
                 app.ip.p = solvePhasesOnly(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
-                    ineq_active, app.mask2el, app.el_per_t, true, options);
+                    ineq_active, app.mask2el, app.el_per_t, true, term);
             end
 
             app.ip.t_solve = toc;
@@ -1287,6 +1289,24 @@ classdef simulationApp < matlab.apps.AppBase
                 app.AdvancedOptimizationOptionsPanel.Visible = false;
             end
         end
+
+        % Button pushed function: CloseallPlotsButton
+        function CloseallPlotsButtonPushed(app, event)
+            close all;
+        end
+
+        % Value changed function: MinimizeArrrayAmplitudesCheckBox
+        function MinimizeArrrayAmplitudesCheckBoxValueChanged(app, event)
+            value = app.MinimizeArrrayAmplitudesCheckBox.Value;
+            app.ip.beta = double(value);
+
+            % Update default optimization options
+            if value
+                app.MaxNoofIterationsEditField.Value = 1000;
+            else
+                app.MaxNoofIterationsEditField.Value = 200;
+            end
+        end
     end
 
     % Component initialization
@@ -1297,12 +1317,12 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [400 300 727 575];
+            app.UIFigure.Position = [400 300 727 581];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.UIFigure);
-            app.TabGroup.Position = [1 26 727 550];
+            app.TabGroup.Position = [1 32 727 550];
 
             % Create InitTab
             app.InitTab = uitab(app.TabGroup);
@@ -2202,13 +2222,13 @@ classdef simulationApp < matlab.apps.AppBase
             % Create ComputeInitialSolutionButton
             app.ComputeInitialSolutionButton = uibutton(app.OptimizeTab, 'push');
             app.ComputeInitialSolutionButton.ButtonPushedFcn = createCallbackFcn(app, @ComputeInitialSolutionButtonPushed, true);
-            app.ComputeInitialSolutionButton.Position = [311 481 142 23];
+            app.ComputeInitialSolutionButton.Position = [311 495 142 23];
             app.ComputeInitialSolutionButton.Text = 'Compute Initial Solution';
 
             % Create OptimizeButton
             app.OptimizeButton = uibutton(app.OptimizeTab, 'push');
             app.OptimizeButton.ButtonPushedFcn = createCallbackFcn(app, @OptimizeButtonPushed, true);
-            app.OptimizeButton.Position = [311 426 142 45];
+            app.OptimizeButton.Position = [311 441 142 45];
             app.OptimizeButton.Text = 'Optimize';
 
             % Create OptimizationModeButtonGroup
@@ -2227,16 +2247,6 @@ classdef simulationApp < matlab.apps.AppBase
             app.OptimizeforPhasesand1AmpperTransducerButton.Text = {'Optimize for Phases '; 'and 1 Amp per Transducer'};
             app.OptimizeforPhasesand1AmpperTransducerButton.Position = [11 15 163 30];
 
-            % Create LimittoIntracranialFieldCheckBox
-            app.LimittoIntracranialFieldCheckBox = uicheckbox(app.OptimizeTab);
-            app.LimittoIntracranialFieldCheckBox.Text = 'Limit to Intracranial Field';
-            app.LimittoIntracranialFieldCheckBox.Position = [25 379 153 22];
-
-            % Create LimittoSkullCheckBox
-            app.LimittoSkullCheckBox = uicheckbox(app.OptimizeTab);
-            app.LimittoSkullCheckBox.Text = 'Limit to Skull';
-            app.LimittoSkullCheckBox.Position = [200 379 90 22];
-
             % Create GroundTruthResolutionFactorEditFieldLabel
             app.GroundTruthResolutionFactorEditFieldLabel = uilabel(app.OptimizeTab);
             app.GroundTruthResolutionFactorEditFieldLabel.HorizontalAlignment = 'right';
@@ -2248,21 +2258,6 @@ classdef simulationApp < matlab.apps.AppBase
             app.GroundTruthResolutionFactorEditField.Position = [662 463 34 22];
             app.GroundTruthResolutionFactorEditField.Value = 1;
 
-            % Create MaskPressurePlotkPaEditFieldLabel
-            app.MaskPressurePlotkPaEditFieldLabel = uilabel(app.OptimizeTab);
-            app.MaskPressurePlotkPaEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaskPressurePlotkPaEditFieldLabel.Position = [20 331 141 22];
-            app.MaskPressurePlotkPaEditFieldLabel.Text = 'Mask Pressure Plot (kPa)';
-
-            % Create MaskPressurePlotkPaEditField
-            app.MaskPressurePlotkPaEditField = uieditfield(app.OptimizeTab, 'numeric');
-            app.MaskPressurePlotkPaEditField.Position = [170 331 52 22];
-
-            % Create MinimizeArrrayAmplitudesCheckBox
-            app.MinimizeArrrayAmplitudesCheckBox = uicheckbox(app.OptimizeTab);
-            app.MinimizeArrrayAmplitudesCheckBox.Text = 'Minimize Arrray Amplitudes';
-            app.MinimizeArrrayAmplitudesCheckBox.Position = [315 379 167 22];
-
             % Create DisplayAdvancedOptimizationOptionsCheckBox
             app.DisplayAdvancedOptimizationOptionsCheckBox = uicheckbox(app.OptimizeTab);
             app.DisplayAdvancedOptimizationOptionsCheckBox.ValueChangedFcn = createCallbackFcn(app, @DisplayAdvancedOptimizationOptionsCheckBoxValueChanged, true);
@@ -2273,28 +2268,28 @@ classdef simulationApp < matlab.apps.AppBase
             app.AdvancedOptimizationOptionsPanel = uipanel(app.OptimizeTab);
             app.AdvancedOptimizationOptionsPanel.Title = 'Advanced Optimization Options';
             app.AdvancedOptimizationOptionsPanel.Visible = 'off';
-            app.AdvancedOptimizationOptionsPanel.Position = [22 13 236 187];
+            app.AdvancedOptimizationOptionsPanel.Position = [25 17 236 187];
 
             % Create FunctionToleranceEditFieldLabel
             app.FunctionToleranceEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
             app.FunctionToleranceEditFieldLabel.HorizontalAlignment = 'right';
-            app.FunctionToleranceEditFieldLabel.Position = [11 136 106 22];
+            app.FunctionToleranceEditFieldLabel.Position = [11 106 106 22];
             app.FunctionToleranceEditFieldLabel.Text = 'Function Tolerance';
 
             % Create FunctionToleranceEditField
             app.FunctionToleranceEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
-            app.FunctionToleranceEditField.Position = [122 136 52 22];
-            app.FunctionToleranceEditField.Value = 1000000;
+            app.FunctionToleranceEditField.Position = [122 106 52 22];
+            app.FunctionToleranceEditField.Value = 0.1;
 
             % Create ConstraintToleranceLabel
             app.ConstraintToleranceLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
             app.ConstraintToleranceLabel.HorizontalAlignment = 'right';
-            app.ConstraintToleranceLabel.Position = [2 106 115 22];
+            app.ConstraintToleranceLabel.Position = [2 76 115 22];
             app.ConstraintToleranceLabel.Text = 'Constraint Tolerance';
 
             % Create ConstraintToleranceEditField
             app.ConstraintToleranceEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
-            app.ConstraintToleranceEditField.Position = [122 106 50 22];
+            app.ConstraintToleranceEditField.Position = [122 76 50 22];
             app.ConstraintToleranceEditField.Value = 0.001;
 
             % Create AlgorithmDropDownLabel
@@ -2309,17 +2304,6 @@ classdef simulationApp < matlab.apps.AppBase
             app.AlgorithmDropDown.Position = [83 16 112 22];
             app.AlgorithmDropDown.Value = 'active-set';
 
-            % Create ConstraintViolationEditFieldLabel
-            app.ConstraintViolationEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
-            app.ConstraintViolationEditFieldLabel.HorizontalAlignment = 'right';
-            app.ConstraintViolationEditFieldLabel.Position = [9 75 109 22];
-            app.ConstraintViolationEditFieldLabel.Text = 'Constraint Violation';
-
-            % Create ConstraintViolationEditField
-            app.ConstraintViolationEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
-            app.ConstraintViolationEditField.Position = [123 75 50 22];
-            app.ConstraintViolationEditField.Value = 1;
-
             % Create MaxNoofIterationsEditFieldLabel
             app.MaxNoofIterationsEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
             app.MaxNoofIterationsEditFieldLabel.HorizontalAlignment = 'right';
@@ -2331,10 +2315,47 @@ classdef simulationApp < matlab.apps.AppBase
             app.MaxNoofIterationsEditField.Position = [123 46 50 22];
             app.MaxNoofIterationsEditField.Value = 100;
 
+            % Create MinimizeArrrayAmplitudesCheckBox
+            app.MinimizeArrrayAmplitudesCheckBox = uicheckbox(app.AdvancedOptimizationOptionsPanel);
+            app.MinimizeArrrayAmplitudesCheckBox.ValueChangedFcn = createCallbackFcn(app, @MinimizeArrrayAmplitudesCheckBoxValueChanged, true);
+            app.MinimizeArrrayAmplitudesCheckBox.Text = 'Minimize Arrray Amplitudes';
+            app.MinimizeArrrayAmplitudesCheckBox.Position = [13 136 167 22];
+
+            % Create PlotPanel
+            app.PlotPanel = uipanel(app.OptimizeTab);
+            app.PlotPanel.Title = 'Plot';
+            app.PlotPanel.Position = [14 264 309 119];
+
+            % Create LimittoIntracranialFieldCheckBox
+            app.LimittoIntracranialFieldCheckBox = uicheckbox(app.PlotPanel);
+            app.LimittoIntracranialFieldCheckBox.Text = 'Limit to Intracranial Field';
+            app.LimittoIntracranialFieldCheckBox.Position = [24 68 153 22];
+
+            % Create LimittoSkullCheckBox
+            app.LimittoSkullCheckBox = uicheckbox(app.PlotPanel);
+            app.LimittoSkullCheckBox.Text = 'Limit to Skull';
+            app.LimittoSkullCheckBox.Position = [199 69 90 22];
+
+            % Create MaskPressurePlotkPaEditFieldLabel
+            app.MaskPressurePlotkPaEditFieldLabel = uilabel(app.PlotPanel);
+            app.MaskPressurePlotkPaEditFieldLabel.HorizontalAlignment = 'right';
+            app.MaskPressurePlotkPaEditFieldLabel.Position = [19 21 141 22];
+            app.MaskPressurePlotkPaEditFieldLabel.Text = 'Mask Pressure Plot (kPa)';
+
+            % Create MaskPressurePlotkPaEditField
+            app.MaskPressurePlotkPaEditField = uieditfield(app.PlotPanel, 'numeric');
+            app.MaskPressurePlotkPaEditField.Position = [169 21 52 22];
+
             % Create Slice30Label
             app.Slice30Label = uilabel(app.UIFigure);
-            app.Slice30Label.Position = [323 1 48 22];
+            app.Slice30Label.Position = [660 6 48 22];
             app.Slice30Label.Text = 'Slice 30';
+
+            % Create CloseallPlotsButton
+            app.CloseallPlotsButton = uibutton(app.UIFigure, 'push');
+            app.CloseallPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @CloseallPlotsButtonPushed, true);
+            app.CloseallPlotsButton.Position = [329 5 100 23];
+            app.CloseallPlotsButton.Text = 'Close all Plots';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

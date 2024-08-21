@@ -1,4 +1,4 @@
-function p = solvePhasesAmp(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, options)
+function p = solvePhasesAmp(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, term)
 p_init = double(p_init);
 
 % Separate A and b
@@ -12,14 +12,19 @@ b0 = 0.0;
 % Add regularization
 [A0, b0] = add_L2_reg(A0, b0, beta(1));
 
-if isempty(options)
-    % Optimization options
-    term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, [], 1e0);
-    options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e6, 'ConstraintTolerance', 1e-3, ...
-        'Algorithm','active-set');%, 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
-    % options.MaxFunctionEvaluations = 2.5e5;
-    options.MaxIterations = 1e2;
+if isempty(term)
+    term.fun_tol = 1e-1;
+    term.constr_tol = 1e-3;
+    term.iter_tol = 10;
+    term.iter_lim = max([term.iter_tol, 200 - term.iter_tol]);
+    term.algorithm = 'active_set';
 end
+
+% Optimization options
+term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
+options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun_tol, 'ConstraintTolerance', term.constr_tol, ...
+    'Algorithm', term.algorithm, 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
+% Algorithms: interior-point, sqp, trust-region-reflective, active-set
 
 % Define cost function
 fun = @(p)cost_fctn(p, A0, b0);
@@ -27,6 +32,12 @@ fun = @(p)cost_fctn(p, A0, b0);
 % Optimize
 if false
     [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2, b2, p_init, options);
+    if exitflag == -2 % No feasible point found
+        disp(output.message)
+        disp("Optimization failed");
+    else
+        disp("Optimization successful");
+    end
 else
     A2_iter = zeros(1, length(p_init));
     b2_iter = 0.0;
@@ -39,6 +50,12 @@ else
 
         % Optimize and check if ineq constraints fulfilled
         [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2_iter, b2_iter, p, options);
+        if exitflag == -2 % No feasible point found
+            unful_ineq = 1;
+            disp(output.message)
+            break;
+        end
+
         b2_new = abs(A2 * p);
 
         unful_ineq = b2_new > (b2 + tol);
@@ -73,13 +90,28 @@ p = getCompVec(p_opt);
 
 end
 
-function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
-    stop = false;
-    % Check if the absolute function value is less than the threshold
-    if optimValues.constrviolation < constr_tol % && abs(optimValues.fval) < fval_tol
-        stop = true;
-        disp('Terminating: Absolute function value is below the threshold.');
-    end
+function stop = customOutputFcn(x, optimValues, state, fun_tol, constr_tol, iter_lim)
+
+stop = false;
+persistent prevFval % Store the previous function value
+currFval = optimValues.fval;
+
+if strcmp(state, 'init')
+    % Initialize prevFval during the first iteration
+    prevFval = 0.0;
+end
+        
+% Check if the values are less than the thresholds
+fun_tol_curr = abs(currFval - prevFval);
+if optimValues.constrviolation < constr_tol && (currFval == 0 || (fun_tol_curr < fun_tol && fun_tol_curr ~= 0) || optimValues.iteration >= iter_lim)
+    stop = true;
+    disp(strcat("Terminating: Optimality conditions fulfilled. Function tolerance: ", ...
+        num2str(fun_tol_curr), ", Max. constraint violation: ", num2str(optimValues.constrviolation)));
+end
+
+% Update prevFval for the next iteration
+prevFval = currFval;
+
 end
 
 

@@ -1,4 +1,4 @@
-function p = solvePhasesOnly(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, mask2el, el_per_t, via_abs, options)
+function p = solvePhasesOnly(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, mask2el, el_per_t, via_abs, term)
 p_init = double(p_init);
 
 % Separate A and b
@@ -42,13 +42,19 @@ else
     nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
 end
 
-if isempty(options)
-    term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, 1e0, 1e0);
-    options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', 1e-6, 'ConstraintTolerance', 1e-6, ...
-        'Algorithm','active-set', 'OutputFcn', term_fctn); % interior-point, sqp, trust-region-reflective, active-set
-    options.MaxFunctionEvaluations = 2.5e5;
-    options.MaxIterations = 1e3;
+if isempty(term)
+    term.fun_tol = 1e-1;
+    term.constr_tol = 1e-3;
+    term.iter_tol = 10;
+    term.iter_lim = max([term.iter_tol, 200 - term.iter_tol]);
+    term.algorithm = 'active_set';
 end
+
+% Optimization options
+term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
+options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun_tol, 'ConstraintTolerance', term.constr_tol, ...
+    'Algorithm', term.algorithm, 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
+% Algorithms: interior-point, sqp, trust-region-reflective, active-set
 
 [p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);
 
