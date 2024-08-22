@@ -25,7 +25,7 @@ if compute_waveform
         highest_freq = ctr_freq + 10;
         f0 = [lowest_freq:5:highest_freq] * 1e3; 
         nfreq = length(f0);
-        w = 2 * pi * f0; % Angular frequencies
+        w = 2 * pi * f0; % Angular frequencies        
         % Period
         T_m = find_mixed_period(f0);
         T = 1/(min(f0));
@@ -33,14 +33,17 @@ if compute_waveform
         Fs = 100e6;
         dt = 1/Fs;
         % t = 0:dt:60*T;          
-        % Amplitudes of each freq
-        amps = [20, 20, 20, 20, 20]; 
+        % Amplitudes and phases of each freq
+        amp = [20, 20, 20, 20, 20] * 1e3; % kPa
+        phi = [0,0.2,0.4,0.6,0.8];
         if apply_factoring
             factors = [1/.97, 1/.99, 1, 1/.99, 1/.97];
-            amp = [((1/.97)*20),((1/.99)*20),20,((1/.99)*20),((1/.97)*20)] * 1e3; % Pa
-        else
-            amp = 20 * 1e3;
+            amp = amp .* factors; % Pa       
         end
+        % Reshape vars to stack each frequency along third dim
+        w = reshape(w, 1, 1, nfreq);
+        amp = reshape(amp, 1, 1, nfreq);
+        phi = reshape(phi, 1, 1, nfreq);
         
                  
         pulse_train_duration = T_m;
@@ -51,9 +54,9 @@ if compute_waveform
         duty_cycle = 0.5;
         
         % Construct signals
-        signals_tmp = amp' .* cos(w' .* t);
+        signals_tmp = amp .* cos(w .* t + phi);        
         % Sum signals of different frequencies along the first dimension to get summed signals matrix
-        result_signal = sum(signals_tmp, 1);
+        result_signal = sum(signals_tmp, 3);
                 
         figure;
         plot(t, result_signal);
@@ -121,6 +124,7 @@ if compute_waveform
             P1 = P2(1:n/2+1); % Single-sided spectrum
             P1(2:end-1) = 2*P1(2:end-1); % Energy of negative spectrum is folded onto the positive spectrum
             f_fft = Fs*(0:(n/2))/n;
+            phase = angle(Y(1:n/2+1));
         
             % Find peaks in the FFT result
             % [peaks, locs] = findpeaks(P1, 'MinPeakHeight', 0.01*max(P1));
@@ -134,10 +138,22 @@ if compute_waveform
             title('Single-Sided Amplitude Spectrum');
             xlabel('Frequency (Hz)');
             ylabel('Amplitude (Pa)');
-            grid on;
-        
             % Zoom in on the frequency range of interest
             xlim([400e3 550e3]);
+            grid on;
+
+            figure;
+            stem(f_fft,phase);
+            title("One-sided Phase Spectrum of Focus Signal 1");
+            xlabel('Frequency(Hz)');
+            ylabel('Phase (rad)')
+             % Zoom in on the frequency range of interest
+            xlim([400e3 550e3]);
+            grid on;
+        
+            
+
+            
         end
 
 end
