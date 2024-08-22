@@ -11,7 +11,7 @@ smoothen_pulse = false; % smooth pulses
 zero_padding = false; % apply zero padding to beginning of the signal
 apply_factoring = true; 
 apply_envelope = false;
-save_csv = false; % export signal to csv file
+save_csv = true; % export signal to csv file
 
 % ----------------------------
 % Construct arbitrary waveform
@@ -34,16 +34,18 @@ if compute_waveform
         dt = 1/Fs;
         % t = 0:dt:60*T;          
         % Amplitudes and phases of each freq
-        amp = [20, 20, 20, 20, 20] * 1e3; % kPa
-        phi = [0,0.2,0.4,0.6,0.8];
+        amp_2d = [20, 20, 20, 20, 20] * 1e3; % kPa
+        phi_2d = [0,0.2,0.4,0.6,0.8];
         if apply_factoring
             factors = [1/.97, 1/.99, 1, 1/.99, 1/.97];
-            amp = amp .* factors; % Pa       
+            amp_2d_factored = amp_2d .* factors; % Pa                         
+            amp = reshape(amp_2d_factored, 1, 1, nfreq);                    
+        else                        
+            amp = reshape(amp_2d, 1, 1, nfreq);            
         end
         % Reshape vars to stack each frequency along third dim
         w = reshape(w, 1, 1, nfreq);
-        amp = reshape(amp, 1, 1, nfreq);
-        phi = reshape(phi, 1, 1, nfreq);
+        phi = reshape(phi_2d, 1, 1, nfreq);
         
                  
         pulse_train_duration = T_m;
@@ -110,12 +112,25 @@ if compute_waveform
     
         if save_csv
             time = t';
-            amplitude = result_signal';
-            signal_data = table(time, amplitude);
+            value = result_signal';
+            signal_data = table(time, value);
             writetable(signal_data, fullfile("../..","Transducer_Delay_Files","arbitrary_signal.csv"));
+
+            amplitude = amp_2d';
+            phase_shift = phi_2d';
+            freq = f0';
+            unfactored_params = table(freq,amplitude,phase_shift);
+            writetable(unfactored_params, fullfile("../..","Transducer_Delay_Files","unfactored_signal_params.csv"));
+
+            if apply_factoring
+                factored_amplitude = amp_2d_factored';
+                factored_params = table(freq,factored_amplitude,phase_shift);
+                writetable(factored_params, fullfile("../..","Transducer_Delay_Files","factored_signal_params.csv"));
+            end
         end
     
     
+
         if perform_fft
             % Compute the FFT of the resulting signal
             n = length(result_signal);
@@ -149,11 +164,7 @@ if compute_waveform
             ylabel('Phase (rad)')
              % Zoom in on the frequency range of interest
             xlim([400e3 550e3]);
-            grid on;
-        
-            
-
-            
+            grid on;                             
         end
 
 end
