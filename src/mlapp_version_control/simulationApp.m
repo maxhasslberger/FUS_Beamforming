@@ -1046,6 +1046,8 @@ classdef simulationApp < matlab.apps.AppBase
             term.iter_tol = 10;
             term.iter_lim = max([term.iter_tol, app.MaxNoofIterationsEditField.Value - term.iter_tol]);
             term.algorithm = app.AlgorithmDropDown.Value;
+
+            app.ip.beta = double(app.MinimizeArrrayAmplitudesCheckBox.Value);
             
             %% Optimize
             tic
@@ -1275,7 +1277,7 @@ classdef simulationApp < matlab.apps.AppBase
         function SliceIndexEditFieldValueChanged(app, event)
             value = app.SliceIndexEditField.Value;
             app.SliceIndexEditField.Value = value;
-            app.Slice30Label.Value = strcat("Slice ", num2str(value));
+            app.Slice30Label.Text = strcat("Slice ", num2str(value));
         end
 
         % Value changed function: 
