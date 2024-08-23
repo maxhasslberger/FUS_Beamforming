@@ -983,7 +983,12 @@ classdef simulationApp < matlab.apps.AppBase
             [app.init_ids, ~, b_mask_plot] = get_init_ids(app.kgrid, ...
                 min(app.medium.sound_speed(:)) / (app.CenterFreqkHzEditField.Value * 1e3), app.b_mask, ...
                 find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values given
-            
+
+            % Update displayed slice based on first init_id
+            if app.n_dim == 3
+                [~, disp_ids, ~] = ind2sub(size(app.kgrid.k), app.init_ids);
+                app.SliceIndexEditField.Value = round(disp_ids(1) / app.dx_factor - app.plot_offset(2));
+            end
             
             % Create preview plot
             b_mask_plot = b_mask_plot + app.full_bmask;
@@ -1276,7 +1281,6 @@ classdef simulationApp < matlab.apps.AppBase
         % Value changed function: SliceIndexEditField
         function SliceIndexEditFieldValueChanged(app, event)
             value = app.SliceIndexEditField.Value;
-            app.SliceIndexEditField.Value = value;
             app.Slice30Label.Text = strcat("Slice ", num2str(value));
         end
 
