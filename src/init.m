@@ -64,7 +64,7 @@ else
 end
 
 if isempty(t1w_filename)
-    plot_offset = grid_size / dx_scan / 2; % Offset to center
+    plot_offset = grid_size / dx_scan / 2 + 1; % Offset to center
 end
 
 [kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
@@ -72,7 +72,7 @@ end
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
-    tr_offset_karr = (plot_offset * dx_scan - grid_size / 2 - kgrid.dx)'; % Compute offset for karray transducers
+    tr_offset_karr = ((plot_offset - 1) * dx_scan - grid_size / 2)'; % Compute offset for karray transducers
     grid_size = [grid_size(1), grid_size(3)]; % plane size for plots
 end
 
@@ -175,7 +175,7 @@ else
 %         t2_rot = [-45, 0, 180]'; % deg
     end
 
-    t_pos = [t1_pos, t2_pos] * 1e-3 * (1e-3 / dx_scan) + tr_offset_karr;
+    t_pos = [t1_pos, t2_pos] * dx_scan + tr_offset_karr;
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
     t_rot = [t1_rot, t2_rot];
     active_tr_ids = [1, 2];

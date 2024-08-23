@@ -330,7 +330,7 @@ classdef simulationApp < matlab.apps.AppBase
                 app.ct_filename = [];
                 app.dx_scan = 1e-3; % m
 
-                app.plot_offset = app.grid_size / app.dx_scan / 2; % Offset to center
+                app.plot_offset = app.grid_size / app.dx_scan / 2 + 1; % Offset to center
             else
                 app.grid_size = [];
                 app.t1w_filename = fullfile('..', 'Scans', app.T1wfilenameDropDown.Value);
@@ -382,7 +382,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             log_dom_ids_out = false(numel(medium_out.sound_speed), 1);
             if app.n_dim == 3
-                tr_offset_karr_out = (app.plot_offset * app.dx_scan - app.grid_size / 2 - kgrid_out.dx)'; % Offset for karray
+                tr_offset_karr_out = ((app.plot_offset - 1) * app.dx_scan - app.grid_size / 2)'; % karray offset in m
                 app.grid_size = [app.grid_size(1), app.grid_size(3)]; % plane size for plots
 
                 slice_grid_2D_out = [];
@@ -436,7 +436,7 @@ classdef simulationApp < matlab.apps.AppBase
                 t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
                 sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
 
-                t_pos_3D = app.t_pos * 1e-3 * (1e-3 / app.dx_scan) + tr_offset_karr_in;
+                t_pos_3D = app.t_pos * app.dx_scan + tr_offset_karr_in; % m
                 active_tr_ids = 1:n_trs;
 
                 if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
