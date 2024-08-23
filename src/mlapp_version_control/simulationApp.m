@@ -159,6 +159,7 @@ classdef simulationApp < matlab.apps.AppBase
         xEditField_4Label               matlab.ui.control.Label
         FocusPositionLabel              matlab.ui.control.Label
         OptimizeTab                     matlab.ui.container.Tab
+        opt_mode                        matlab.ui.control.CheckBox
         PlotPanel                       matlab.ui.container.Panel
         MaskPressurePlotkPaEditField    matlab.ui.control.NumericEditField
         MaskPressurePlotkPaEditFieldLabel  matlab.ui.control.Label
@@ -1057,8 +1058,8 @@ classdef simulationApp < matlab.apps.AppBase
             %% Optimize
             tic
             if app.OptimizeforTransducerPhasesandAmplitudesButton.Value
-                app.ip.p = solvePhasesAmp(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
-                    ineq_active, term);
+                app.ip.p = solvePhasesAmp(app.opt_mode.Value, app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, ...
+                    app.init_ids, app.ip.beta, ineq_active, term);
             else
                 app.ip.p = solvePhasesOnly(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
                     ineq_active, app.mask2el, app.el_per_t, true, term);
@@ -2351,6 +2352,12 @@ classdef simulationApp < matlab.apps.AppBase
             % Create MaskPressurePlotkPaEditField
             app.MaskPressurePlotkPaEditField = uieditfield(app.PlotPanel, 'numeric');
             app.MaskPressurePlotkPaEditField.Position = [169 21 52 22];
+
+            % Create opt_mode
+            app.opt_mode = uicheckbox(app.OptimizeTab);
+            app.opt_mode.Text = 'Use double-iterative mode';
+            app.opt_mode.Position = [312 410 162 22];
+            app.opt_mode.Value = true;
 
             % Create Slice30Label
             app.Slice30Label = uilabel(app.UIFigure);

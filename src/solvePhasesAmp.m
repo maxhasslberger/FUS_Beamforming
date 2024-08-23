@@ -1,4 +1,4 @@
-function p = solvePhasesAmp(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, term)
+function p = solvePhasesAmp(iter_mode, A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, term)
 p_init = double(p_init);
 
 % Separate A and b
@@ -30,7 +30,7 @@ options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun
 fun = @(p)cost_fctn(p, A0, b0);
 
 % Optimize
-if false
+if ~iter_mode
     [p, fval, exitflag, output] = solve_ip(fun, A1, b1, A2, b2, p_init, options);
     if exitflag == -2 % No feasible point found
         disp(output.message)

@@ -80,7 +80,7 @@ p_init = pinv(ip.A(init_ids, :)) * b_ip_des(init_ids);
 
 tic
 
-ip.p = solvePhasesAmp(ip.A, b_ip_des, domain_ids | skull_ids, vol_ids, p_init, init_ids, ip.beta, ineq_active, []); % var Amp
+ip.p = solvePhasesAmp(true, ip.A, b_ip_des, domain_ids | skull_ids, vol_ids, p_init, init_ids, ip.beta, ineq_active, []); % var Amp
 % ip.p = p_init;
 
 ip.t_solve = toc;
