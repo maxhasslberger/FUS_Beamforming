@@ -339,11 +339,11 @@ classdef simulationApp < matlab.apps.AppBase
 
                 app.plot_offset = [-app.scanxEditField.Value, -app.scanyEditField.Value, -app.scanzEditField.Value] + 1;
             end
+            scan_slice = round(app.plot_offset(2) + app.SliceIndexEditField.Value);
 
             [kgrid_out, medium_out, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, 'n_dim', app.n_dim, ...
                 'dx_factor', dx_factor_in, 'ct_scan', app.ct_filename, ...
-                'slice_idx', round(app.plot_offset(2) + app.SliceIndexEditField.Value), ...
-                'dx_scan', app.dx_scan, 'constants', const);
+                'slice_idx', scan_slice, 'dx_scan', app.dx_scan, 'constants', const);
             [sensor_out, sensor_mask_out] = init_sensor(kgrid_out, ppp);
 
             dx_factor_out = app.dx_scan / kgrid_out.dx;
@@ -352,6 +352,7 @@ classdef simulationApp < matlab.apps.AppBase
             if ~isempty(app.t1w_filename)
                 [seg_ids_out] = segment_space(app.t1w_filename, app.dx_scan);
                 app.segment_labels = unique(seg_ids_out(:));
+
                 if abs(dx_factor_out) ~= 1.0
                     % Interpolate to adapt to grid size
                     grid_sz_all = size(kgrid_out.k);
@@ -360,6 +361,7 @@ classdef simulationApp < matlab.apps.AppBase
                     seg_nums = reshape(seg_nums, size(seg_ids_out)); % Ensure it has the same shape as the original 3D array
                 
                     if app.n_dim == 2
+                        seg_nums = squeeze(seg_nums(:, scan_slice, :));
                         [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(3));
                         [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(2)));
                         seg_nums = interp2(X, Z, double(seg_nums)', Xq, Zq, "nearest")';
@@ -367,7 +369,7 @@ classdef simulationApp < matlab.apps.AppBase
                         [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
                         [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(2), grid_sz_all(2)), ...
                             linspace(1, seg_sz(3), grid_sz_all(3)));
-                        seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
+                        seg_nums = permute(interp3(X, Y, Z, permute(double(seg_nums), [2 1 3]), Xq, Yq, Zq, "nearest"), [2 1 3]);
                     end
                 
                     % Map back to strings

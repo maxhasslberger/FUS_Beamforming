@@ -66,9 +66,10 @@ end
 if isempty(t1w_filename)
     plot_offset = grid_size / dx_scan / 2 + 1; % Offset to center
 end
+scan_slice = round(plot_offset(2) + slice_idx_2D);
 
 [kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
-    'slice_idx', round(plot_offset(2) + slice_idx_2D), 'dx_scan', dx_scan);
+    'slice_idx', scan_slice, 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
@@ -91,13 +92,14 @@ if ~isempty(t1w_filename)
         seg_nums = reshape(seg_nums, size(segment_ids)); % Ensure it has the same shape as the original 3D array
     
         if kgrid.dim == 2
+            seg_nums = squeeze(seg_nums(:, scan_slice, :));
             [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(3));
             [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(2)));
             seg_nums = interp2(X, Z, double(seg_nums)', Xq, Zq, "nearest")';
         else
             [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
             [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(2), grid_sz_all(2)), linspace(1, seg_sz(3), grid_sz_all(3)));
-            seg_nums = interp2(X, Y, Z, double(seg_nums)', Xq, Yq, Zq, "nearest")';
+            seg_nums = permute(interp3(X, Y, Z, permute(double(seg_nums), [2 1 3]), Xq, Yq, Zq, "nearest"), [2 1 3]);
         end
     
         % Map back to strings
