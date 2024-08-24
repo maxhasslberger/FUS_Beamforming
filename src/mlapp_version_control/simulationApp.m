@@ -1312,7 +1312,21 @@ classdef simulationApp < matlab.apps.AppBase
                 app.t_pos = data.tr.pos;
                 app.t_rot = data.tr.rot;
                 app.tr_len = data.tr.length; 
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Add one transducer after another
+                
+                if size(app.t_pos, 2) > 0
+                    app.TransducerDropDown.Items = cellstr( num2str(1:size(app.t_pos, 2) + 1) )';
+                    app.TransducerDropDown.Value = 1;
+
+                    app.trPosxEditField.Value = app.t_pos(1, 1);
+                    app.trPosyEditField.Value = app.t_pos(2, 1);
+                    app.trPoszEditField.Value = app.t_pos(3, 1);
+
+                    app.alphaEditField.Value = app.t_rot(1, 1);
+                    app.betaEditField.Value = app.t_rot(2, 1);
+                    app.gammaEditField.Value = app.t_rot(3, 1);
+
+                    app.TransducerLengthmmEditField.Value = app.tr_len(1);
+                end
                 
                 if isfield(data, 'dropdowns') && isfield(data.dropdowns, 'array_pos')
                     app.ArrayElementsPositionsfilenameDropDown.Value = data.dropdowns.array_pos;
