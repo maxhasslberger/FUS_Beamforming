@@ -514,11 +514,18 @@ classdef simulationApp < matlab.apps.AppBase
                 opt.skull = app.LimittoSkullCheckBox.Value;
                 gt_dx_factor = app.GroundTruthResolutionFactorEditField.Value;
 
+                term.advanced_opt = app.DisplayAdvancedOptimizationOptionsCheckBox.Value;
+                term.min_arr_amp = app.MinimizeArrrayAmplitudesCheckBox.Value;
+                term.fun_tol = app.FunctionToleranceEditField.Value;
+                term.constr_tol = app.ConstraintToleranceEditField.Value;
+                term.max_iter = app.MaxNoofIterationsEditField.Value;
+                term.algorithm = app.AlgorithmDropDown.Value;
+
                 ip_sol = app.ip;
 
                 save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "dim_switch", "f0", "slice_direction", "slice_index", "dx", ...
                     "medium_type", "green_function", "hom_coord", "t1w_file", "ct_file", "het_coord", "dx_t1w", "dropdowns", "array", "tr", "matrix_name", ...
-                    "man", "reg", "ineq_flag", "ineq_val", "skull_flag", "skull_val", "opt", "gt_dx_factor", "ip_sol");
+                    "man", "reg", "ineq_flag", "ineq_val", "skull_flag", "skull_val", "opt", "gt_dx_factor", "term", "ip_sol");
                 
             end
         end
@@ -1275,10 +1282,83 @@ classdef simulationApp < matlab.apps.AppBase
             value = app.LoadResultsfromFileDropDown.Value;
             if ~strcmp(value, '')
                 filename = fullfile("..", "Results", value);
-                dim_switch = load(filename).dim_switch;
-                matrix_name = load(filename).matrix_name;
+                data = load(filename);
 
-                app.DimSwitch.Value = dim_switch;
+                % Std param
+                app.DimSwitch.Value = data.dim_switch; DimSwitchValueChanged(app);
+                app.CenterFreqkHzEditField.Value = data.f0;
+                app.SimSpatialResolutionmmEditField.Value = data.dx; CenterFreqkHzEditFieldValueChanged(app);
+
+                app.SliceDirectionDropDown.Value = data.slice_direction;
+                app.SliceIndexEditField.Value = data.slice_index; SliceIndexEditFieldValueChanged(app);
+
+                app.MediumSwitch.Value = data.medium_type; MediumSwitchValueChanged(app);
+                app.GreensFunctionbasedCheckBox.Value = data.green_function;
+                app.xHomEditField.Value = data.hom_coord(1);
+                app.HomyEditField.Value = data.hom_coord(2);
+                app.HomzEditField.Value = data.hom_coord(3);
+                app.T1wfilenameDropDown.Value = data.t1w_file;
+                app.CTfilenameDropDown.Value = data.ct_file;
+                app.scanxEditField.Value = data.het_coord(1);
+                app.scanyEditField.Value = data.het_coord(2);
+                app.scanzEditField.Value = data.het_coord(3);
+                app.ScanSpatialResolutionmmEditField.Value = data.dx_t1w;
+
+                % Transducer param
+                TransducersTabButtonDown(app);
+                app.ElementGeometrySwitch.Value = data.array.geom; ElementGeometrySwitchValueChanged(app);
+                app.LengthmmEditField.Value = data.array.len;
+                app.WidthmmEditField.Value = data.array.wid;
+                app.t_pos = data.tr.pos;
+                app.t_rot = data.tr.rot;
+                app.tr_len = data.tr.length; 
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Add one transducer after another
+                
+                if isfield(data, 'dropdowns') && isfield(data.dropdowns, 'array_pos')
+                    app.ArrayElementsPositionsfilenameDropDown.Value = data.dropdowns.array_pos;
+                end
+                if isfield(data, 'dropdowns') && isfield(data.dropdowns, 'sparsity')
+                    app.SparsityfilenameDropDown.Value = data.dropdowns.sparsity;
+                end
+                
+                app.PropagationMatrixAfilenameDropDown.Value = data.matrix_name;
+
+                % Target param
+                TargetingTabButtonDown(app)
+                app.point_pos_m = data.man.points;
+                app.focus_radius = data.man.radius;
+                app.des_pressures = data.man.pressure;
+                app.min_dist = data.man.min_dist;
+                app.force_pressures = data.man.force;
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Add one target after another
+                
+                app.tar_reg_labels = data.reg.labels;
+                app.des_pressures_reg = data.reg.pressure;
+                app.min_dist_reg = data.reg.min_dist;
+                app.force_pressures_reg = data.reg.force;
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Add one target after another
+                
+                app.LimitIntracranialOffTargetPressureCheckBox.Value = data.ineq_flag;
+                app.MaxPressurekPaEditField.Value = data.ineq_val;
+                app.LimitSkullPressureCheckBox.Value = data.skull_flag;
+                app.MaxPressurekPaSkullEditField.Value = data.skull_val;
+
+                % Optimization param
+                OptimizeTabButtonDown(app);
+                app.OptimizeforTransducerPhasesandAmplitudesButton.Value = data.opt.phaseAmp;
+                app.OptimizeforPhasesand1AmpperTransducerButton.Value = data.opt.phaseOnly;
+                app.LimittoIntracranialFieldCheckBox.Value = data.opt.intracranial;
+                app.LimittoSkullCheckBox.Value = data.opt.skull;
+                app.GroundTruthResolutionFactorEditField.Value = data.gt_dx_factor;
+
+                app.DisplayAdvancedOptimizationOptionsCheckBox.Value = data.term.advanced_opt;
+                app.MinimizeArrrayAmplitudesCheckBox.Value = data.term.min_arr_amp;
+                app.FunctionToleranceEditField.Value = data.term.fun_tol;
+                app.ConstraintToleranceEditField.Value = data.term.constr_tol;
+                app.MaxNoofIterationsEditField.Value = data.term.max_iter;
+                app.AlgorithmDropDown.Value = data.term.algorithm;
+
+                app.ip = data.ip_sol;
             end
         end
 
