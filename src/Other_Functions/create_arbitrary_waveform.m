@@ -1,15 +1,21 @@
 clear;
 close all;
 
+% 50 microsecond burst
+% 150 microsecond padding
+
+
 % Modes
 compute_waveform = true;
 plot_pulse_durations = false;
+use_cw_signals = false;
+use_multi_freq = false;
 
 % Waveform options
-perform_fft = true; % perform fft on summed signal
+perform_fft = false; % perform fft on summed signal
 smoothen_pulse = false; % smooth pulses
 zero_padding = false; % apply zero padding to beginning of the signal
-apply_factoring = true; 
+apply_factoring = false; 
 apply_envelope = false;
 save_csv = true; % export signal to csv file
 
@@ -17,49 +23,78 @@ save_csv = true; % export signal to csv file
 % Construct arbitrary waveform
 % ----------------------------
 
-if compute_waveform
-
+if compute_waveform  
         % Frequencies
-        ctr_freq = 470; % kHz
-        lowest_freq = ctr_freq - 10;
-        highest_freq = ctr_freq + 10;
-        f0 = [lowest_freq:5:highest_freq] * 1e3; 
+        ctr_freq = 500; % kHz
+        if use_multi_freq
+            lowest_freq = ctr_freq - 10;
+            highest_freq = ctr_freq + 10;
+            f0 = [lowest_freq:5:highest_freq] * 1e3; 
+        else 
+            f0 = ctr_freq * 1e3;
+        end
         nfreq = length(f0);
         w = 2 * pi * f0; % Angular frequencies        
         % Period
-        T_m = find_mixed_period(f0);
+        if use_multi_freq
+            T_m = find_mixed_period(f0);
+        end
         T = 1/(min(f0));
         % Computational load can be managed by tweaking sampling freq and/or time vector length
         Fs = 100e6;
         dt = 1/Fs;
         % t = 0:dt:60*T;          
         % Amplitudes and phases of each freq
-        amp_2d = [20, 20, 20, 20, 20] * 1e3; % kPa
-        phi_2d = [0,0.2,0.4,0.6,0.8];
+        if use_multi_freq
+            amp_2d = [20, 20, 20, 20, 20] * 1e3; % kPa
+            phi_2d = [0,0.2,0.4,0.6,0.8];
+        else
+            amp = 20*1e3;
+            phi = 0;
+        end
         if apply_factoring
             factors = [1/.97, 1/.99, 1, 1/.99, 1/.97];
             amp_2d_factored = amp_2d .* factors; % Pa                         
             amp = reshape(amp_2d_factored, 1, 1, nfreq);                    
-        else                        
-            amp = reshape(amp_2d, 1, 1, nfreq);            
+        else                  
+            if use_multi_freq
+                amp = reshape(amp_2d, 1, 1, nfreq);  
+            end
         end
         % Reshape vars to stack each frequency along third dim
-        w = reshape(w, 1, 1, nfreq);
-        phi = reshape(phi_2d, 1, 1, nfreq);
-        
-                 
-        pulse_train_duration = T_m;
+        if use_multi_freq
+            w = reshape(w, 1, 1, nfreq);
+            phi = reshape(phi_2d, 1, 1, nfreq);                
+            pulse_train_duration = T_m;
+        else
+            % pulse_train_duration = 30*T;
+            pulse_train_duration = 200* 1e-6;
         if zero_padding; padding_duration = 10 * T; else; padding_duration = 0; end;
         t = 0:dt:(pulse_train_duration + padding_duration);
-        npulses = 4;
+        npulses = 1;
         pulse_duration = pulse_train_duration / npulses;
-        duty_cycle = 0.5;
+        duty_cycle = 1;
         
         % Construct signals
-        signals_tmp = amp .* cos(w .* t + phi);        
-        % Sum signals of different frequencies along the first dimension to get summed signals matrix
-        result_signal = sum(signals_tmp, 3);
+        if use_multi_freq
+            signals_tmp = amp .* cos(w .* t + phi);        
+            % Sum signals of different frequencies along the first dimension to get summed signals matrix
+            result_signal = sum(signals_tmp, 3);
+        else
+            result_signal = amp * sin(w .* t + phi);
+        end
+        % if zero_padding
+        %     samples_zero = length(0:dt:padding_duration);
+        %     result_signal(1:samples_zero) = 0; 
+        % end
+        time_zero = 150 * 1e-6;
+        % time_zero = 10*T;
+        t_zero = pulse_train_duration +dt:dt:pulse_train_duration + time_zero;
+        zero_signal = zeros(1,length(t_zero));
                 
+        result_signal = [result_signal, zero_signal];
+        total_time = pulse_train_duration + time_zero;
+        t = 0:dt:total_time;
         figure;
         plot(t, result_signal);
         title('Arbitrary Signal');
@@ -114,18 +149,24 @@ if compute_waveform
             time = t';
             value = result_signal';
             signal_data = table(time, value);
-            writetable(signal_data, fullfile("../..","Transducer_Delay_Files","arbitrary_signal.csv"));
+            
+            writetable(signal_data, fullfile("../..","Transducer_Delay_Files","arbitrary_signal_singlefreq_500khz.csv"));
+            if ~use_multi_freq
+                amplitude = amp;
+                params = table(f0, amplitude, phi);
+                writetable(params,fullfile("../..","Transducer_Delay_Files","single_freq" + num2str(f0) + "_params.csv"));
+            else
+                amplitude = amp_2d';
+                phase_shift = phi_2d';
+                freq = f0';
+                unfactored_params = table(freq,amplitude,phase_shift);
+                writetable(unfactored_params, fullfile("../..","Transducer_Delay_Files","unfactored_signal_params.csv"));            
 
-            amplitude = amp_2d';
-            phase_shift = phi_2d';
-            freq = f0';
-            unfactored_params = table(freq,amplitude,phase_shift);
-            writetable(unfactored_params, fullfile("../..","Transducer_Delay_Files","unfactored_signal_params.csv"));
-
-            if apply_factoring
-                factored_amplitude = amp_2d_factored';
-                factored_params = table(freq,factored_amplitude,phase_shift);
-                writetable(factored_params, fullfile("../..","Transducer_Delay_Files","factored_signal_params.csv"));
+                if apply_factoring
+                    factored_amplitude = amp_2d_factored';
+                    factored_params = table(freq,factored_amplitude,phase_shift);
+                    writetable(factored_params, fullfile("../..","Transducer_Delay_Files","factored_signal_params.csv"));
+                end
             end
         end
     
@@ -166,8 +207,14 @@ if compute_waveform
             xlim([400e3 550e3]);
             grid on;                             
         end
+        end
 
-end
+% ----------------------------------------------------------------
+% >>>>> Option 2: Constructing signals using createCWSignals <<<<<
+% ----------------------------------------------------------------
+    
+    
+
 
 
 % --------------------------------------------------
@@ -244,6 +291,9 @@ if plot_pulse_durations
         % ylim([0 0.1])
     end
 end
+end
+
+
 
 
 % ----------------
