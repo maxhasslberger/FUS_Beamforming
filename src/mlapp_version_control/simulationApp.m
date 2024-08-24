@@ -991,6 +991,7 @@ classdef simulationApp < matlab.apps.AppBase
             if app.n_dim == 3
                 [~, disp_ids, ~] = ind2sub(size(app.kgrid.k), app.init_ids);
                 app.SliceIndexEditField.Value = round(disp_ids(1) / app.dx_factor - app.plot_offset(2));
+                SliceIndexEditFieldValueChanged(app);
             end
             
             % Create preview plot
