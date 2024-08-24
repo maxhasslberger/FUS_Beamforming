@@ -1,4 +1,4 @@
-function [kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, varargin)
+function [kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, slice_dim, varargin)
 
 n_dim = 2;
 ct_filename = [];
@@ -57,20 +57,26 @@ medium.alpha_power = const.alpha_power;
 dx = const.c0 / f0 / const.ppw;
 dx = dx / dx_factor;
 
+dims_2D = exclude_dim(slice_dim);
+
 if ~isempty(ct_filename)
     input_ct = double(niftiread(ct_filename));
     skull = input_ct;
     skull_sz = size(skull);
 
     skull_res_factor = dx_scan / dx;
+    if n_dim == 2
+        skull_sz = skull_sz(dims_2D);
+    else
+        Nz = round(skull_sz(3) * skull_res_factor);
+    end
     Nx = round(skull_sz(1) * skull_res_factor);
     Ny = round(skull_sz(2) * skull_res_factor);
-    Nz = round(skull_sz(3) * skull_res_factor);
 
     grid_size = skull_sz * dx_scan;
 else
-    Nx = round(grid_size(1)/dx);
-    Ny = round(grid_size(2)/dx);
+    Nx = round(grid_size(dims_2D(1))/dx);
+    Ny = round(grid_size(dims_2D(2))/dx);
 end
 
 if n_dim == 2
@@ -85,7 +91,7 @@ elseif n_dim == 3
     kgrid = kWaveGrid(Nx, dx, Ny, dx, Nz, dx);
     add_z = kgrid.z_size.^2; % -> t_end
 
-    slice_idx = 1:round(grid_size(2) / dx_scan);
+    slice_idx = 1:round(grid_size(dim2num(slice_dim)) / dx_scan);
 end
 
 %% Define medium
@@ -101,8 +107,8 @@ if ~isempty(ct_filename)
     skull(skull > const.hu_max) = const.hu_max;
 
     if n_dim == 2
-        skull = squeeze(skull(:, slice_idx, :));
-    end
+        skull = index2Dto3D(skull, slice_dim, slice_idx);
+    end 
 
     % Interpolate to adapt to grid size
     grid_dim = size(kgrid.k);

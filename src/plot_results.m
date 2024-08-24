@@ -2,7 +2,7 @@ function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename
 %% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
-slice_dim = 2;
+slice_dim = 'Y';
 scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
@@ -60,11 +60,14 @@ end
 
 %% Plot the pressure field 
 
+slice_dim = dim2num(slice_dim);
+dims_2D = exclude_dim(slice_dim);
+
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    slice_p = round((plot_offset(2) + slice_coord) * dx_factor); % p space
-    p_data = squeeze(abs(data(:,slice_p,:)));
+    slice_p = round((plot_offset(slice_dim) + slice_coord) * dx_factor); % p space
+    p_data = abs(index2Dto3D(data, slice_dim, slice_p));
 end
 
 % Get Ticks
@@ -73,8 +76,8 @@ p_sz = size(p_data);
 plot_vecy = linspace(0, grid_size(2)-kgrid.dy, p_sz(2)) / dx_scan;
 plot_vecx = linspace(0, grid_size(1)-kgrid.dx, p_sz(1)) / dx_scan;
 
-plot_vecy = plot_vecy - plot_offset(3) + kgrid.dy / dx_scan;
-plot_vecx = plot_vecx - plot_offset(1) + kgrid.dx / dx_scan;
+plot_vecy = plot_vecy - plot_offset(dims_2D(2)) + kgrid.dy / dx_scan;
+plot_vecx = plot_vecx - plot_offset(dims_2D(1)) + kgrid.dx / dx_scan;
 
 % if isempty(ax)
     f_data = figure('color','w');
@@ -87,15 +90,16 @@ plot_vecx = plot_vecx - plot_offset(1) + kgrid.dx / dx_scan;
 if ~isempty(t1w_filename)
     t1_img = niftiread(t1w_filename);
 
-    slice_scan = round(plot_offset(2) + slice_coord); % scan space
-    t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
+    slice_scan = round(plot_offset(slice_dim) + slice_coord); % scan space
+    t1w_sz = size(t1_img);
+    t1w_sz = t1w_sz(dims_2D);
     if ~isequal(p_sz, t1w_sz)
         % Interpolate to adapt to grid size
         [X, Y] = meshgrid(1:t1w_sz(1), 1:t1w_sz(2));
         [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));
-        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice_scan, :)))', Xq, Yq, "linear")';
-    else
-        t1w_plot = squeeze(t1_img(:, slice_scan, :));
+        t1w_plot = interp2(X, Y, double(index2Dto3D(t1_img, slice_dim, slice_scan))', Xq, Yq, "linear")';
+    else 
+        t1w_plot = index2Dto3D(t1_img, slice_dim, slice_scan);
     end
 
     % Plot

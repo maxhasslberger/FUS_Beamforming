@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, force_pressures, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, logical_dom_ids, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size2D, dx_factor, preplot_arg, logical_dom_ids, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -14,6 +14,7 @@ t2_pos = [68, 60]; % scan dims [x, z]
 t_rot = [45, -45]; % deg
 
 % scan_focus_x = [-18, 22];
+slice_dim = 2;
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
 % scan_focus_z = [-27, -19];
 % des_pressures = [300, 300]; % kPa
@@ -66,15 +67,17 @@ end
 if isempty(t1w_filename)
     plot_offset = grid_size / dx_scan / 2 + 1; % Offset to center
 end
-scan_slice = round(plot_offset(2) + slice_idx_2D);
 
-[kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
+scan_slice = round(plot_offset(slice_dim) + slice_idx_2D);
+dims_2D = exclude_dim(slice_dim);
+
+[kgrid, medium, grid_size, ppp] = init_grid_medium(f0, grid_size, slice_dim, 'n_dim', n_dim, 'dx_factor', dx_factor, 'ct_scan', ct_filename, ...
     'slice_idx', scan_slice, 'dx_scan', dx_scan);
 [sensor, sensor_mask] = init_sensor(kgrid, ppp);
 
 if n_dim == 3
     tr_offset_karr = ((plot_offset - 1) * dx_scan - grid_size / 2)'; % Compute offset for karray transducers
-    grid_size = [grid_size(1), grid_size(3)]; % plane size for plots
+    grid_size2D = grid_size(dims_2D); % plane size for plots
 end
 
 dx_factor = dx_scan / kgrid.dx;
@@ -86,19 +89,22 @@ if ~isempty(t1w_filename)
 
     if abs(dx_factor) ~= 1.0
         % Interpolate to adapt to grid size
-        grid_sz_all = size(kgrid.k);
+        grid_sz_vox = size(kgrid.k);
         seg_sz = size(segment_ids);
         [uniqueStrings, ~, seg_nums] = unique(segment_ids);
         seg_nums = reshape(seg_nums, size(segment_ids)); % Ensure it has the same shape as the original 3D array
     
         if kgrid.dim == 2
+            grid_sz_vox = grid_sz_vox(dims_2D);
+            seg_sz = seg_sz(dims_2D);
             seg_nums = squeeze(seg_nums(:, scan_slice, :));
-            [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(3));
-            [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(3), grid_sz_all(2)));
+
+            [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2));
+            [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_vox(1)), linspace(1, seg_sz(2), grid_sz_vox(2)));
             seg_nums = interp2(X, Z, double(seg_nums)', Xq, Zq, "nearest")';
         else
             [X, Y, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2), 1:seg_sz(3));
-            [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_all(1)), linspace(1, seg_sz(2), grid_sz_all(2)), linspace(1, seg_sz(3), grid_sz_all(3)));
+            [Xq, Yq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_vox(1)), linspace(1, seg_sz(2), grid_sz_vox(2)), linspace(1, seg_sz(3), grid_sz_vox(3)));
             seg_nums = permute(interp3(X, Y, Z, permute(double(seg_nums), [2 1 3]), Xq, Yq, Zq, "nearest"), [2 1 3]);
         end
     
@@ -137,8 +143,8 @@ if kgrid.dim == 2
     el_per_t = zeros(1, n_trs);
     t_ids = [];
     for i = 1:n_trs
-        x_offset = round((plot_offset(1) + t_pos(1, i)) * dx_factor); % grid points
-        y_offset = round((plot_offset(3) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
+        x_offset = round((plot_offset(dims_2D(1)) + t_pos(1, i)) * dx_factor); % grid points
+        y_offset = round((plot_offset(dims_2D(2)) + t_pos(2, i)) * dx_factor); % tangential shift in grid points
     
         new_arr = create_linear_array(kgrid, tr_len(i), x_offset, y_offset, spacing, t_rot(i));
 
@@ -196,7 +202,7 @@ logical_dom_ids = false(numel(medium.sound_speed), 1);
 
 if kgrid.dim == 2
     % Mask brain slice
-    slice_grid_2D = round((plot_offset(2) + slice_idx_2D) * dx_factor);
+    slice_grid_2D = round((plot_offset(slice_dim) + slice_idx_2D) * dx_factor);
     logical_dom_ids(squeeze(domain_ids(:, slice_grid_2D, :))) = true;
 
     % Define targets
@@ -206,8 +212,8 @@ if kgrid.dim == 2
         point_pos_m.y = scan_focus_z;
         amp_in = des_pressures' * 1e3; % Pa
     
-        point_pos.x = round((plot_offset(1) + point_pos_m.x) * dx_factor);
-        point_pos.y = round((plot_offset(3) + point_pos_m.y) * dx_factor);
+        point_pos.x = round((plot_offset(dims_2D(1)) + point_pos_m.x) * dx_factor);
+        point_pos.y = round((plot_offset(dims_2D(2)) + point_pos_m.y) * dx_factor);
     
         % Assign amplitude acc. to closest position
         idx = sub2ind([kgrid.Nx, kgrid.Ny], point_pos.x, point_pos.y);
@@ -316,7 +322,7 @@ if ~isscalar(medium.sound_speed)
     preplot_arg = preplot_arg + skull_arg * max(b_cross(:));
 end
 
-plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice, 'colorbar', false, ...
+plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size2D, dx_factor, false, [], 'slice', point_pos.slice, 'colorbar', false, ...
     'cmap', hot());
 preplot_arg(logical(t_mask_ps)) = 0.0; % Do not show transducers in second pre-plot
 
