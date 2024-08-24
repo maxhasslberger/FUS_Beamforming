@@ -563,6 +563,61 @@ classdef simulationApp < matlab.apps.AppBase
             fprintf(strcat("\n", plot_title, " max. Pressure (kPa):\n"))
             disp(max(real_ip) * 1e-3)
         end
+        
+        function labels2D_visible(app, visible_3D, dim)
+            
+            if dim == 1
+                app.xHomEditField.Visible = visible_3D;
+                app.xEditField_2Label.Visible = visible_3D;
+        
+                app.trPosxEditField.Visible = visible_3D;
+                app.xEditField_3Label.Visible = visible_3D;
+                app.betaEditField.Visible = visible_3D;
+                app.betaEditFieldLabel.Visible = visible_3D;
+                app.gammaEditField.Visible = visible_3D;
+                app.gammaEditFieldLabel.Visible = visible_3D;
+        
+                app.focusxEditField.Visible = visible_3D;
+                app.xEditField_4Label.Visible = visible_3D;
+        
+            elseif dim == 2
+                app.HomyEditField.Visible = visible_3D;
+                app.yEditField_2Label.Visible = visible_3D;
+        
+                app.trPosyEditField.Visible = visible_3D;
+                app.yEditField_3Label.Visible = visible_3D;
+                app.alphaEditField.Visible = visible_3D;
+                app.alphaEditFieldLabel.Visible = visible_3D;
+                app.gammaEditField.Visible = visible_3D;
+                app.gammaEditFieldLabel.Visible = visible_3D;
+        
+                app.focusyEditField.Visible = visible_3D;
+                app.yEditField_4Label.Visible = visible_3D;
+        
+            else
+                app.HomzEditField.Visible = visible_3D;
+                app.zEditField_2Label.Visible = visible_3D;
+        
+                app.trPoszEditField.Visible = visible_3D;
+                app.zEditField_3Label.Visible = visible_3D;
+                app.alphaEditField.Visible = visible_3D;
+                app.alphaEditFieldLabel.Visible = visible_3D;
+                app.betaEditField.Visible = visible_3D;
+                app.betaEditFieldLabel.Visible = visible_3D;
+        
+                app.focuszEditField.Visible = visible_3D;
+                app.zEditField_4Label.Visible = visible_3D;
+            end
+        
+            % General properties 
+            app.TransducerLengthmmEditField.Visible = ~visible_3D;
+            app.TransducerLengthmmEditFieldLabel.Visible = ~visible_3D;
+        
+            app.GeneralPanel_2.Visible = visible_3D;
+            app.GroundTruthResolutionFactorEditField.Visible = visible_3D;
+            app.GroundTruthResolutionFactorEditFieldLabel.Visible = visible_3D;
+        end
+
     end
     
 
@@ -1165,27 +1220,10 @@ classdef simulationApp < matlab.apps.AppBase
         % Value changed function: DimSwitch
         function DimSwitchValueChanged(app, event)
             app.n_dim = 2 + (app.DimSwitch.Value == "3D");
+            dim = dim2num(app.SliceDirectionDropDown.Value);
 
-            true_3D = app.n_dim == 3;
-
-            app.HomyEditField.Visible = true_3D;
-            app.yEditField_2Label.Visible = true_3D;
-
-            app.trPosyEditField.Visible = true_3D;
-            app.yEditField_3Label.Visible = true_3D;
-            app.alphaEditField.Visible = true_3D;
-            app.alphaEditFieldLabel.Visible = true_3D;
-            app.gammaEditField.Visible = true_3D;
-            app.gammaEditFieldLabel.Visible = true_3D;
-
-            app.focusyEditField.Visible = true_3D;
-            app.yEditField_4Label.Visible = true_3D;
-            app.TransducerLengthmmEditField.Visible = ~true_3D;
-            app.TransducerLengthmmEditFieldLabel.Visible = ~true_3D;
-
-            app.GeneralPanel_2.Visible = true_3D;
-            app.GroundTruthResolutionFactorEditField.Visible = true_3D;
-            app.GroundTruthResolutionFactorEditFieldLabel.Visible = true_3D;
+            visible_3D = app.n_dim == 3;
+            labels2D_visible(app, visible_3D, dim);
         end
 
         % Callback function
@@ -1424,6 +1462,19 @@ classdef simulationApp < matlab.apps.AppBase
                 app.MaxNoofIterationsEditField.Value = 200;
             end
         end
+
+        % Value changed function: SliceDirectionDropDown
+        function SliceDirectionDropDownValueChanged(app, event)
+            persistent prev_dim
+            if isempty(prev_dim)
+                prev_dim = 2;
+            end
+            
+            labels2D_visible(app, true, prev_dim); % Make dimensions of previous dim visible
+            DimSwitchValueChanged(app);
+
+            prev_dim = dim2num(app.SliceDirectionDropDown.Value);
+        end
     end
 
     % Component initialization
@@ -1655,6 +1706,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create SliceDirectionDropDown
             app.SliceDirectionDropDown = uidropdown(app.GeneralPanel);
             app.SliceDirectionDropDown.Items = {'X', 'Y', 'Z'};
+            app.SliceDirectionDropDown.ValueChangedFcn = createCallbackFcn(app, @SliceDirectionDropDownValueChanged, true);
             app.SliceDirectionDropDown.Position = [146 159 45 22];
             app.SliceDirectionDropDown.Value = 'Y';
 
