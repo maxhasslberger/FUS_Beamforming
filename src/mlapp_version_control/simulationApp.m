@@ -3,6 +3,7 @@ classdef simulationApp < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
+        UpdateSliceButton               matlab.ui.control.Button
         CloseallPlotsButton             matlab.ui.control.Button
         Slice30Label                    matlab.ui.control.Label
         TabGroup                        matlab.ui.container.TabGroup
@@ -240,6 +241,7 @@ classdef simulationApp < matlab.apps.AppBase
         plot_title_curr
         slice_dim
         dims_2D
+        sv_obj
     end
     
     methods (Access = private)
@@ -273,7 +275,7 @@ classdef simulationApp < matlab.apps.AppBase
             plot_thr = app.MaskPressurePlotkPaEditField.Value * 1e3;
             save_results = app.SaveResultsCheckBox.Value;
 
-            plot_results(app.kgrid, p, b, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
+            app.sv_obj = plot_results(app.kgrid, p, b, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
                 app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
                 'slice_dim', app.SliceDirectionDropDown.Value, 'axes', []);%app.UIAxesParam);
 
@@ -610,6 +612,8 @@ classdef simulationApp < matlab.apps.AppBase
             end
         
             % General properties 
+            app.UpdateSliceButton.Visible = visible_3D;
+
             app.TransducerLengthmmEditField.Visible = ~visible_3D;
             app.TransducerLengthmmEditFieldLabel.Visible = ~visible_3D;
         
@@ -635,7 +639,7 @@ classdef simulationApp < matlab.apps.AppBase
                 skull_arg = app.medium.sound_speed - min(app.medium.sound_speed(:));
                 skull_arg = skull_arg / max(skull_arg(:));
 
-                plot_results(app.kgrid, [], skull_arg, 'Scan/Skull Preview', [], app.t1w_filename, ...
+                app.sv_obj = plot_results(app.kgrid, [], skull_arg, 'Scan/Skull Preview', [], app.t1w_filename, ...
                     app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
                     'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDirectionDropDown.Value);
             end
@@ -781,9 +785,9 @@ classdef simulationApp < matlab.apps.AppBase
                 app.preplot_arg = app.preplot_arg + skull_arg;
             end
 
-            plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, app.plot_offset, ...
-                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', hot(), ...
-                'slice_dim', app.SliceDirectionDropDown.Value);
+            app.sv_obj = plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, ...
+                app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
+                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDirectionDropDown.Value);
 
             disp('Transducer init successful')
         end
@@ -1072,9 +1076,9 @@ classdef simulationApp < matlab.apps.AppBase
             b_mask_plot = b_mask_plot + app.full_bmask;
             preplot_arg2 = app.preplot_arg + b_mask_plot / max(b_mask_plot(:));
 
-            plot_results(app.kgrid, [], preplot_arg2, 'Target Preview', app.mask2el, app.t1w_filename, app.plot_offset, ...
-                app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, 'colorbar', false, ...
-                'cmap', hot(), 'slice_dim', app.SliceDirectionDropDown.Value);
+            app.sv_obj = plot_results(app.kgrid, [], preplot_arg2, 'Target Preview', app.mask2el, app.t1w_filename, ...
+                app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
+                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDirectionDropDown.Value);
 
             disp('Target init successful')
         end
@@ -1194,7 +1198,7 @@ classdef simulationApp < matlab.apps.AppBase
                 evaluate_pressure_dist(app, plot_title, b_gt, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
             end
 
-            plot_results(kgridP, [], b_gt, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
+            app.sv_obj = plot_results(kgridP, [], b_gt, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
                 dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
                 'slice_dim', app.SliceDirectionDropDown.Value);
 
@@ -1475,6 +1479,15 @@ classdef simulationApp < matlab.apps.AppBase
             DimSwitchValueChanged(app);
 
             prev_dim = dim2num(app.SliceDirectionDropDown.Value);
+        end
+
+        % Button pushed function: UpdateSliceButton
+        function UpdateSliceButtonPushed2(app, event)
+            if ~isempty(app.sv_obj)
+                currentSliceIndex = app.sv_obj.SliceNumber;
+                app.SliceIndexEditField.Value = round(currentSliceIndex / app.dx_factor - app.plot_offset(app.slice_dim));
+                SliceIndexEditFieldValueChanged(app);
+            end
         end
     end
 
@@ -2524,14 +2537,21 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create Slice30Label
             app.Slice30Label = uilabel(app.UIFigure);
-            app.Slice30Label.Position = [660 6 48 22];
+            app.Slice30Label.Position = [653 6 67 22];
             app.Slice30Label.Text = 'Slice 30';
 
             % Create CloseallPlotsButton
             app.CloseallPlotsButton = uibutton(app.UIFigure, 'push');
             app.CloseallPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @CloseallPlotsButtonPushed, true);
-            app.CloseallPlotsButton.Position = [329 5 100 23];
+            app.CloseallPlotsButton.Position = [251 5 100 23];
             app.CloseallPlotsButton.Text = 'Close all Plots';
+
+            % Create UpdateSliceButton
+            app.UpdateSliceButton = uibutton(app.UIFigure, 'push');
+            app.UpdateSliceButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateSliceButtonPushed2, true);
+            app.UpdateSliceButton.Visible = 'off';
+            app.UpdateSliceButton.Position = [543 5 100 23];
+            app.UpdateSliceButton.Text = 'Update Slice';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

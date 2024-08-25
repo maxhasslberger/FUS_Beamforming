@@ -1,4 +1,4 @@
-function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
+function sv_obj = plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
 %% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
@@ -156,13 +156,15 @@ if kgrid.dim == 3
     f_3D.Position = [125,475,302,350];
 
     data = permute(data, [dims_2D(1), slice_dim, dims_2D(2)]);
-    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
+    sv_obj = sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
 
     if plot_colorbar
         cb3 = colorbar;
         xlabel(cb3, 'Pressure (kPa)');
     end
     title(plot_title);
+else
+    sv_obj = [];
 end
 
 if save_results
