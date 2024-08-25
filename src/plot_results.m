@@ -60,6 +60,8 @@ end
 
 %% Plot the pressure field 
 
+dims_char = ['X', 'Y', 'Z'];
+
 slice_dim = dim2num(slice_dim_in);
 dims_2D = exclude_dim(slice_dim);
 
@@ -118,18 +120,20 @@ if ~isempty(t1w_filename)
         cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
         xlabel(cb2, 'Pressure (kPa)');
     end
+
     title(ax1, plot_title)
     set(ax1, 'ydir', 'normal')
     set(ax2, 'ydir', 'normal')
-
+    xlabel(ax1, dims_char(dims_2D(1)));
+    ylabel(ax1, dims_char(dims_2D(2)));
 else
 
     ax = axes;
     imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90))); % relative to transducer 1 face (center)
     
     colormap(cmap);
-    xlabel('x (mm)');
-    ylabel('z (mm)');
+    xlabel(strcat(dims_char(dims_2D(1)), ' (mm)'));
+    ylabel(strcat(dims_char(dims_2D(2)), ' (mm)'));
     axis image;
     % clim([0 30000])
     title(plot_title);
