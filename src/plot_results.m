@@ -2,7 +2,7 @@ function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename
 %% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
-slice_dim = 'Y';
+slice_dim_in = 'Y';
 scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
@@ -17,7 +17,7 @@ if ~isempty(varargin)
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
             case 'slice_dim'
-                slice_dim = varargin{arg_idx+1};
+                slice_dim_in = varargin{arg_idx+1};
             case 'colorbar'
                 plot_colorbar = varargin{arg_idx+1};
             case 'cmap'
@@ -60,7 +60,7 @@ end
 
 %% Plot the pressure field 
 
-slice_dim = dim2num(slice_dim);
+slice_dim = dim2num(slice_dim_in);
 dims_2D = exclude_dim(slice_dim);
 
 if kgrid.dim == 2
@@ -150,7 +150,10 @@ fontsize(f_data, 12,"points")
 if kgrid.dim == 3
     f_3D = figure('color','w');
     f_3D.Position = [125,475,302,350];
-    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
+
+
+    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', slice_dim_in, "Parent", f_3D);
+
     if plot_colorbar
         cb3 = colorbar;
         xlabel(cb3, 'Pressure (kPa)');
