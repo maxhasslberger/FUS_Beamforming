@@ -1,5 +1,5 @@
 function [kgrid, medium, sensor, sensor_mask, b_des, b_des_pl, b_mask, full_bmask, t_mask_ps, karray_t, force_pressures, ...
-    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size2D, dx_factor, preplot_arg, logical_dom_ids, input_args] = ...
+    active_ids, mask2el, el_per_t, t_pos, t_rot, plot_offset, point_pos, point_pos_m, grid_size, dx_factor, preplot_arg, logical_dom_ids, input_args] = ...
     init(f0, n_dim, dx_factor, varargin)
 
 % Scan init
@@ -77,7 +77,6 @@ dims_2D = exclude_dim(slice_dim);
 
 if n_dim == 3
     tr_offset_karr = ((plot_offset - 1) * dx_scan - grid_size / 2)'; % Compute offset for karray transducers
-    grid_size2D = grid_size(dims_2D); % plane size for plots
 end
 
 dx_factor = dx_scan / kgrid.dx;
@@ -322,7 +321,7 @@ if ~isscalar(medium.sound_speed)
     preplot_arg = preplot_arg + skull_arg * max(b_cross(:));
 end
 
-plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size2D, dx_factor, false, [], 'slice', point_pos.slice, 'colorbar', false, ...
+plot_results(kgrid, [], preplot_arg, 'Plot Preview', [], t1w_filename, plot_offset, grid_size, dx_factor, false, [], 'slice', point_pos.slice, 'colorbar', false, ...
     'cmap', hot());
 preplot_arg(logical(t_mask_ps)) = 0.0; % Do not show transducers in second pre-plot
 

@@ -70,6 +70,8 @@ if kgrid.dim == 2
 else
     slice_p = round((plot_offset(slice_dim) + slice_coord) * dx_factor); % p space
     p_data = abs(index2Dto3D(data, slice_dim, slice_p));
+
+    grid_size = grid_size(dims_2D);
 end
 
 % Get Ticks

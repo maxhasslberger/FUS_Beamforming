@@ -3,6 +3,8 @@ classdef simulationApp < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
+        SliceDirectionDropDown_2        matlab.ui.control.DropDown
+        SliceDirectionLabel             matlab.ui.control.Label
         UpdateSliceButton               matlab.ui.control.Button
         CloseallPlotsButton             matlab.ui.control.Button
         Slice30Label                    matlab.ui.control.Label
@@ -41,9 +43,9 @@ classdef simulationApp < matlab.apps.AppBase
         LoadResultsfromFileDropDownLabel  matlab.ui.control.Label
         SaveResultsCheckBox             matlab.ui.control.CheckBox
         SliceIndexEditField             matlab.ui.control.NumericEditField
-        DSliceIndexEditFieldLabel       matlab.ui.control.Label
-        SliceDirectionDropDown          matlab.ui.control.DropDown
-        SliceDirectionDropDownLabel     matlab.ui.control.Label
+        SliceIndexLabel                 matlab.ui.control.Label
+        SliceDimDropDown                matlab.ui.control.DropDown
+        SliceDimDropDownLabel           matlab.ui.control.Label
         SimSpatialResolutionmmEditField  matlab.ui.control.NumericEditField
         SimSpatialResolutionmmEditFieldLabel  matlab.ui.control.Label
         CenterFreqkHzEditField          matlab.ui.control.NumericEditField
@@ -265,33 +267,37 @@ classdef simulationApp < matlab.apps.AppBase
             b = reshape(b, size(app.kgrid.k));
 
             %% Plot results
+            b_lim = b;
             if app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value
                 excl_ids = ~(app.LimittoIntracranialFieldCheckBox.Value & app.logical_dom_ids) & ...
                 ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
 
-                b(excl_ids) = 0.0;
+                b_lim(excl_ids) = 0.0;
             end
 
             plot_thr = app.MaskPressurePlotkPaEditField.Value * 1e3;
             save_results = app.SaveResultsCheckBox.Value;
 
-            app.sv_obj = plot_results(app.kgrid, p, b, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
+            app.sv_obj = plot_results(app.kgrid, p, b_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
                 app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'slice_dim', app.SliceDirectionDropDown.Value, 'axes', []);%app.UIAxesParam);
+                'slice_dim', app.SliceDimDropDown.Value, 'axes', []);%app.UIAxesParam);
 
             % Plot mask with pressure above off-target limit
-            plot_results(app.kgrid, [], abs(b) > plot_thr, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
+            masked_b = abs(b_lim);
+            masked_b(masked_b <= plot_thr) = 0.0;
+            plot_results(app.kgrid, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]}, ...
-                'slice_dim', app.SliceDirectionDropDown.Value);
+                app.SliceIndexEditField.Value, 'fig_pos', {[], [1500,475,302,350]}, ...
+                'slice_dim', app.SliceDimDropDown.Value);
 
             %% Evaluate pressure distribution
-            evaluate_pressure_dist(app, plot_title, b, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
+            evaluate_pressure_dist(app, plot_title, b_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
 
             app.p_curr = p;
             app.plot_title_curr = plot_title;
 
             % Save results in mat file
+            app.ip.b = b;
             save_results_mat(app);
         end
         
@@ -345,11 +351,11 @@ classdef simulationApp < matlab.apps.AppBase
                 app.plot_offset = [-app.scanxEditField.Value, -app.scanyEditField.Value, -app.scanzEditField.Value] + 1;
             end
 
-            app.slice_dim = dim2num(app.SliceDirectionDropDown.Value);
+            app.slice_dim = dim2num(app.SliceDimDropDown.Value);
             scan_slice = round(app.plot_offset(app.slice_dim) + app.SliceIndexEditField.Value);
             app.dims_2D = exclude_dim(app.slice_dim);
 
-            [kgrid_out, medium_out, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, app.SliceDirectionDropDown.Value, ...
+            [kgrid_out, medium_out, app.grid_size, ppp] = init_grid_medium(f0, app.grid_size, app.SliceDimDropDown.Value, ...
                 'n_dim', app.n_dim, 'dx_factor', dx_factor_in, 'ct_scan', app.ct_filename, ...
                 'slice_idx', scan_slice, 'dx_scan', app.dx_scan, 'constants', const);
             [sensor_out, sensor_mask_out] = init_sensor(kgrid_out, ppp);
@@ -371,7 +377,7 @@ classdef simulationApp < matlab.apps.AppBase
                     if app.n_dim == 2
                         grid_sz_vox = grid_sz_vox(app.dims_2D);
                         seg_sz = seg_sz(app.dims_2D);
-                        seg_nums = index2Dto3D(seg_nums, app.SliceDirectionDropDown.Value, scan_slice);
+                        seg_nums = index2Dto3D(seg_nums, app.SliceDimDropDown.Value, scan_slice);
 
                         [X, Z] = meshgrid(1:seg_sz(1), 1:seg_sz(2));
                         [Xq, Zq] = meshgrid(linspace(1, seg_sz(1), grid_sz_vox(1)), linspace(1, seg_sz(2), grid_sz_vox(2)));
@@ -396,7 +402,6 @@ classdef simulationApp < matlab.apps.AppBase
             log_dom_ids_out = false(numel(medium_out.sound_speed), 1);
             if app.n_dim == 3
                 tr_offset_karr_out = ((app.plot_offset - 1) * app.dx_scan - app.grid_size / 2)'; % karray offset in m
-                app.grid_size = app.grid_size(app.dims_2D); % plane size for plots
 
                 slice_grid_2D_out = [];
                 log_dom_ids_out(domain_ids) = true;
@@ -404,7 +409,7 @@ classdef simulationApp < matlab.apps.AppBase
                 tr_offset_karr_out = [];
 
                 slice_grid_2D_out = round((app.plot_offset(app.slice_dim) + app.SliceIndexEditField.Value) * dx_factor_out);
-                log_dom_ids_out(index2Dto3D(domain_ids, app.SliceDirectionDropDown.Value, slice_grid_2D_out)) = true;
+                log_dom_ids_out(index2Dto3D(domain_ids, app.SliceDimDropDown.Value, slice_grid_2D_out)) = true;
             end
 
             %% Set global options
@@ -474,7 +479,7 @@ classdef simulationApp < matlab.apps.AppBase
                 % Std param
                 dim_switch = app.DimSwitch.Value;
                 f0 = app.CenterFreqkHzEditField.Value;
-                slice_direction = app.SliceDirectionDropDown.Value;
+                slice_direction = app.SliceDimDropDown.Value;
                 slice_index = app.SliceIndexEditField.Value;
                 dx = app.SimSpatialResolutionmmEditField.Value;
 
@@ -613,6 +618,10 @@ classdef simulationApp < matlab.apps.AppBase
         
             % General properties 
             app.UpdateSliceButton.Visible = visible_3D;
+            app.SliceDirectionDropDown_2.Visible = visible_3D;
+            app.SliceDirectionLabel.Visible = visible_3D;
+            app.SliceDimDropDown.Visible = ~visible_3D;
+            app.SliceDimDropDownLabel.Visible = ~visible_3D;
 
             app.TransducerLengthmmEditField.Visible = ~visible_3D;
             app.TransducerLengthmmEditFieldLabel.Visible = ~visible_3D;
@@ -641,7 +650,7 @@ classdef simulationApp < matlab.apps.AppBase
 
                 app.sv_obj = plot_results(app.kgrid, [], skull_arg, 'Scan/Skull Preview', [], app.t1w_filename, ...
                     app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
-                    'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDirectionDropDown.Value);
+                    'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDimDropDown.Value);
             end
         end
 
@@ -787,7 +796,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.sv_obj = plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
-                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDirectionDropDown.Value);
+                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDimDropDown.Value);
 
             disp('Transducer init successful')
         end
@@ -980,7 +989,7 @@ classdef simulationApp < matlab.apps.AppBase
                 if ~isempty(app.t1w_filename) && ~isempty(app.RegionTargetDropDown.Items)
                     % Stimulate brain region
                     amp_in_reg = app.des_pressures_reg' * 1e3; % Pa
-                    stim_regions = index2Dto3D(app.segment_ids, app.SliceDirectionDropDown.Value, app.slice_grid_2D);
+                    stim_regions = index2Dto3D(app.segment_ids, app.SliceDimDropDown.Value, app.slice_grid_2D);
 
                     for j = 1:length(app.tar_reg_labels)
                         reg_mask = stim_regions == app.tar_reg_labels(j);
@@ -1078,7 +1087,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.sv_obj = plot_results(app.kgrid, [], preplot_arg2, 'Target Preview', app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
-                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDirectionDropDown.Value);
+                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDimDropDown.Value);
 
             disp('Target init successful')
         end
@@ -1185,6 +1194,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             plot_title = 'Ground Truth';
 
+            b_gt_lim = b_gt;
             if app.GroundTruthResolutionFactorEditField.Value == 1 % && ...
                    % app.LimittoIntracranialFieldCheckBox.Value || app.LimittoSkullCheckBox.Value
 
@@ -1192,20 +1202,22 @@ classdef simulationApp < matlab.apps.AppBase
                     ~(app.LimittoIntracranialFieldCheckBox.Value & app.logical_dom_ids) & ...
                     ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
 
-                b_gt(excl_ids) = 0.0;
+                b_gt_lim(excl_ids) = 0.0;
 
                 % Evaluate Pressure Distribution
-                evaluate_pressure_dist(app, plot_title, b_gt, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
+                evaluate_pressure_dist(app, plot_title, b_gt_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
             end
 
-            app.sv_obj = plot_results(kgridP, [], b_gt, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
+            app.sv_obj = plot_results(kgridP, [], b_gt_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
                 dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'slice_dim', app.SliceDirectionDropDown.Value);
+                'slice_dim', app.SliceDimDropDown.Value);
 
-            plot_results(kgridP, [], abs(b_gt) > plot_thr, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
+            masked_b = abs(b_gt_lim);
+            masked_b(masked_b <= plot_thr) = 0.0;
+            plot_results(kgridP, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'colorbar', false, 'cmap', gray(), 'fig_pos', {[], [1500,475,302,350]}, ...
-                'slice_dim', app.SliceDirectionDropDown.Value);
+                app.SliceIndexEditField.Value, 'fig_pos', {[], [1500,475,302,350]}, ...
+                'slice_dim', app.SliceDimDropDown.Value);
 
             % Save results in mat file
             app.ip.b_gt = b_gt;
@@ -1225,7 +1237,7 @@ classdef simulationApp < matlab.apps.AppBase
         % Value changed function: DimSwitch
         function DimSwitchValueChanged(app, event)
             app.n_dim = 2 + (app.DimSwitch.Value == "3D");
-            dim = dim2num(app.SliceDirectionDropDown.Value);
+            dim = dim2num(app.SliceDimDropDown.Value);
 
             visible_3D = app.n_dim == 3;
             labels2D_visible(app, visible_3D, dim);
@@ -1345,7 +1357,7 @@ classdef simulationApp < matlab.apps.AppBase
                 app.CenterFreqkHzEditField.Value = data.f0;
                 app.SimSpatialResolutionmmEditField.Value = data.dx; CenterFreqkHzEditFieldValueChanged(app);
 
-                app.SliceDirectionDropDown.Value = data.slice_direction;
+                app.SliceDimDropDown.Value = data.slice_direction;
                 app.SliceIndexEditField.Value = data.slice_index; SliceIndexEditFieldValueChanged(app);
 
                 app.MediumSwitch.Value = data.medium_type; MediumSwitchValueChanged(app);
@@ -1468,8 +1480,10 @@ classdef simulationApp < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: SliceDirectionDropDown
-        function SliceDirectionDropDownValueChanged(app, event)
+        % Value changed function: SliceDimDropDown
+        function SliceDimDropDownValueChanged(app, event)
+            value = app.SliceDimDropDown.Value;
+            
             persistent prev_dim
             if isempty(prev_dim)
                 prev_dim = 2;
@@ -1478,16 +1492,26 @@ classdef simulationApp < matlab.apps.AppBase
             labels2D_visible(app, true, prev_dim); % Make dimensions of previous dim visible
             DimSwitchValueChanged(app);
 
-            prev_dim = dim2num(app.SliceDirectionDropDown.Value);
+            prev_dim = dim2num(value);
+
+            app.SliceDirectionDropDown_2.Value = value;
+            UpdateSliceButtonPushed2(app);
         end
 
         % Button pushed function: UpdateSliceButton
         function UpdateSliceButtonPushed2(app, event)
-            if ~isempty(app.sv_obj)
+            if ~isempty(app.sv_obj) && app.n_dim == 3
                 currentSliceIndex = app.sv_obj.SliceNumber;
                 app.SliceIndexEditField.Value = round(currentSliceIndex / app.dx_factor - app.plot_offset(app.slice_dim));
                 SliceIndexEditFieldValueChanged(app);
             end
+        end
+
+        % Value changed function: SliceDirectionDropDown_2
+        function SliceDirectionDropDown_2ValueChanged(app, event)
+            value = app.SliceDirectionDropDown_2.Value;
+            app.SliceDimDropDown.Value = value;
+            SliceDimDropDownValueChanged(app);
         end
     end
 
@@ -1711,24 +1735,24 @@ classdef simulationApp < matlab.apps.AppBase
             app.SimSpatialResolutionmmEditField.ValueChangedFcn = createCallbackFcn(app, @SimSpatialResolutionmmEditFieldValueChanged, true);
             app.SimSpatialResolutionmmEditField.Position = [213 78 45 22];
 
-            % Create SliceDirectionDropDownLabel
-            app.SliceDirectionDropDownLabel = uilabel(app.GeneralPanel);
-            app.SliceDirectionDropDownLabel.HorizontalAlignment = 'right';
-            app.SliceDirectionDropDownLabel.Position = [41 159 90 22];
-            app.SliceDirectionDropDownLabel.Text = 'Slice (Direction)';
+            % Create SliceDimDropDownLabel
+            app.SliceDimDropDownLabel = uilabel(app.GeneralPanel);
+            app.SliceDimDropDownLabel.HorizontalAlignment = 'right';
+            app.SliceDimDropDownLabel.Position = [75 159 56 22];
+            app.SliceDimDropDownLabel.Text = 'Slice Dim';
 
-            % Create SliceDirectionDropDown
-            app.SliceDirectionDropDown = uidropdown(app.GeneralPanel);
-            app.SliceDirectionDropDown.Items = {'X', 'Y', 'Z'};
-            app.SliceDirectionDropDown.ValueChangedFcn = createCallbackFcn(app, @SliceDirectionDropDownValueChanged, true);
-            app.SliceDirectionDropDown.Position = [146 159 45 22];
-            app.SliceDirectionDropDown.Value = 'Y';
+            % Create SliceDimDropDown
+            app.SliceDimDropDown = uidropdown(app.GeneralPanel);
+            app.SliceDimDropDown.Items = {'X', 'Y', 'Z'};
+            app.SliceDimDropDown.ValueChangedFcn = createCallbackFcn(app, @SliceDimDropDownValueChanged, true);
+            app.SliceDimDropDown.Position = [146 159 45 22];
+            app.SliceDimDropDown.Value = 'Y';
 
-            % Create DSliceIndexEditFieldLabel
-            app.DSliceIndexEditFieldLabel = uilabel(app.GeneralPanel);
-            app.DSliceIndexEditFieldLabel.HorizontalAlignment = 'right';
-            app.DSliceIndexEditFieldLabel.Position = [46 125 82 22];
-            app.DSliceIndexEditFieldLabel.Text = '2D Slice Index';
+            % Create SliceIndexLabel
+            app.SliceIndexLabel = uilabel(app.GeneralPanel);
+            app.SliceIndexLabel.HorizontalAlignment = 'right';
+            app.SliceIndexLabel.Position = [64 125 64 22];
+            app.SliceIndexLabel.Text = 'Slice Index';
 
             % Create SliceIndexEditField
             app.SliceIndexEditField = uieditfield(app.GeneralPanel, 'numeric');
@@ -2543,7 +2567,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create CloseallPlotsButton
             app.CloseallPlotsButton = uibutton(app.UIFigure, 'push');
             app.CloseallPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @CloseallPlotsButtonPushed, true);
-            app.CloseallPlotsButton.Position = [251 5 100 23];
+            app.CloseallPlotsButton.Position = [8 6 100 23];
             app.CloseallPlotsButton.Text = 'Close all Plots';
 
             % Create UpdateSliceButton
@@ -2552,6 +2576,21 @@ classdef simulationApp < matlab.apps.AppBase
             app.UpdateSliceButton.Visible = 'off';
             app.UpdateSliceButton.Position = [543 5 100 23];
             app.UpdateSliceButton.Text = 'Update Slice';
+
+            % Create SliceDirectionLabel
+            app.SliceDirectionLabel = uilabel(app.UIFigure);
+            app.SliceDirectionLabel.HorizontalAlignment = 'right';
+            app.SliceDirectionLabel.Visible = 'off';
+            app.SliceDirectionLabel.Position = [390 6 82 22];
+            app.SliceDirectionLabel.Text = 'Slice Direction';
+
+            % Create SliceDirectionDropDown_2
+            app.SliceDirectionDropDown_2 = uidropdown(app.UIFigure);
+            app.SliceDirectionDropDown_2.Items = {'X', 'Y', 'Z'};
+            app.SliceDirectionDropDown_2.ValueChangedFcn = createCallbackFcn(app, @SliceDirectionDropDown_2ValueChanged, true);
+            app.SliceDirectionDropDown_2.Visible = 'off';
+            app.SliceDirectionDropDown_2.Position = [487 6 45 22];
+            app.SliceDirectionDropDown_2.Value = 'Y';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
