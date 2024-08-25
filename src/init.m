@@ -9,8 +9,8 @@ plot_offset = [96, 127, 126] + 1; % Offset to Scan center
 dx_scan = 1e-3; % m - MR Scan resolution
 
 % Transducer and Foci init
-t1_pos = [-59, 60]; % scan dims [x, z]
-t2_pos = [68, 60]; % scan dims [x, z]
+t1_pos = [-59, 60]; % scan dims
+t2_pos = [68, 60]; % scan dims
 t_rot = [45, -45]; % deg
 
 % scan_focus_x = [-18, 22];

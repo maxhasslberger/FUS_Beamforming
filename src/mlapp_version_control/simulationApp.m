@@ -1965,7 +1965,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create trPoszEditField
             app.trPoszEditField = uieditfield(app.Transducer1Panel, 'numeric');
             app.trPoszEditField.Position = [254 149 37 22];
-            app.trPoszEditField.Value = 68;
+            app.trPoszEditField.Value = 60;
 
             % Create RotationdegxyzintrinsicLabel
             app.RotationdegxyzintrinsicLabel = uilabel(app.Transducer1Panel);
