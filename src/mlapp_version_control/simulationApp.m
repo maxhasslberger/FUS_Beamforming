@@ -1062,8 +1062,9 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Update displayed slice based on first init_id
             if app.n_dim == 3
-                [~, disp_ids, ~] = ind2sub(size(app.kgrid.k), app.init_ids);
-                app.SliceIndexEditField.Value = round(disp_ids(1) / app.dx_factor - app.plot_offset(app.slice_dim));
+                [dispX, dispY, dispZ] = ind2sub(size(app.kgrid.k), find(app.init_ids));
+                disp_id = [dispX(1), dispY(1), dispZ(1)];
+                app.SliceIndexEditField.Value = round(disp_id(app.slice_dim) / app.dx_factor - app.plot_offset(app.slice_dim));
                 SliceIndexEditFieldValueChanged(app);
             end
             
