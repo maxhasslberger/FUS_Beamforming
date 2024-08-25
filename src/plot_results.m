@@ -151,8 +151,8 @@ if kgrid.dim == 3
     f_3D = figure('color','w');
     f_3D.Position = [125,475,302,350];
 
-
-    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', slice_dim_in, "Parent", f_3D);
+    data = permute(data, [dims_2D(1), slice_dim, dims_2D(2)]);
+    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
 
     if plot_colorbar
         cb3 = colorbar;
