@@ -15,7 +15,7 @@ use_multi_freq = true;
 perform_fft = false; % perform fft on summed signal
 smoothen_pulse = false; % smooth pulses
 zero_padding = false; % apply zero padding to beginning of the signal
-apply_factoring = false; 
+apply_factoring = true; 
 apply_envelope = false;
 save_csv = true; % export signal to csv file
 
@@ -47,8 +47,10 @@ if compute_waveform
         % t = 0:dt:60*T;          
         % Amplitudes and phases of each freq
         if use_multi_freq
-            amp_2d = [20, 40, 60, 80, 100] * 1e3; % kPa
-            phi_2d = [0,0.2,0.4,0.6,0.8];
+            % amp_2d = [20, 40, 60, 80, 100] * 1e3; % kPa
+            amp_2d = rand(1,5) * 1e5;
+            % phi_2d = [0,0.2,0.4,0.6,0.8];
+            phi_2d = rand(1,5) * 2 * pi;
         else
             amp = 20*1e3;
             phi = 0;
@@ -56,7 +58,8 @@ if compute_waveform
         if apply_factoring
             factors = [1/.97, 1/.99, 1, 1/.99, 1/.97];
             amp_2d_factored = amp_2d .* factors; % Pa                         
-            amp = reshape(amp_2d_factored, 1, 1, nfreq);                    
+            amp = reshape(amp_2d_factored, 1, 1, nfreq);
+            amp_unfactored = reshape(amp_2d, 1, 1, nfreq);
         else                  
             if use_multi_freq
                 amp = reshape(amp_2d, 1, 1, nfreq);  
@@ -66,7 +69,7 @@ if compute_waveform
         if use_multi_freq
             w = reshape(w, 1, 1, nfreq);
             phi = reshape(phi_2d, 1, 1, nfreq);                
-            pulse_train_duration = T_m;
+            pulse_train_duration = 3 * T_m;
         else
             % pulse_train_duration = 30*T;
             pulse_train_duration = 200* 1e-6;
@@ -82,6 +85,9 @@ if compute_waveform
             signals_tmp = amp .* sin(w .* t + phi);        
             % Sum signals of different frequencies along the first dimension to get summed signals matrix
             result_signal = sum(signals_tmp, 3);
+            unfactored_signals_tmp = amp_unfactored .* sin(w .* t + phi);
+            result_unfactored_signal = sum(unfactored_signals_tmp, 3);
+
         else
             result_signal = amp * sin(w .* t + phi);
         end
@@ -95,6 +101,7 @@ if compute_waveform
         zero_signal = zeros(1,length(t_zero));
                 
         result_signal = [result_signal, zero_signal];
+        result_unfactored_signal = [result_unfactored_signal, zero_signal];
         total_time = pulse_train_duration + time_zero;
         t = 0:dt:total_time;
         figure;
@@ -149,10 +156,17 @@ if compute_waveform
     
         if save_csv            
             time = t';
-            value = result_signal';
+            value = result_signal';            
             signal_data = table(time, value);
+            if use_multi_freq
+                unfactored_signal_data = table(time, result_unfactored_signal');
+                writetable(unfactored_signal_data, fullfile("../..","Transducer_Delay_Files","unfactored_signal.csv"));
+                writetable(signal_data, fullfile("../..","Transducer_Delay_Files","factored_signal.csv"));
+            else
+                writetable(signal_data, fullfile("../..","Transducer_Delay_Files","arbitrary_signal_singlefreq_500khz.csv"));
+            end
             
-            writetable(signal_data, fullfile("../..","Transducer_Delay_Files","arbitrary_signal_singlefreq_500khz.csv"));
+            
             if ~use_multi_freq
                 amplitude = amp;
                 params = table(f0, amplitude, phi);
