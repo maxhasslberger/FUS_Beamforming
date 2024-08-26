@@ -287,7 +287,7 @@ classdef simulationApp < matlab.apps.AppBase
             masked_b(masked_b <= plot_thr) = 0.0;
             plot_results(app.kgrid, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'fig_pos', {[], [1439 445 475 525], [1660 55 250 300]}, ...
+                app.SliceIndexEditField.Value, 'fig_pos', {[], [1400 450 475 525], [1660 55 250 300]}, ...
                 'slice_dim', app.SliceDimDropDown.Value);
 
             %% Evaluate pressure distribution
@@ -773,16 +773,6 @@ classdef simulationApp < matlab.apps.AppBase
         function UpdateButtonTransducerPushed(app, event)
             [app.t_mask_ps, app.karray_t, app.el_per_t, app.active_ids] = transducer_geometry_init(app, app.kgrid, ...
                 app.dx_factor, app.tr_offset_karr);
-            
-            %% Obtain or load propagation matrix
-            if strcmp(app.PropagationMatrixAfilenameDropDown.Value, "")
-                get_current_A = false;
-            else
-                get_current_A = app.PropagationMatrixAfilenameDropDown.Value(1:end-4);
-            end
-            app.A = obtain_linear_propagator(app.kgrid, app.medium, app.sensor, app.sensor_mask, app.input_args, ...
-                app.t_mask_ps, app.karray_t, app.CenterFreqkHzEditField.Value * 1e3, get_current_A, app.use_greens_fctn, ...
-                'active_ids', app.active_ids);
 
             %% Create preview plot
             app.preplot_arg = zeros(size(app.kgrid.k));
@@ -797,6 +787,16 @@ classdef simulationApp < matlab.apps.AppBase
             app.sv_obj = plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
                 'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDimDropDown.Value);
+
+            %% Obtain or load propagation matrix
+            if strcmp(app.PropagationMatrixAfilenameDropDown.Value, "")
+                get_current_A = false;
+            else
+                get_current_A = app.PropagationMatrixAfilenameDropDown.Value(1:end-4);
+            end
+            app.A = obtain_linear_propagator(app.kgrid, app.medium, app.sensor, app.sensor_mask, app.input_args, ...
+                app.t_mask_ps, app.karray_t, app.CenterFreqkHzEditField.Value * 1e3, get_current_A, app.use_greens_fctn, ...
+                'active_ids', app.active_ids);
 
             disp('Transducer init successful')
         end
@@ -1216,7 +1216,7 @@ classdef simulationApp < matlab.apps.AppBase
             masked_b(masked_b <= plot_thr) = 0.0;
             plot_results(kgridP, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'fig_pos', {[], [1439 445 475 525], [1660 55 250 300]}, ...
+                app.SliceIndexEditField.Value, 'fig_pos', {[], [1400 450 475 525], [1660 55 250 300]}, ...
                 'slice_dim', app.SliceDimDropDown.Value);
 
             % Save results in mat file
@@ -2086,7 +2086,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create PropagationMatrixAfilenameDropDown
             app.PropagationMatrixAfilenameDropDown = uidropdown(app.TransducersTab);
             app.PropagationMatrixAfilenameDropDown.Items = {''};
-            app.PropagationMatrixAfilenameDropDown.Position = [228 119 100 22];
+            app.PropagationMatrixAfilenameDropDown.Position = [228 119 174 22];
             app.PropagationMatrixAfilenameDropDown.Value = '';
 
             % Create GeneralPanel_2
