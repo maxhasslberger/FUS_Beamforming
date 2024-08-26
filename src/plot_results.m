@@ -7,7 +7,7 @@ scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
 ax = [];
-fig_pos = {[1025 55 625 300], [755 445 475 525], [755 55 250 300]};
+fig_pos = {[1025 55 625 300], [800 450 475 525], [755 55 250 300]};
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
