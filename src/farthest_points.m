@@ -22,6 +22,7 @@ init_ids = [];
 selected = false(length(x), 1);
 selected(ismember(stim_ids, cat(2, hull_ids{:}))) = true; % Exclude surfaces indices
 
+prev_len = 0;
 for i = 1:length(hull_ids) % for each cluster
     selected_i = selected;
     selected_i(cluster_labels ~= i) = true; % Exclude indices from other clusters
@@ -60,7 +61,11 @@ for i = 1:length(hull_ids) % for each cluster
         selected_i(nextPoint) = true;
         point_found = true;
     end
+
+    fprintf(strcat("\nNo of Init ids cluster #", num2str(i), ": ", num2str(length(init_ids) - prev_len)))
+    prev_len = length(init_ids);
 end
+fprintf("\n")
 
 if length(grid_sz) == 2
     init_ids = sub2ind(grid_sz, x(init_ids), y(init_ids));

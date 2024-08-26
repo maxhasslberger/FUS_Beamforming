@@ -291,10 +291,10 @@ classdef simulationApp < matlab.apps.AppBase
                 'slice_dim', app.SliceDimDropDown.Value);
 
             %% Evaluate pressure distribution
-            evaluate_pressure_dist(app, plot_title, b_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
-
             app.p_curr = p;
             app.plot_title_curr = plot_title;
+
+            evaluate_metrics(app, plot_title, b_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
 
             % Save results in mat file
             app.ip.b = b;
@@ -548,7 +548,7 @@ classdef simulationApp < matlab.apps.AppBase
             end
         end
         
-        function evaluate_pressure_dist(app, plot_title, b, vol_ids, logical_dom_ids, skull_ids, init_ids)
+        function evaluate_metrics(app, plot_title, b, vol_ids, logical_dom_ids, skull_ids, init_ids)
             real_ip = abs(reshape(b, [], 1));
             
             offTar_real_ip = real_ip;
@@ -557,18 +557,22 @@ classdef simulationApp < matlab.apps.AppBase
             skull_real_ip = real_ip(skull_ids);
             
             init_real_ip = real_ip(init_ids);
-            
-            fprintf(strcat("\n", plot_title, " Init Points (kPa):\n"))
-            disp(init_real_ip' * 1e-3)
-            
-            fprintf(strcat("\n", plot_title, " max. Skull Pressure (kPa):\n"))
-            disp(max(skull_real_ip) * 1e-3)
-            
-            fprintf(strcat("\n", plot_title, " max. Off-Target Pressure (kPa):\n"))
-            disp(max(offTar_real_ip) * 1e-3)
+
+
+            fprintf(strcat("\n", plot_title, " Excitation norm (kPa):\n"))
+            disp(norm(app.p_curr) * 1e-3)
 
             fprintf(strcat("\n", plot_title, " max. Pressure (kPa):\n"))
             disp(max(real_ip) * 1e-3)
+
+            fprintf(strcat("\n", plot_title, " max. Skull Pressure (kPa):\n"))
+            disp(max(skull_real_ip) * 1e-3)
+            
+            fprintf(strcat("\n", plot_title, " Forced Points (kPa):\n"))
+            disp(init_real_ip' * 1e-3)
+            
+            fprintf(strcat("\n", plot_title, " max. Off-Target Pressure (kPa):\n"))
+            disp(max(offTar_real_ip) * 1e-3)
         end
         
         function labels2D_visible(app, visible_3D, dim)
@@ -1070,7 +1074,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.vol_ids = reshape(logical(app.full_bmask), numel(app.full_bmask), 1); % Indices that correspond to the target volume(s)
             
             [app.init_ids, ~, b_mask_plot] = get_init_ids(app.kgrid, ...
-                app.min_dist * 1e-3, app.b_mask, ...
+                [app.min_dist, app.min_dist_reg] * 1e-3, app.b_mask, ...
                 find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values forced
 
             % Update displayed slice based on first init_id
@@ -1205,7 +1209,7 @@ classdef simulationApp < matlab.apps.AppBase
                 b_gt_lim(excl_ids) = 0.0;
 
                 % Evaluate Pressure Distribution
-                evaluate_pressure_dist(app, plot_title, b_gt_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
+                evaluate_metrics(app, plot_title, b_gt_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
             end
 
             app.sv_obj = plot_results(kgridP, [], b_gt_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
