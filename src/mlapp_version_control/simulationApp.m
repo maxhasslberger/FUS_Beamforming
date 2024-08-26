@@ -1070,8 +1070,8 @@ classdef simulationApp < matlab.apps.AppBase
             app.vol_ids = reshape(logical(app.full_bmask), numel(app.full_bmask), 1); % Indices that correspond to the target volume(s)
             
             [app.init_ids, ~, b_mask_plot] = get_init_ids(app.kgrid, ...
-                min(app.medium.sound_speed(:)) / (app.CenterFreqkHzEditField.Value * 1e3), app.b_mask, ...
-                find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values given
+                app.min_dist * 1e-3, app.b_mask, ...
+                find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values forced
 
             % Update displayed slice based on first init_id
             if app.n_dim == 3

@@ -56,7 +56,7 @@ if ~exist('A', 'var')
 end
 
 %% Solve Inverse Problem
-obs_ids = reshape(logical(full_bmask), numel(full_bmask), 1);
+vol_ids = reshape(logical(full_bmask), numel(full_bmask), 1);
 
 % [domain_ids, skull_ids] = limit_space(medium.sound_speed); % Indices considered in optimization (intracranial and skull)
 skullMask = medium.sound_speed > min(medium.sound_speed(:));
@@ -65,10 +65,11 @@ skull_ids = reshape(skullMask, [], 1);
 % Take entire observation grid into account
 ip.A = A;
 b_ip_des = b_des_pl;
-
-vol_ids = obs_ids; % Indices that correspond to the target volume(s)
-[init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / f0, b_mask, force_pressures); % Indices where pressure values given
 ip.beta = 0.0;
+
+lambda = min(medium.sound_speed(:)) / f0;
+min_dist = 2 * lambda * ones(1, length(force_pressures)); % min distance between init points
+[init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min_dist, b_mask, force_pressures); % Indices where pressure values given
 
 % New preplot with init point arg
 preplot_arg = preplot_arg + b_mask_plot;
