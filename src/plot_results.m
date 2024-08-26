@@ -7,7 +7,7 @@ scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
 ax = [];
-fig_pos = {[1150 75 650 300], [1150,475,302,350]};
+fig_pos = {[1025 55 625 300], [755 445 475 525], [755 55 250 300]};
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -155,7 +155,6 @@ fontsize(f_data, 12,"points")
 
 if kgrid.dim == 3
     f_3D = figure('color','w');
-    f_3D.Position = [125,475,302,350];
 
     data = permute(data, [dims_2D(1), slice_dim, dims_2D(2)]);
     sv_obj = sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
@@ -165,6 +164,7 @@ if kgrid.dim == 3
         xlabel(cb3, 'Pressure (kPa)');
     end
     title(plot_title);
+    f_3D.Position = fig_pos{3};
 else
     sv_obj = [];
 end

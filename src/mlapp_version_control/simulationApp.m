@@ -287,7 +287,7 @@ classdef simulationApp < matlab.apps.AppBase
             masked_b(masked_b <= plot_thr) = 0.0;
             plot_results(app.kgrid, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'fig_pos', {[], [1500,475,302,350]}, ...
+                app.SliceIndexEditField.Value, 'fig_pos', {[], [1439 445 475 525], [1660 55 250 300]}, ...
                 'slice_dim', app.SliceDimDropDown.Value);
 
             %% Evaluate pressure distribution
@@ -1216,7 +1216,7 @@ classdef simulationApp < matlab.apps.AppBase
             masked_b(masked_b <= plot_thr) = 0.0;
             plot_results(kgridP, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', ...
-                app.SliceIndexEditField.Value, 'fig_pos', {[], [1500,475,302,350]}, ...
+                app.SliceIndexEditField.Value, 'fig_pos', {[], [1439 445 475 525], [1660 55 250 300]}, ...
                 'slice_dim', app.SliceDimDropDown.Value);
 
             % Save results in mat file
@@ -1523,7 +1523,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [400 300 727 581];
+            app.UIFigure.Position = [25 445 727 581];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create TabGroup
