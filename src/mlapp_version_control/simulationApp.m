@@ -1512,6 +1512,9 @@ classdef simulationApp < matlab.apps.AppBase
             value = app.SliceDirectionDropDown_2.Value;
             app.SliceDimDropDown.Value = value;
             SliceDimDropDownValueChanged(app);
+
+            app.slice_dim = dim2num(app.SliceDimDropDown.Value);
+            app.dims_2D = exclude_dim(app.slice_dim);
         end
     end
 
