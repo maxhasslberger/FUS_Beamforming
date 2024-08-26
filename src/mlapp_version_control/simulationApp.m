@@ -82,6 +82,7 @@ classdef simulationApp < matlab.apps.AppBase
         c0msEditField                   matlab.ui.control.NumericEditField
         c0msEditFieldLabel              matlab.ui.control.Label
         TransducersTab                  matlab.ui.container.Tab
+        TransducerPreviewButton         matlab.ui.control.Button
         RemoveTransducerButton          matlab.ui.control.Button
         GeneralPanel_2                  matlab.ui.container.Panel
         WidthmmEditField                matlab.ui.control.NumericEditField
@@ -775,22 +776,8 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: UpdateButtonTransducer
         function UpdateButtonTransducerPushed(app, event)
-            [app.t_mask_ps, app.karray_t, app.el_per_t, app.active_ids] = transducer_geometry_init(app, app.kgrid, ...
-                app.dx_factor, app.tr_offset_karr);
 
-            %% Create preview plot
-            app.preplot_arg = zeros(size(app.kgrid.k));
-            app.preplot_arg(logical(app.t_mask_ps)) = 1.0;
-            
-            if ~isscalar(app.medium.sound_speed)
-                skull_arg = app.medium.sound_speed / max(app.medium.sound_speed(:));
-                skull_arg = skull_arg - min(skull_arg(:));
-                app.preplot_arg = app.preplot_arg + skull_arg;
-            end
-
-            app.sv_obj = plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, ...
-                app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
-                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDimDropDown.Value);
+            TransducerPreviewButtonPushed(app);
 
             %% Obtain or load propagation matrix
             if strcmp(app.PropagationMatrixAfilenameDropDown.Value, "")
@@ -1520,6 +1507,26 @@ classdef simulationApp < matlab.apps.AppBase
             app.slice_dim = dim2num(app.SliceDimDropDown.Value);
             app.dims_2D = exclude_dim(app.slice_dim);
         end
+
+        % Button pushed function: TransducerPreviewButton
+        function TransducerPreviewButtonPushed(app, event)
+            [app.t_mask_ps, app.karray_t, app.el_per_t, app.active_ids] = transducer_geometry_init(app, app.kgrid, ...
+                app.dx_factor, app.tr_offset_karr);
+
+            %% Create preview plot
+            app.preplot_arg = zeros(size(app.kgrid.k));
+            app.preplot_arg(logical(app.t_mask_ps)) = 1.0;
+            
+            if ~isscalar(app.medium.sound_speed)
+                skull_arg = app.medium.sound_speed / max(app.medium.sound_speed(:));
+                skull_arg = skull_arg - min(skull_arg(:));
+                app.preplot_arg = app.preplot_arg + skull_arg;
+            end
+
+            app.sv_obj = plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, ...
+                app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
+                'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDimDropDown.Value);
+        end
     end
 
     % Component initialization
@@ -2078,19 +2085,19 @@ classdef simulationApp < matlab.apps.AppBase
             % Create UpdateButtonTransducer
             app.UpdateButtonTransducer = uibutton(app.TransducersTab, 'push');
             app.UpdateButtonTransducer.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonTransducerPushed, true);
-            app.UpdateButtonTransducer.Position = [574 116 100 23];
+            app.UpdateButtonTransducer.Position = [576 63 100 23];
             app.UpdateButtonTransducer.Text = 'Update';
 
             % Create PropagationMatrixAfilenameDropDownLabel
             app.PropagationMatrixAfilenameDropDownLabel = uilabel(app.TransducersTab);
             app.PropagationMatrixAfilenameDropDownLabel.HorizontalAlignment = 'right';
-            app.PropagationMatrixAfilenameDropDownLabel.Position = [39 119 174 22];
+            app.PropagationMatrixAfilenameDropDownLabel.Position = [46 62 174 22];
             app.PropagationMatrixAfilenameDropDownLabel.Text = 'Propagation Matrix (A) filename';
 
             % Create PropagationMatrixAfilenameDropDown
             app.PropagationMatrixAfilenameDropDown = uidropdown(app.TransducersTab);
             app.PropagationMatrixAfilenameDropDown.Items = {''};
-            app.PropagationMatrixAfilenameDropDown.Position = [228 119 174 22];
+            app.PropagationMatrixAfilenameDropDown.Position = [235 62 174 22];
             app.PropagationMatrixAfilenameDropDown.Value = '';
 
             % Create GeneralPanel_2
@@ -2163,6 +2170,12 @@ classdef simulationApp < matlab.apps.AppBase
             app.RemoveTransducerButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveTransducerButtonPushed2, true);
             app.RemoveTransducerButton.Position = [129 213 122 23];
             app.RemoveTransducerButton.Text = 'Remove Transducer';
+
+            % Create TransducerPreviewButton
+            app.TransducerPreviewButton = uibutton(app.TransducersTab, 'push');
+            app.TransducerPreviewButton.ButtonPushedFcn = createCallbackFcn(app, @TransducerPreviewButtonPushed, true);
+            app.TransducerPreviewButton.Position = [555 123 121 23];
+            app.TransducerPreviewButton.Text = 'Transducer Preview';
 
             % Create TargetingTab
             app.TargetingTab = uitab(app.TabGroup);
