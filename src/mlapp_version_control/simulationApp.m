@@ -456,7 +456,7 @@ classdef simulationApp < matlab.apps.AppBase
                 t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
                 sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
 
-                t_pos_3D = app.t_pos * app.dx_scan + tr_offset_karr_in; % m
+                t_pos_3D = app.t_pos * app.dx_scan;
                 active_tr_ids = 1:n_trs;
 
                 if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
@@ -465,8 +465,8 @@ classdef simulationApp < matlab.apps.AppBase
                     el_sz = app.LengthmmEditField.Value;
                 end
             
-                [karray_t_out, t_mask_ps_out, active_ids_out, num_elements, app.mask2el] = create_transducer(kgrid_in, t_name, ...
-                    sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
+                [karray_t_out, t_mask_ps_out, active_ids_out, num_elements, app.mask2el] = create_transducer(kgrid_in, ...
+                    app.plot_offset, tr_offset_karr_in, t_name, sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
             
                 el_per_t_out = num_elements * ones(1, length(active_tr_ids));
             end

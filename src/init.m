@@ -182,13 +182,14 @@ else
 %         t2_rot = [-45, 0, 180]'; % deg
     end
 
-    t_pos = [t1_pos, t2_pos] * dx_scan + tr_offset_karr;
+    t_pos = [t1_pos, t2_pos] * dx_scan;
     % t_pos = (repmat(plot_offset', 1, size(t_pos, 2)) + t_pos) * dx_factor;
     t_rot = [t1_rot, t2_rot];
     active_tr_ids = [1, 2];
     el_sz = [3, 3] * 1e-3; % dimensions of one array element
 
-    [karray_t, t_mask_ps, active_ids, num_elements, mask2el] = create_transducer(kgrid, t_name, sparsity_name, t_pos, t_rot, active_tr_ids, el_sz);
+    [karray_t, t_mask_ps, active_ids, num_elements, mask2el] = create_transducer(kgrid, t_name, plot_offset, tr_offset_karr, sparsity_name, t_pos, t_rot, ...
+        active_tr_ids, el_sz);
 
     el_per_t = num_elements * ones(1, length(active_tr_ids));
 
