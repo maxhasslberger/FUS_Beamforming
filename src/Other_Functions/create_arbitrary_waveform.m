@@ -9,7 +9,7 @@ close all;
 compute_waveform = true;
 plot_pulse_durations = false;
 use_cw_signals = false;
-use_multi_freq = false;
+use_multi_freq = true;
 
 % Waveform options
 perform_fft = false; % perform fft on summed signal
@@ -24,6 +24,7 @@ save_csv = true; % export signal to csv file
 % ----------------------------
 
 if compute_waveform  
+        
         % Frequencies
         ctr_freq = 500; % kHz
         if use_multi_freq
@@ -46,12 +47,12 @@ if compute_waveform
         % t = 0:dt:60*T;          
         % Amplitudes and phases of each freq
         if use_multi_freq
-            amp_2d = [20, 20, 20, 20, 20] * 1e3; % kPa
+            amp_2d = [20, 40, 60, 80, 100] * 1e3; % kPa
             phi_2d = [0,0.2,0.4,0.6,0.8];
         else
             amp = 20*1e3;
             phi = 0;
-        end
+        end        
         if apply_factoring
             factors = [1/.97, 1/.99, 1, 1/.99, 1/.97];
             amp_2d_factored = amp_2d .* factors; % Pa                         
@@ -60,7 +61,7 @@ if compute_waveform
             if use_multi_freq
                 amp = reshape(amp_2d, 1, 1, nfreq);  
             end
-        end
+        end        
         % Reshape vars to stack each frequency along third dim
         if use_multi_freq
             w = reshape(w, 1, 1, nfreq);
@@ -69,6 +70,7 @@ if compute_waveform
         else
             % pulse_train_duration = 30*T;
             pulse_train_duration = 200* 1e-6;
+        end
         if zero_padding; padding_duration = 10 * T; else; padding_duration = 0; end;
         t = 0:dt:(pulse_train_duration + padding_duration);
         npulses = 1;
@@ -77,7 +79,7 @@ if compute_waveform
         
         % Construct signals
         if use_multi_freq
-            signals_tmp = amp .* cos(w .* t + phi);        
+            signals_tmp = amp .* sin(w .* t + phi);        
             % Sum signals of different frequencies along the first dimension to get summed signals matrix
             result_signal = sum(signals_tmp, 3);
         else
@@ -145,7 +147,7 @@ if compute_waveform
             grid on;           
         end      
     
-        if save_csv
+        if save_csv            
             time = t';
             value = result_signal';
             signal_data = table(time, value);
@@ -156,17 +158,20 @@ if compute_waveform
                 params = table(f0, amplitude, phi);
                 writetable(params,fullfile("../..","Transducer_Delay_Files","single_freq" + num2str(f0) + "_params.csv"));
             else
-                amplitude = amp_2d';
-                phase_shift = phi_2d';
                 freq = f0';
-                unfactored_params = table(freq,amplitude,phase_shift);
-                writetable(unfactored_params, fullfile("../..","Transducer_Delay_Files","unfactored_signal_params.csv"));            
-
-                if apply_factoring
+                phase_shift = phi_2d';
+                if apply_factoring % Clean up code later
                     factored_amplitude = amp_2d_factored';
                     factored_params = table(freq,factored_amplitude,phase_shift);
                     writetable(factored_params, fullfile("../..","Transducer_Delay_Files","factored_signal_params.csv"));
-                end
+                    amplitude = amp_2d';
+                    unfactored_params = table(freq,amplitude,phase_shift);
+                    writetable(unfactored_params, fullfile("../..","Transducer_Delay_Files","unfactored_signal_params.csv"));     
+                else
+                    amplitude = amp_2d';
+                    unfactored_params = table(freq,amplitude,phase_shift);
+                    writetable(unfactored_params, fullfile("../..","Transducer_Delay_Files","unfactored_signal_params.csv"));        
+                end                                                                                  
             end
         end
     
@@ -207,7 +212,7 @@ if compute_waveform
             xlim([400e3 550e3]);
             grid on;                             
         end
-        end
+end
 
 % ----------------------------------------------------------------
 % >>>>> Option 2: Constructing signals using createCWSignals <<<<<
@@ -291,7 +296,7 @@ if plot_pulse_durations
         % ylim([0 0.1])
     end
 end
-end
+
 
 
 
