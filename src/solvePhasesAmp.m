@@ -116,9 +116,10 @@ end
 
 
 function val = cost_fctn(p, A0, b0)
+norm_val = 2;
 
 p = getCompVec(p);
-val = norm(abs(A0 * p) - b0);
+val = nthroot(norm(abs(A0 * p.^norm_val) - b0), norm_val);
 
 end
 
