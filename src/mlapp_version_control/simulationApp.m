@@ -143,7 +143,7 @@ classdef simulationApp < matlab.apps.AppBase
         BrainRegionDropDownLabel        matlab.ui.control.Label
         ManualTargetDropDown            matlab.ui.control.DropDown
         ManualTargetDropDownLabel       matlab.ui.control.Label
-        RemoveManualTransducerButton    matlab.ui.control.Button
+        RemoveManualTargetButton        matlab.ui.control.Button
         AddManualTargetButton           matlab.ui.control.Button
         TargetManPanel                  matlab.ui.container.Panel
         ConfirmManTargetButton          matlab.ui.control.Button
@@ -1265,8 +1265,8 @@ classdef simulationApp < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: RemoveManualTransducerButton
-        function RemoveManualTransducerButtonPushed(app, event)
+        % Button pushed function: RemoveManualTargetButton
+        function RemoveManualTargetButtonPushed(app, event)
             n_man_tars = length(app.ManualTargetDropDown.Items) - 1;
 
             if n_man_tars >= 0
@@ -2285,11 +2285,11 @@ classdef simulationApp < matlab.apps.AppBase
             app.AddManualTargetButton.Position = [112 401 122 23];
             app.AddManualTargetButton.Text = 'Add Manual Target';
 
-            % Create RemoveManualTransducerButton
-            app.RemoveManualTransducerButton = uibutton(app.TargetingTab, 'push');
-            app.RemoveManualTransducerButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveManualTransducerButtonPushed, true);
-            app.RemoveManualTransducerButton.Position = [90 371 166 23];
-            app.RemoveManualTransducerButton.Text = 'Remove Manual Transducer';
+            % Create RemoveManualTargetButton
+            app.RemoveManualTargetButton = uibutton(app.TargetingTab, 'push');
+            app.RemoveManualTargetButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveManualTargetButtonPushed, true);
+            app.RemoveManualTargetButton.Position = [104 371 139 23];
+            app.RemoveManualTargetButton.Text = 'Remove Manual Target';
 
             % Create ManualTargetDropDownLabel
             app.ManualTargetDropDownLabel = uilabel(app.TargetingTab);
