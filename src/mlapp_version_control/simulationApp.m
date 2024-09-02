@@ -491,6 +491,7 @@ classdef simulationApp < matlab.apps.AppBase
                 ct_file = app.CTfilenameDropDown.Value;
                 het_coord = [app.scanxEditField.Value, app.scanyEditField.Value, app.scanzEditField.Value];
                 dx_t1w = app.ScanSpatialResolutionmmEditField.Value;
+                seg_labels = app.segment_labels;
                 
                 % Transducer param
                 TransducersTabButtonDown(app);
@@ -544,7 +545,7 @@ classdef simulationApp < matlab.apps.AppBase
 
                 save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "dim_switch", "f0", "slice_direction", "slice_index", "dx", ...
                     "medium_type", "green_function", "hom_coord", "t1w_file", "ct_file", "het_coord", "dx_t1w", "dropdowns", "array", "tr", "matrix_name", ...
-                    "man", "reg", "ineq_flag", "ineq_val", "skull_flag", "skull_val", "opt", "gt_dx_factor", "term", "ip_sol");
+                    "man", "reg", "ineq_flag", "ineq_val", "skull_flag", "skull_val", "opt", "gt_dx_factor", "term", "ip_sol", "seg_labels");
                 
             end
         end
@@ -1362,6 +1363,7 @@ classdef simulationApp < matlab.apps.AppBase
                 app.scanyEditField.Value = data.het_coord(2);
                 app.scanzEditField.Value = data.het_coord(3);
                 app.ScanSpatialResolutionmmEditField.Value = data.dx_t1w;
+                app.segment_labels = data.seg_labels;
 
                 % Transducer param
                 TransducersTabButtonDown(app);
@@ -1372,9 +1374,10 @@ classdef simulationApp < matlab.apps.AppBase
                 app.t_rot = data.tr.rot;
                 app.tr_len = data.tr.length; 
                 
+                app.Transducer1Panel.Visible = ~isempty(app.t_pos);
                 if ~isempty(app.t_pos)
-                    app.TransducerDropDown.Items = cellstr( num2str(1:size(app.t_pos, 2)) )';
-                    app.TransducerDropDown.Value = 1;
+                    app.TransducerDropDown.Items = cellstr( num2str((1:size(app.t_pos, 2))') );
+                    app.TransducerDropDown.Value = '1';
 
                     app.trPosxEditField.Value = app.t_pos(1, 1);
                     app.trPosyEditField.Value = app.t_pos(2, 1);
@@ -1404,9 +1407,10 @@ classdef simulationApp < matlab.apps.AppBase
                 app.min_dist = data.man.min_dist;
                 app.force_pressures = data.man.force;
                 
+                app.TargetManPanel.Visible = ~isempty(app.des_pressures);
                 if ~isempty(app.des_pressures)
-                    app.ManualTargetDropDown.Items = cellstr( num2str(1:length(app.des_pressures)) )';
-                    app.ManualTargetDropDown.Value = 1;
+                    app.ManualTargetDropDown.Items = cellstr( num2str((1:length(app.des_pressures))') );
+                    app.ManualTargetDropDown.Value = '1';
 
                     app.focusxEditField.Value = app.point_pos_m(1, 1);
                     app.focusyEditField.Value = app.point_pos_m(2, 1);
@@ -1415,7 +1419,13 @@ classdef simulationApp < matlab.apps.AppBase
                     app.FocusRadiusmmEditField.Value = app.focus_radius(1);
                     app.PressureAmplitudekPaEditField.Value = app.des_pressures(1);
                     app.MinPointDistancemmEditField.Value = app.min_dist(1);
-                    app.todeclaredPressureSwitch.Value = app.force_pressures(1);
+
+                    if app.force_pressures(1)
+                        switch_val_man = 'Force';
+                    else
+                        switch_val_man = 'Limit';
+                    end
+                    app.todeclaredPressureSwitch.Value = switch_val_man;
                 end
                 
                 app.tar_reg_labels = data.reg.labels;
@@ -1423,15 +1433,22 @@ classdef simulationApp < matlab.apps.AppBase
                 app.min_dist_reg = data.reg.min_dist;
                 app.force_pressures_reg = data.reg.force;
 
+                app.TargetRegPanel.Visible = ~isempty(app.des_pressures_reg);
                 if ~isempty(app.des_pressures_reg)
-                    app.RegionTargetDropDown.Items = cellstr( num2str(1:length(app.des_pressures_reg)) )';
-                    app.RegionTargetDropDown.Value = 1;
+                    app.RegionTargetDropDown.Items = cellstr( num2str((1:length(app.des_pressures_reg))') );
+                    app.RegionTargetDropDown.Value = '1';
 
-                    app.BrainRegionDropDown.Value = app.tar_reg_labels(1);
+                    app.BrainRegionDropDown.Value = convertStringsToChars(app.tar_reg_labels(1));
 
                     app.PressureAmplitudekPaEditFieldReg.Value = app.des_pressures_reg(1);
                     app.MinPointDistancemmEditFieldReg.Value = app.min_dist_reg(1);
-                    app.todeclaredPressureSwitchReg.Value = app.force_pressures_reg(1);
+
+                    if app.force_pressures_reg(1)
+                        switch_val_reg = 'Force';
+                    else
+                        switch_val_reg = 'Limit';
+                    end
+                    app.todeclaredPressureSwitchReg.Value = switch_val_reg;
                 end
                 
                 app.LimitIntracranialOffTargetPressureCheckBox.Value = data.ineq_flag;
