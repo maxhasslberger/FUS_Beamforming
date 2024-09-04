@@ -1,7 +1,7 @@
 function [init_ids, hull_ids, b_mask_plot] = get_init_ids(kgrid, min_dist, b_mask, force_pressures)
 
 n_dim = length(size(kgrid.k));
-min_dist = min_dist / kgrid.dx; % m -> pix
+min_dist = min_dist(force_pressures) / kgrid.dx; % m -> pix
 
 % Label clusters and identify forced stim_ids
 stim_ids = [];
