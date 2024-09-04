@@ -170,15 +170,15 @@ classdef simulationApp < matlab.apps.AppBase
         LimittoSkullCheckBox            matlab.ui.control.CheckBox
         LimittoIntracranialFieldCheckBox  matlab.ui.control.CheckBox
         AdvancedOptimizationOptionsPanel  matlab.ui.container.Panel
+        LxNormEditField                 matlab.ui.control.NumericEditField
+        LxNormEditFieldLabel            matlab.ui.control.Label
         MinimizeArrrayAmplitudesCheckBox  matlab.ui.control.CheckBox
         MaxNoofIterationsEditField      matlab.ui.control.NumericEditField
         MaxNoofIterationsEditFieldLabel  matlab.ui.control.Label
-        AlgorithmDropDown               matlab.ui.control.DropDown
-        AlgorithmDropDownLabel          matlab.ui.control.Label
         ConstraintToleranceEditField    matlab.ui.control.NumericEditField
         ConstraintToleranceLabel        matlab.ui.control.Label
-        FunctionToleranceEditField      matlab.ui.control.NumericEditField
-        FunctionToleranceEditFieldLabel  matlab.ui.control.Label
+        RelFunctionToleranceEditField   matlab.ui.control.NumericEditField
+        RelFunctionToleranceEditFieldLabel  matlab.ui.control.Label
         DisplayAdvancedOptimizationOptionsCheckBox  matlab.ui.control.CheckBox
         GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
         GroundTruthResolutionFactorEditFieldLabel  matlab.ui.control.Label
@@ -536,7 +536,7 @@ classdef simulationApp < matlab.apps.AppBase
 
                 term.advanced_opt = app.DisplayAdvancedOptimizationOptionsCheckBox.Value;
                 term.min_arr_amp = app.MinimizeArrrayAmplitudesCheckBox.Value;
-                term.fun_tol = app.FunctionToleranceEditField.Value;
+                term.fun_tol = app.RelFunctionToleranceEditField.Value;
                 term.constr_tol = app.ConstraintToleranceEditField.Value;
                 term.max_iter = app.MaxNoofIterationsEditField.Value;
                 term.algorithm = app.AlgorithmDropDown.Value;
@@ -561,7 +561,7 @@ classdef simulationApp < matlab.apps.AppBase
             init_real_ip = real_ip(init_ids);
 
 
-            fprintf(strcat("\n", plot_title, " Excitation norm (kPa):\n"))
+            fprintf(strcat("\n", plot_title, " Excitation L2-norm (kPa):\n"))
             disp(norm(app.p_curr) * 1e-3)
 
             fprintf(strcat("\n", plot_title, " max. Pressure (kPa):\n"))
@@ -1129,11 +1129,11 @@ classdef simulationApp < matlab.apps.AppBase
             cons_ids = (skull_active & app.skull_ids) | (dom_active & app.logical_dom_ids);
 
             %% Get Optimization Options
-            term.fun_tol = app.FunctionToleranceEditField.Value;
+            term.fun_tol = app.RelFunctionToleranceEditField.Value;
             term.constr_tol = app.ConstraintToleranceEditField.Value;
             term.iter_tol = 10;
             term.iter_lim = max([term.iter_tol, app.MaxNoofIterationsEditField.Value - term.iter_tol]);
-            term.algorithm = app.AlgorithmDropDown.Value;
+            term.norm_val = app.LxNormEditField.Value;
 
             app.ip.beta = double(app.MinimizeArrrayAmplitudesCheckBox.Value);
             
@@ -1466,7 +1466,7 @@ classdef simulationApp < matlab.apps.AppBase
 
                 app.DisplayAdvancedOptimizationOptionsCheckBox.Value = data.term.advanced_opt;
                 app.MinimizeArrrayAmplitudesCheckBox.Value = data.term.min_arr_amp;
-                app.FunctionToleranceEditField.Value = data.term.fun_tol;
+                app.RelFunctionToleranceEditField.Value = data.term.fun_tol;
                 app.ConstraintToleranceEditField.Value = data.term.constr_tol;
                 app.MaxNoofIterationsEditField.Value = data.term.max_iter;
                 app.AlgorithmDropDown.Value = data.term.algorithm;
@@ -1737,6 +1737,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create PMLsizeEditField
             app.PMLsizeEditField = uieditfield(app.AdvancedGridMediumSettingsPanel, 'numeric');
+            app.PMLsizeEditField.RoundFractionalValues = 'on';
             app.PMLsizeEditField.Position = [608 104 35 22];
             app.PMLsizeEditField.Value = 10;
 
@@ -1813,6 +1814,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create SliceIndexEditField
             app.SliceIndexEditField = uieditfield(app.GeneralPanel, 'numeric');
+            app.SliceIndexEditField.RoundFractionalValues = 'on';
             app.SliceIndexEditField.ValueChangedFcn = createCallbackFcn(app, @SliceIndexEditFieldValueChanged, true);
             app.SliceIndexEditField.Position = [144 125 48 22];
             app.SliceIndexEditField.Value = 30;
@@ -1878,6 +1880,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create scanxEditField
             app.scanxEditField = uieditfield(app.hetPanel, 'numeric');
+            app.scanxEditField.RoundFractionalValues = 'on';
             app.scanxEditField.Position = [62 71 42 22];
             app.scanxEditField.Value = -96;
 
@@ -1889,6 +1892,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create scanzEditField
             app.scanzEditField = uieditfield(app.hetPanel, 'numeric');
+            app.scanzEditField.RoundFractionalValues = 'on';
             app.scanzEditField.Position = [265 71 42 22];
             app.scanzEditField.Value = -126;
 
@@ -1900,6 +1904,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create scanyEditField
             app.scanyEditField = uieditfield(app.hetPanel, 'numeric');
+            app.scanyEditField.RoundFractionalValues = 'on';
             app.scanyEditField.Position = [159 71 42 22];
             app.scanyEditField.Value = -127;
 
@@ -1940,7 +1945,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create homPanel
             app.homPanel = uipanel(app.hetPanel);
-            app.homPanel.Position = [2 11 308 219];
+            app.homPanel.Position = [1 13 308 219];
 
             % Create GreensFunctionbasedCheckBox
             app.GreensFunctionbasedCheckBox = uicheckbox(app.homPanel);
@@ -1962,6 +1967,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create xHomEditField
             app.xHomEditField = uieditfield(app.homPanel, 'numeric');
             app.xHomEditField.Limits = [0 Inf];
+            app.xHomEditField.RoundFractionalValues = 'on';
             app.xHomEditField.Position = [69 62 37 22];
             app.xHomEditField.Value = 192;
 
@@ -1975,6 +1981,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create HomyEditField
             app.HomyEditField = uieditfield(app.homPanel, 'numeric');
             app.HomyEditField.Limits = [0 Inf];
+            app.HomyEditField.RoundFractionalValues = 'on';
             app.HomyEditField.Visible = 'off';
             app.HomyEditField.Position = [149 62 37 22];
             app.HomyEditField.Value = 256;
@@ -1988,6 +1995,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create HomzEditField
             app.HomzEditField = uieditfield(app.homPanel, 'numeric');
             app.HomzEditField.Limits = [0 Inf];
+            app.HomzEditField.RoundFractionalValues = 'on';
             app.HomzEditField.Position = [233 62 37 22];
             app.HomzEditField.Value = 256;
 
@@ -2034,6 +2042,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create trPosxEditField
             app.trPosxEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.trPosxEditField.RoundFractionalValues = 'on';
             app.trPosxEditField.Position = [90 149 37 22];
             app.trPosxEditField.Value = -59;
 
@@ -2046,6 +2055,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create trPosyEditField
             app.trPosyEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.trPosyEditField.RoundFractionalValues = 'on';
             app.trPosyEditField.Visible = 'off';
             app.trPosyEditField.Position = [170 149 37 22];
             app.trPosyEditField.Value = 30;
@@ -2058,6 +2068,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create trPoszEditField
             app.trPoszEditField = uieditfield(app.Transducer1Panel, 'numeric');
+            app.trPoszEditField.RoundFractionalValues = 'on';
             app.trPoszEditField.Position = [254 149 37 22];
             app.trPoszEditField.Value = 60;
 
@@ -2244,6 +2255,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create focusxEditField
             app.focusxEditField = uieditfield(app.TargetManPanel, 'numeric');
+            app.focusxEditField.RoundFractionalValues = 'on';
             app.focusxEditField.Position = [90 149 37 22];
             app.focusxEditField.Value = -18;
 
@@ -2256,6 +2268,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create focusyEditField
             app.focusyEditField = uieditfield(app.TargetManPanel, 'numeric');
+            app.focusyEditField.RoundFractionalValues = 'on';
             app.focusyEditField.Visible = 'off';
             app.focusyEditField.Position = [170 149 37 22];
             app.focusyEditField.Value = 30;
@@ -2268,6 +2281,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             % Create focuszEditField
             app.focuszEditField = uieditfield(app.TargetManPanel, 'numeric');
+            app.focuszEditField.RoundFractionalValues = 'on';
             app.focuszEditField.Position = [254 149 37 22];
             app.focuszEditField.Value = -27;
 
@@ -2540,49 +2554,38 @@ classdef simulationApp < matlab.apps.AppBase
             app.AdvancedOptimizationOptionsPanel.Visible = 'off';
             app.AdvancedOptimizationOptionsPanel.Position = [25 17 236 187];
 
-            % Create FunctionToleranceEditFieldLabel
-            app.FunctionToleranceEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
-            app.FunctionToleranceEditFieldLabel.HorizontalAlignment = 'right';
-            app.FunctionToleranceEditFieldLabel.Position = [11 106 106 22];
-            app.FunctionToleranceEditFieldLabel.Text = 'Function Tolerance';
+            % Create RelFunctionToleranceEditFieldLabel
+            app.RelFunctionToleranceEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
+            app.RelFunctionToleranceEditFieldLabel.HorizontalAlignment = 'right';
+            app.RelFunctionToleranceEditFieldLabel.Position = [6 106 131 22];
+            app.RelFunctionToleranceEditFieldLabel.Text = 'Rel. Function Tolerance';
 
-            % Create FunctionToleranceEditField
-            app.FunctionToleranceEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
-            app.FunctionToleranceEditField.Position = [122 106 52 22];
-            app.FunctionToleranceEditField.Value = 0.1;
+            % Create RelFunctionToleranceEditField
+            app.RelFunctionToleranceEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
+            app.RelFunctionToleranceEditField.Position = [142 106 52 22];
+            app.RelFunctionToleranceEditField.Value = 1e-08;
 
             % Create ConstraintToleranceLabel
             app.ConstraintToleranceLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
             app.ConstraintToleranceLabel.HorizontalAlignment = 'right';
-            app.ConstraintToleranceLabel.Position = [2 76 115 22];
+            app.ConstraintToleranceLabel.Position = [22 76 115 22];
             app.ConstraintToleranceLabel.Text = 'Constraint Tolerance';
 
             % Create ConstraintToleranceEditField
             app.ConstraintToleranceEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
-            app.ConstraintToleranceEditField.Position = [122 76 50 22];
+            app.ConstraintToleranceEditField.Position = [142 76 50 22];
             app.ConstraintToleranceEditField.Value = 0.001;
-
-            % Create AlgorithmDropDownLabel
-            app.AlgorithmDropDownLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
-            app.AlgorithmDropDownLabel.HorizontalAlignment = 'right';
-            app.AlgorithmDropDownLabel.Position = [13 16 56 22];
-            app.AlgorithmDropDownLabel.Text = 'Algorithm';
-
-            % Create AlgorithmDropDown
-            app.AlgorithmDropDown = uidropdown(app.AdvancedOptimizationOptionsPanel);
-            app.AlgorithmDropDown.Items = {'active-set', 'interior-point', 'sqp', 'sqp-legacy'};
-            app.AlgorithmDropDown.Position = [83 16 112 22];
-            app.AlgorithmDropDown.Value = 'active-set';
 
             % Create MaxNoofIterationsEditFieldLabel
             app.MaxNoofIterationsEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
             app.MaxNoofIterationsEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaxNoofIterationsEditFieldLabel.Position = [2 46 116 22];
+            app.MaxNoofIterationsEditFieldLabel.Position = [22 46 116 22];
             app.MaxNoofIterationsEditFieldLabel.Text = 'Max. No of Iterations';
 
             % Create MaxNoofIterationsEditField
             app.MaxNoofIterationsEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
-            app.MaxNoofIterationsEditField.Position = [123 46 50 22];
+            app.MaxNoofIterationsEditField.RoundFractionalValues = 'on';
+            app.MaxNoofIterationsEditField.Position = [143 46 50 22];
             app.MaxNoofIterationsEditField.Value = 100;
 
             % Create MinimizeArrrayAmplitudesCheckBox
@@ -2590,6 +2593,18 @@ classdef simulationApp < matlab.apps.AppBase
             app.MinimizeArrrayAmplitudesCheckBox.ValueChangedFcn = createCallbackFcn(app, @MinimizeArrrayAmplitudesCheckBoxValueChanged, true);
             app.MinimizeArrrayAmplitudesCheckBox.Text = 'Minimize Arrray Amplitudes';
             app.MinimizeArrrayAmplitudesCheckBox.Position = [13 136 167 22];
+
+            % Create LxNormEditFieldLabel
+            app.LxNormEditFieldLabel = uilabel(app.AdvancedOptimizationOptionsPanel);
+            app.LxNormEditFieldLabel.HorizontalAlignment = 'right';
+            app.LxNormEditFieldLabel.Position = [86 12 50 22];
+            app.LxNormEditFieldLabel.Text = 'Lx Norm';
+
+            % Create LxNormEditField
+            app.LxNormEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
+            app.LxNormEditField.RoundFractionalValues = 'on';
+            app.LxNormEditField.Position = [143 12 50 22];
+            app.LxNormEditField.Value = 10;
 
             % Create PlotPanel
             app.PlotPanel = uipanel(app.OptimizeTab);

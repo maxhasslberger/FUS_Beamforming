@@ -17,17 +17,17 @@ if isempty(term)
     term.constr_tol = 1e-3;
     term.iter_tol = 10;
     term.iter_lim = max([term.iter_tol, 200 - term.iter_tol]);
-    term.algorithm = 'active_set';
+    term.norm_val = 10;
 end
 
 % Optimization options
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun_tol, 'ConstraintTolerance', term.constr_tol, ...
-    'Algorithm', term.algorithm, 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
+    'Algorithm', 'active-set', 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
 % Algorithms: interior-point, sqp, trust-region-reflective, active-set
 
 % Define cost function
-fun = @(p)cost_fctn(p, A0, b0);
+fun = @(p)cost_fctn(p, A0, b0, term.norm_val);
 
 % Optimize
 if ~iter_mode
@@ -98,14 +98,14 @@ currFval = optimValues.fval;
 
 if strcmp(state, 'init')
     % Initialize prevFval during the first iteration
-    prevFval = 0.0;
+    prevFval = inf;
 end
         
 % Check if the values are less than the thresholds
-fun_tol_curr = abs(currFval - prevFval);
-if optimValues.constrviolation < constr_tol && (currFval == 0 || (fun_tol_curr < fun_tol && fun_tol_curr ~= 0) || optimValues.iteration >= iter_lim)
+fun_tol_curr = (prevFval - currFval) / (currFval + 1);
+if optimValues.constrviolation < constr_tol && (currFval == 0 || (fun_tol_curr < fun_tol && fun_tol_curr > 0) || optimValues.iteration >= iter_lim)
     stop = true;
-    disp(strcat("Terminating: Optimality conditions fulfilled. Function tolerance: ", ...
+    disp(strcat("Terminating: Optimality conditions fulfilled. Rel. function tolerance: ", ...
         num2str(fun_tol_curr), ", Max. constraint violation: ", num2str(optimValues.constrviolation)));
 end
 
@@ -115,11 +115,10 @@ prevFval = currFval;
 end
 
 
-function val = cost_fctn(p, A0, b0)
-norm_val = 2;
+function val = cost_fctn(p, A0, b0, norm_val)
 
 p = getCompVec(p);
-val = nthroot(norm(abs(A0 * p.^norm_val) - b0), norm_val);
+val = norm(abs(A0 * p) - b0, norm_val);
 
 end
 

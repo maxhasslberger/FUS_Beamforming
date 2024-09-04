@@ -47,13 +47,13 @@ if isempty(term)
     term.constr_tol = 1e-3;
     term.iter_tol = 10;
     term.iter_lim = max([term.iter_tol, 200 - term.iter_tol]);
-    term.algorithm = 'active_set';
+    term.norm_val = 10;
 end
 
 % Optimization options
 term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun_tol, 'ConstraintTolerance', term.constr_tol, ...
-    'Algorithm', term.algorithm, 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
+    'Algorithm', 'active-set', 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
 % Algorithms: interior-point, sqp, trust-region-reflective, active-set
 
 [p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);
