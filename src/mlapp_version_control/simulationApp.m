@@ -1532,9 +1532,11 @@ classdef simulationApp < matlab.apps.AppBase
         % Button pushed function: UpdateSliceButton
         function UpdateSliceButtonPushed2(app, event)
             if ~isempty(app.sv_obj) && app.n_dim == 3
-                currentSliceIndex = app.sv_obj.SliceNumber;
-                app.SliceIndexEditField.Value = round(currentSliceIndex / app.dx_factor - app.plot_offset(app.slice_dim));
-                SliceIndexEditFieldValueChanged(app);
+                if isvalid(app.sv_obj)
+                    currentSliceIndex = app.sv_obj.SliceNumber;
+                    app.SliceIndexEditField.Value = round(currentSliceIndex / app.dx_factor - app.plot_offset(app.slice_dim));
+                    SliceIndexEditFieldValueChanged(app);
+                end
             end
         end
 
@@ -1546,6 +1548,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.slice_dim = dim2num(app.SliceDimDropDown.Value);
             app.dims_2D = exclude_dim(app.slice_dim);
+            UpdateSliceButtonPushed2(app);
         end
 
         % Button pushed function: TransducerPreviewButton
