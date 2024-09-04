@@ -1,18 +1,24 @@
-function p = solvePhasesOnly(A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, mask2el, el_per_t, via_abs, term)
+function p = solvePhasesOnly(iter_mode, A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, term, mask2el, el_per_t, via_abs, tot_1amp)
 p_init = double(p_init);
 
 % Separate A and b
-[A1, A2, b1, b2, ~, ~] = prepare_opt_vars(A, b, cons_ids, vol_ids, init_ids, ineq_active);
+[A1, A2, b1, b2] = prepare_opt_vars(A, b, cons_ids, vol_ids, init_ids, ineq_active);
 
 clear A;
 
-% Define one amp per transducer
-n_amps = length(el_per_t);
-trx_ids = cell(1, n_amps);
-shift = 0;
-for i = 1:n_amps
-    trx_ids{i} = mask2el(1 + shift:sum(el_per_t(1:i)));
-    shift = shift + el_per_t(i);
+if ~tot_1amp
+    % Obtain one amp per transducer
+    n_amps = length(el_per_t);
+    trx_ids = cell(1, n_amps);
+    shift = 0;
+    for i = 1:n_amps
+        trx_ids{i} = mask2el(1 + shift:sum(el_per_t(1:i)));
+        shift = shift + el_per_t(i);
+    end
+else
+    % Obtain one amp for all transducers
+    n_amps = 1;
+    trx_ids = {(1:sum(el_per_t))};
 end
 
 init_amp = mean(abs(p_init));
@@ -51,9 +57,9 @@ if isempty(term)
 end
 
 % Optimization options
-term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
+% term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun_tol, 'ConstraintTolerance', term.constr_tol, ...
-    'Algorithm', 'active-set', 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
+    'Algorithm', 'active-set', 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf); % , 'OutputFcn', term_fctn); 
 % Algorithms: interior-point, sqp, trust-region-reflective, active-set
 
 [p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);

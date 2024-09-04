@@ -108,7 +108,7 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
     % [domain_ids_gt, skull_ids_gt] = limit_space(mediumP.sound_speed);
     % ip.b_gt(~domain_ids_gt) = 0.0;
 else
-    ip.p_gt = solvePhasesOnly(ip.A, b_ip_des, domain_ids | skull_ids, vol_ids, p_init, init_ids, ip.beta, ineq_active, mask2el, el_per_t, true, []); % Amp fixed
+    ip.p_gt = solvePhasesOnly([], ip.A, b_ip_des, domain_ids | skull_ids, vol_ids, p_init, init_ids, ip.beta, ineq_active, [], mask2el, el_per_t, true, true); % Amp fixed
 %     ip.p_gt = solvePhases_Amp_phasepack(ip.A, b_ip_des, domain_ids, vol_ids, p_init, init_ids, beta); % var Amp
 %     ip.p_gt = p_init;
     ip.b_gt = A * ip.p_gt;

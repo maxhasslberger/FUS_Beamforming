@@ -183,8 +183,9 @@ classdef simulationApp < matlab.apps.AppBase
         GroundTruthResolutionFactorEditField  matlab.ui.control.NumericEditField
         GroundTruthResolutionFactorEditFieldLabel  matlab.ui.control.Label
         OptimizationModeButtonGroup     matlab.ui.container.ButtonGroup
+        OptimizeforPhasesand1AmpButton  matlab.ui.control.RadioButton
         OptimizeforPhasesand1AmpperTransducerButton  matlab.ui.control.RadioButton
-        OptimizeforTransducerPhasesandAmplitudesButton  matlab.ui.control.RadioButton
+        OptimizeforPhasesandAmplitudesButton  matlab.ui.control.RadioButton
         OptimizeButton                  matlab.ui.control.Button
         ComputeInitialSolutionButton    matlab.ui.control.Button
         DoGroundTruthSimulationButton   matlab.ui.control.Button
@@ -528,7 +529,7 @@ classdef simulationApp < matlab.apps.AppBase
                 skull_val = app.MaxPressurekPaSkullEditField.Value;
 
                 % Optimization param
-                opt.phaseAmp = app.OptimizeforTransducerPhasesandAmplitudesButton.Value;
+                opt.phaseAmp = app.OptimizeforPhasesandAmplitudesButton.Value;
                 opt.phaseOnly = app.OptimizeforPhasesand1AmpperTransducerButton.Value;
                 opt.intracranial = app.LimittoIntracranialFieldCheckBox.Value;
                 opt.skull = app.LimittoSkullCheckBox.Value;
@@ -1139,12 +1140,13 @@ classdef simulationApp < matlab.apps.AppBase
             
             %% Optimize
             tic
-            if app.OptimizeforTransducerPhasesandAmplitudesButton.Value
+            if app.OptimizeforPhasesandAmplitudesButton.Value
                 app.ip.p = solvePhasesAmp(app.opt_mode.Value, app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, ...
                     app.init_ids, app.ip.beta, ineq_active, term);
             else
-                app.ip.p = solvePhasesOnly(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, app.init_ids, app.ip.beta, ...
-                    ineq_active, app.mask2el, app.el_per_t, true, term);
+                app.ip.p = solvePhasesOnly(app.opt_mode.Value, app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, ...
+                    app.init_ids, app.ip.beta, ineq_active, term, ...
+                    app.mask2el, app.el_per_t, true, app.OptimizeforPhasesand1AmpButton.Value);
             end
 
             app.ip.t_solve = toc;
@@ -1458,7 +1460,7 @@ classdef simulationApp < matlab.apps.AppBase
 
                 % Optimization param
                 OptimizeTabButtonDown(app);
-                app.OptimizeforTransducerPhasesandAmplitudesButton.Value = data.opt.phaseAmp;
+                app.OptimizeforPhasesandAmplitudesButton.Value = data.opt.phaseAmp;
                 app.OptimizeforPhasesand1AmpperTransducerButton.Value = data.opt.phaseOnly;
                 app.LimittoIntracranialFieldCheckBox.Value = data.opt.intracranial;
                 app.LimittoSkullCheckBox.Value = data.opt.skull;
@@ -2518,18 +2520,23 @@ classdef simulationApp < matlab.apps.AppBase
             % Create OptimizationModeButtonGroup
             app.OptimizationModeButtonGroup = uibuttongroup(app.OptimizeTab);
             app.OptimizationModeButtonGroup.Title = 'Optimization Mode';
-            app.OptimizationModeButtonGroup.Position = [14 413 224 106];
+            app.OptimizationModeButtonGroup.Position = [14 387 224 132];
 
-            % Create OptimizeforTransducerPhasesandAmplitudesButton
-            app.OptimizeforTransducerPhasesandAmplitudesButton = uiradiobutton(app.OptimizationModeButtonGroup);
-            app.OptimizeforTransducerPhasesandAmplitudesButton.Text = {'Optimize for Transducer '; 'Phases and Amplitudes'};
-            app.OptimizeforTransducerPhasesandAmplitudesButton.Position = [11 52 153 30];
-            app.OptimizeforTransducerPhasesandAmplitudesButton.Value = true;
+            % Create OptimizeforPhasesandAmplitudesButton
+            app.OptimizeforPhasesandAmplitudesButton = uiradiobutton(app.OptimizationModeButtonGroup);
+            app.OptimizeforPhasesandAmplitudesButton.Text = {'Optimize for Phases '; 'and Amplitudes'};
+            app.OptimizeforPhasesandAmplitudesButton.Position = [11 78 133 30];
+            app.OptimizeforPhasesandAmplitudesButton.Value = true;
 
             % Create OptimizeforPhasesand1AmpperTransducerButton
             app.OptimizeforPhasesand1AmpperTransducerButton = uiradiobutton(app.OptimizationModeButtonGroup);
             app.OptimizeforPhasesand1AmpperTransducerButton.Text = {'Optimize for Phases '; 'and 1 Amp per Transducer'};
-            app.OptimizeforPhasesand1AmpperTransducerButton.Position = [11 15 163 30];
+            app.OptimizeforPhasesand1AmpperTransducerButton.Position = [11 41 163 30];
+
+            % Create OptimizeforPhasesand1AmpButton
+            app.OptimizeforPhasesand1AmpButton = uiradiobutton(app.OptimizationModeButtonGroup);
+            app.OptimizeforPhasesand1AmpButton.Text = {'Optimize for Phases '; 'and 1 Amp'};
+            app.OptimizeforPhasesand1AmpButton.Position = [11 7 133 30];
 
             % Create GroundTruthResolutionFactorEditFieldLabel
             app.GroundTruthResolutionFactorEditFieldLabel = uilabel(app.OptimizeTab);
@@ -2546,7 +2553,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.DisplayAdvancedOptimizationOptionsCheckBox = uicheckbox(app.OptimizeTab);
             app.DisplayAdvancedOptimizationOptionsCheckBox.ValueChangedFcn = createCallbackFcn(app, @DisplayAdvancedOptimizationOptionsCheckBoxValueChanged, true);
             app.DisplayAdvancedOptimizationOptionsCheckBox.Text = 'Display Advanced Optimization Options';
-            app.DisplayAdvancedOptimizationOptionsCheckBox.Position = [22 221 234 22];
+            app.DisplayAdvancedOptimizationOptionsCheckBox.Position = [22 217 234 22];
 
             % Create AdvancedOptimizationOptionsPanel
             app.AdvancedOptimizationOptionsPanel = uipanel(app.OptimizeTab);
@@ -2609,7 +2616,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create PlotPanel
             app.PlotPanel = uipanel(app.OptimizeTab);
             app.PlotPanel.Title = 'Plot';
-            app.PlotPanel.Position = [14 264 309 119];
+            app.PlotPanel.Position = [14 253 309 119];
 
             % Create LimittoIntracranialFieldCheckBox
             app.LimittoIntracranialFieldCheckBox = uicheckbox(app.PlotPanel);
