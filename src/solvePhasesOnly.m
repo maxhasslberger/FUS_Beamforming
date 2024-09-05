@@ -62,18 +62,88 @@ options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun
     'Algorithm', 'active-set', 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf); % , 'OutputFcn', term_fctn); 
 % Algorithms: interior-point, sqp, trust-region-reflective, active-set
 
-[p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);
+if ~iter_mode
+    [p_opt, fval, exitflag, output] = solve_ip(fun, A1, b1, A2, b2, p_start, options, via_abs, amp_fac, trx_ids);
 
+    p_0 = zeros(size(A1, 2), 1);
+    p_0 = getAmpPerElement(p_0, p_opt, trx_ids);
+    
+    if via_abs
+        p = p_0 .* exp(1j * atan2(p_opt(n_amps + ceil((end-n_amps)/2) + 1:end), p_opt(n_amps + (1:ceil((end-n_amps)/2)))));
+    else
+        p = amp_fac * p_0 .* exp(1j * p_opt(n_amps + 1:end));
+    end
 
-p_0 = zeros(size(A1, 2), 1);
-p_0 = getAmpPerElement(p_0, p_opt, trx_ids);
-
-if via_abs
-    p = p_0 .* exp(1j * atan2(p_opt(n_amps + ceil((end-n_amps)/2) + 1:end), p_opt(n_amps + (1:ceil((end-n_amps)/2)))));
+    if exitflag == -2 % No feasible point found
+        disp(output.message)
+        disp("Optimization failed");
+    else
+        disp("Optimization successful");
+    end
 else
-    p = amp_fac * p_0 .* exp(1j * p_opt(n_amps + 1:end));
+    A2_iter = zeros(1, length(p_init));
+    b2_iter = 0.0;
+    p_opt = p_start;
+
+    max_iter = 20;
+    tol = b2 / 1000; % Pa
+    for iter = 1:max_iter
+        disp(strcat("Main iteration ", num2str(iter), "..."))
+
+        % Optimize and check if ineq constraints fulfilled
+        [p_opt, fval, exitflag, output] = solve_ip(fun, A1, b1, A2_iter, b2_iter, p_opt, options, via_abs, amp_fac, trx_ids);
+        if exitflag == -2 % No feasible point found
+            unful_ineq = 1;
+            disp(output.message)
+            break;
+        end
+
+        p_0 = zeros(size(A1, 2), 1);
+        p_0 = getAmpPerElement(p_0, p_opt, trx_ids);
+        p = p_0 .* exp(1j * atan2(p_opt(n_amps + ceil((end-n_amps)/2) + 1:end), p_opt(n_amps + (1:ceil((end-n_amps)/2)))));
+
+        b2_new = abs(A2 * p);
+
+        unful_ineq = b2_new > (b2 + tol);
+        if ~any(unful_ineq)
+            break; % successful
+        else
+            % Add inequalities that are not fulfilled
+            A2_iter = [A2_iter; A2(unful_ineq, :)];
+            b2_iter = [b2_iter; b2(unful_ineq)];
+            disp(strcat("Violated Inequalities: ", num2str(sum(unful_ineq))))
+        end
+    end
+
+    if any(unful_ineq)
+        disp("Optimization failed");
+    else
+        disp("Optimization successful");
+    end
 end
 
+% [p_opt, fval, exitflag, output] = fmincon(fun, p_start, [], [], [], [], [], [], nonlcon, options);
+
+
+% p_0 = zeros(size(A1, 2), 1);
+% p_0 = getAmpPerElement(p_0, p_opt, trx_ids);
+% 
+% if via_abs
+%     p = p_0 .* exp(1j * atan2(p_opt(n_amps + ceil((end-n_amps)/2) + 1:end), p_opt(n_amps + (1:ceil((end-n_amps)/2)))));
+% else
+%     p = amp_fac * p_0 .* exp(1j * p_opt(n_amps + 1:end));
+% end
+
+
+end
+
+function [p_opt, fval, exitflag, output] = solve_ip(fun, A1, b1, A2, b2, p_init, options, via_abs, amp_fac, trx_ids)
+
+% Update constraints
+nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
+
+% Optimize
+[p_opt, fval, exitflag, output] = fmincon(fun, p_init, [], [], [], [], [], [], nonlcon, options);
 
 end
 
