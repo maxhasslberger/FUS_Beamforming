@@ -766,11 +766,12 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: AddTransducerButton
         function AddTransducerButtonPushed(app, event)
+            app.ConfirmButtonPushed();
+            
             new_item = num2str(length(app.TransducerDropDown.Items) + 1);
             app.TransducerDropDown.Items = [app.TransducerDropDown.Items(:)', {new_item}];
 
             app.TransducerDropDown.Value = {new_item};
-            app.ConfirmButtonPushed();
 
             app.Transducer1Panel.Title = strcat("Transducer ", num2str(str2num(app.TransducerDropDown.Value)));
             app.Transducer1Panel.Visible = true;
@@ -797,7 +798,7 @@ classdef simulationApp < matlab.apps.AppBase
         % Value changed function: TransducerDropDown
         function TransducerDropDownValueChanged(app, event)
             value = str2num(app.TransducerDropDown.Value);
-            
+
             app.trPosxEditField.Value = app.t_pos(1, value);
             app.trPosyEditField.Value = app.t_pos(2, value);
             app.trPoszEditField.Value = app.t_pos(3, value);
@@ -814,27 +815,33 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: ConfirmButton
         function ConfirmButtonPushed(app, event)
-            value = str2num(app.TransducerDropDown.Value);
-            % Add new column for new transducer
-            if size(app.t_pos, 2) < value
-                app.t_pos = [app.t_pos, inf(3, 1)];
-                app.t_rot = [app.t_rot, inf(3, 1)];
-                app.tr_len = [app.tr_len, inf];
-            end
+            value = app.TransducerDropDown.Value;
 
-            % Assign values to global transducer vars
-            app.t_pos(:, value) = [app.trPosxEditField.Value, app.trPosyEditField.Value, app.trPoszEditField.Value];
-            app.t_rot(:, value) = [app.alphaEditField.Value, app.betaEditField.Value, app.gammaEditField.Value];
-            app.tr_len(value) = app.TransducerLengthmmEditField.Value;
+            if ~isempty(value)
+                value = str2num(value);
+
+                % Add new column for new transducer
+                if size(app.t_pos, 2) < value
+                    app.t_pos = [app.t_pos, inf(3, 1)];
+                    app.t_rot = [app.t_rot, inf(3, 1)];
+                    app.tr_len = [app.tr_len, inf];
+                end
+    
+                % Assign values to global transducer vars
+                app.t_pos(:, value) = [app.trPosxEditField.Value, app.trPosyEditField.Value, app.trPoszEditField.Value];
+                app.t_rot(:, value) = [app.alphaEditField.Value, app.betaEditField.Value, app.gammaEditField.Value];
+                app.tr_len(value) = app.TransducerLengthmmEditField.Value;
+            end
         end
 
         % Button pushed function: AddManualTargetButton
         function AddManualTargetButtonPushed(app, event)
+            app.ConfirmManTargetButtonPushed();
+            
             new_item = num2str(length(app.ManualTargetDropDown.Items) + 1);
             app.ManualTargetDropDown.Items = [app.ManualTargetDropDown.Items(:)', {new_item}];
 
             app.ManualTargetDropDown.Value = {new_item};
-            app.ConfirmManTargetButtonPushed();
             app.TargetManPanel.Title = strcat("Target ", num2str(str2num(app.ManualTargetDropDown.Value)));
 
             app.TargetManPanel.Visible = true;
@@ -842,36 +849,41 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: ConfirmManTargetButton
         function ConfirmManTargetButtonPushed(app, event)
-            value = str2num(app.ManualTargetDropDown.Value);
+            value = app.ManualTargetDropDown.Value;
 
-            % Add new column for new target
-            if length(app.des_pressures) < value
-                app.point_pos_m = [app.point_pos_m, inf(3, 1)];
-
-                app.focus_radius = [app.focus_radius, inf];
-                app.des_pressures = [app.des_pressures, inf];
-                app.min_dist = [app.min_dist, inf];
-
-                app.force_pressures = [app.force_pressures, false];
+            if ~isempty(value)
+                value = str2num(value);
+    
+                % Add new column for new target
+                if length(app.des_pressures) < value
+                    app.point_pos_m = [app.point_pos_m, inf(3, 1)];
+    
+                    app.focus_radius = [app.focus_radius, inf];
+                    app.des_pressures = [app.des_pressures, inf];
+                    app.min_dist = [app.min_dist, inf];
+    
+                    app.force_pressures = [app.force_pressures, false];
+                end
+    
+                % Assign values to global target vars
+                app.point_pos_m(:, value) = [app.focusxEditField.Value, app.focusyEditField.Value, app.focuszEditField.Value];
+    
+                app.focus_radius(value) = app.FocusRadiusmmEditField.Value;
+                app.des_pressures(value) = app.PressureAmplitudekPaEditField.Value;
+                app.min_dist(value) = app.MinPointDistancemmEditField.Value;
+    
+                app.force_pressures(value) = app.todeclaredPressureSwitch.Value == "Force";
             end
-
-            % Assign values to global target vars
-            app.point_pos_m(:, value) = [app.focusxEditField.Value, app.focusyEditField.Value, app.focuszEditField.Value];
-
-            app.focus_radius(value) = app.FocusRadiusmmEditField.Value;
-            app.des_pressures(value) = app.PressureAmplitudekPaEditField.Value;
-            app.min_dist(value) = app.MinPointDistancemmEditField.Value;
-
-            app.force_pressures(value) = app.todeclaredPressureSwitch.Value == "Force";
         end
 
         % Button pushed function: AddRegionTargetButton
         function AddRegionTargetButtonPushed(app, event)
+            app.ConfirmRegTargetButtonPushed();
+
             new_item = num2str(length(app.RegionTargetDropDown.Items) + 1);
             app.RegionTargetDropDown.Items = [app.RegionTargetDropDown.Items(:)', {new_item}];
 
             app.RegionTargetDropDown.Value = {new_item};
-            app.ConfirmRegTargetButtonPushed();
             app.TargetRegPanel.Title = strcat("Target ", num2str(str2num(app.RegionTargetDropDown.Value)));
 
             app.TargetRegPanel.Visible = true;
@@ -879,25 +891,28 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: ConfirmRegTargetButton
         function ConfirmRegTargetButtonPushed(app, event)
-            value = str2num(app.RegionTargetDropDown.Value);
+            value = app.RegionTargetDropDown.Value;
+            if ~isempty(value)
+                value = str2num(value);
 
-            % Add new column for new target
-            if length(app.des_pressures_reg) < value
-                app.tar_reg_labels = [app.tar_reg_labels, ""];
-
-                app.des_pressures_reg = [app.des_pressures_reg, inf];
-                app.min_dist_reg = [app.min_dist_reg, inf];
-
-                app.force_pressures_reg = [app.force_pressures_reg, false];
+                % Add new column for new target
+                if length(app.des_pressures_reg) < value
+                    app.tar_reg_labels = [app.tar_reg_labels, ""];
+    
+                    app.des_pressures_reg = [app.des_pressures_reg, inf];
+                    app.min_dist_reg = [app.min_dist_reg, inf];
+    
+                    app.force_pressures_reg = [app.force_pressures_reg, false];
+                end
+    
+                % Assign values to global target vars
+                app.tar_reg_labels(value) = app.BrainRegionDropDown.Value;
+    
+                app.des_pressures_reg(value) = app.PressureAmplitudekPaEditFieldReg.Value;
+                app.min_dist_reg(value) = app.MinPointDistancemmEditFieldReg.Value;
+    
+                app.force_pressures_reg(value) = app.todeclaredPressureSwitchReg.Value == "Force";
             end
-
-            % Assign values to global target vars
-            app.tar_reg_labels(value) = app.BrainRegionDropDown.Value;
-
-            app.des_pressures_reg(value) = app.PressureAmplitudekPaEditFieldReg.Value;
-            app.min_dist_reg(value) = app.MinPointDistancemmEditFieldReg.Value;
-
-            app.force_pressures_reg(value) = app.todeclaredPressureSwitchReg.Value == "Force";
         end
 
         % Value changed function: ManualTargetDropDown
@@ -950,11 +965,14 @@ classdef simulationApp < matlab.apps.AppBase
         % Button pushed function: UpdateTargetingButton
         function UpdateTargetingButtonPushed(app, event)
 
+            ConfirmManTargetButtonPushed(app);
+            ConfirmRegTargetButtonPushed(app);
+
             if app.n_dim == 2
 
                 % Define targets
                 if ~isempty(app.ManualTargetDropDown.Items)
-                    plot_offset_rep = repmat(app.plot_offset, 1, length(app.ManualTargetDropDown.Items));
+                    plot_offset_rep = repmat(app.plot_offset, length(app.ManualTargetDropDown.Items), 1);
                     app.point_pos = round((plot_offset_rep' + app.point_pos_m) * app.dx_factor);
 
                     amp_in = app.des_pressures' * 1e3; % Pa
@@ -999,7 +1017,7 @@ classdef simulationApp < matlab.apps.AppBase
                 
                 % Define targets
                 if ~isempty(app.ManualTargetDropDown.Items)
-                    plot_offset_rep = repmat(app.plot_offset, 1, length(app.ManualTargetDropDown.Items));
+                    plot_offset_rep = repmat(app.plot_offset, length(app.ManualTargetDropDown.Items), 1);
                     app.point_pos = round((plot_offset_rep' + app.point_pos_m) * app.dx_factor);
 
                     amp_in = app.des_pressures' * 1e3; % Pa
@@ -1555,6 +1573,7 @@ classdef simulationApp < matlab.apps.AppBase
 
         % Button pushed function: TransducerPreviewButton
         function TransducerPreviewButtonPushed(app, event)
+            ConfirmButtonPushed(app);
             [app.t_mask_ps, app.karray_t, app.el_per_t, app.active_ids] = transducer_geometry_init(app, app.kgrid, ...
                 app.dx_factor, app.tr_offset_karr);
 
@@ -1571,6 +1590,26 @@ classdef simulationApp < matlab.apps.AppBase
             app.sv_obj = plot_results(app.kgrid, [], app.preplot_arg, 'Transducer Preview', app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, false, [], 'slice', app.SliceIndexEditField.Value, ...
                 'colorbar', false, 'cmap', hot(), 'slice_dim', app.SliceDimDropDown.Value);
+        end
+
+        % Drop down opening function: RegionTargetDropDown
+        function RegionTargetDropDownOpening(app, event)
+            ConfirmRegTargetButtonPushed(app);
+        end
+
+        % Drop down opening function: ManualTargetDropDown
+        function ManualTargetDropDownOpening(app, event)
+            ConfirmManTargetButtonPushed(app);
+        end
+
+        % Drop down opening function: TransducerDropDown
+        function TransducerDropDownOpening(app, event)
+            ConfirmButtonPushed(app);
+        end
+
+        % Clicked callback: RegionTargetDropDown
+        function RegionTargetDropDownClicked(app, event)
+%             item = event.InteractionInformation.Item;
         end
     end
 
@@ -2021,6 +2060,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create TransducerDropDown
             app.TransducerDropDown = uidropdown(app.TransducersTab);
             app.TransducerDropDown.Items = {};
+            app.TransducerDropDown.DropDownOpeningFcn = createCallbackFcn(app, @TransducerDropDownOpening, true);
             app.TransducerDropDown.ValueChangedFcn = createCallbackFcn(app, @TransducerDropDownValueChanged, true);
             app.TransducerDropDown.Position = [138 311 100 22];
             app.TransducerDropDown.Value = {};
@@ -2129,6 +2169,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create ConfirmButton
             app.ConfirmButton = uibutton(app.Transducer1Panel, 'push');
             app.ConfirmButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmButtonPushed, true);
+            app.ConfirmButton.Visible = 'off';
             app.ConfirmButton.Position = [275 11 100 23];
             app.ConfirmButton.Text = 'Confirm';
 
@@ -2335,6 +2376,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create ConfirmManTargetButton
             app.ConfirmManTargetButton = uibutton(app.TargetManPanel, 'push');
             app.ConfirmManTargetButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmManTargetButtonPushed, true);
+            app.ConfirmManTargetButton.Visible = 'off';
             app.ConfirmManTargetButton.Position = [260 17 100 23];
             app.ConfirmManTargetButton.Text = 'Confirm';
 
@@ -2359,6 +2401,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create ManualTargetDropDown
             app.ManualTargetDropDown = uidropdown(app.TargetingTab);
             app.ManualTargetDropDown.Items = {};
+            app.ManualTargetDropDown.DropDownOpeningFcn = createCallbackFcn(app, @ManualTargetDropDownOpening, true);
             app.ManualTargetDropDown.ValueChangedFcn = createCallbackFcn(app, @ManualTargetDropDownValueChanged, true);
             app.ManualTargetDropDown.Position = [121 461 100 22];
             app.ManualTargetDropDown.Value = {};
@@ -2418,6 +2461,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create ConfirmRegTargetButton
             app.ConfirmRegTargetButton = uibutton(app.TargetRegPanel, 'push');
             app.ConfirmRegTargetButton.ButtonPushedFcn = createCallbackFcn(app, @ConfirmRegTargetButtonPushed, true);
+            app.ConfirmRegTargetButton.Visible = 'off';
             app.ConfirmRegTargetButton.Position = [259 10 100 23];
             app.ConfirmRegTargetButton.Text = 'Confirm';
 
@@ -2445,8 +2489,10 @@ classdef simulationApp < matlab.apps.AppBase
             % Create RegionTargetDropDown
             app.RegionTargetDropDown = uidropdown(app.TargetingTab);
             app.RegionTargetDropDown.Items = {};
+            app.RegionTargetDropDown.DropDownOpeningFcn = createCallbackFcn(app, @RegionTargetDropDownOpening, true);
             app.RegionTargetDropDown.ValueChangedFcn = createCallbackFcn(app, @RegionTargetDropDownValueChanged, true);
             app.RegionTargetDropDown.Visible = 'off';
+            app.RegionTargetDropDown.ClickedFcn = createCallbackFcn(app, @RegionTargetDropDownClicked, true);
             app.RegionTargetDropDown.Position = [122 213 100 22];
             app.RegionTargetDropDown.Value = {};
 
