@@ -163,6 +163,7 @@ classdef simulationApp < matlab.apps.AppBase
         xEditField_4Label               matlab.ui.control.Label
         FocusPositionLabel              matlab.ui.control.Label
         OptimizeTab                     matlab.ui.container.Tab
+        PlotResultsButton               matlab.ui.control.Button
         opt_mode                        matlab.ui.control.CheckBox
         PlotPanel                       matlab.ui.container.Panel
         MaskPressurePlotkPaEditField    matlab.ui.control.NumericEditField
@@ -296,7 +297,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.p_curr = p;
             app.plot_title_curr = plot_title;
 
-            evaluate_metrics(app, plot_title, b_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
+            evaluate_metrics(app, plot_title, b, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
 
             % Save results in mat file
             app.ip.b = b;
@@ -1611,6 +1612,13 @@ classdef simulationApp < matlab.apps.AppBase
         function RegionTargetDropDownClicked(app, event)
 %             item = event.InteractionInformation.Item;
         end
+
+        % Button pushed function: PlotResultsButton
+        function PlotResultsButtonPushed(app, event)
+            if isfield(app.ip, 'p')
+                evaluate_results(app, app.ip.p, "Inverse Problem");
+            end
+        end
     end
 
     % Component initialization
@@ -2689,6 +2697,12 @@ classdef simulationApp < matlab.apps.AppBase
             app.opt_mode.Text = 'Use double-iterative mode';
             app.opt_mode.Position = [312 410 162 22];
             app.opt_mode.Value = true;
+
+            % Create PlotResultsButton
+            app.PlotResultsButton = uibutton(app.OptimizeTab, 'push');
+            app.PlotResultsButton.ButtonPushedFcn = createCallbackFcn(app, @PlotResultsButtonPushed, true);
+            app.PlotResultsButton.Position = [335 296 118 34];
+            app.PlotResultsButton.Text = 'Plot Results';
 
             % Create Slice30Label
             app.Slice30Label = uilabel(app.UIFigure);
