@@ -1216,12 +1216,14 @@ classdef simulationApp < matlab.apps.AppBase
                     ~(app.LimittoSkullCheckBox.Value & app.skull_ids);
 
                 b_gt_lim(excl_ids) = 0.0;
+                b_lim = app.ip.b;
+                b_lim(excl_ids) = 0.0;
 
                 % Evaluate Pressure Distribution
                 evaluate_metrics(app, plot_title, b_gt_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
 
                 % Compare to IP solution
-                err = abs(app.ip.b) - abs(b_gt);
+                err = abs(b_lim) - abs(b_gt_lim);
                 plot_results(kgridP, [], err, 'Difference', app.mask2el, app.t1w_filename, app.plot_offset, ...
                     app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
                     'slice_dim', app.SliceDimDropDown.Value);
