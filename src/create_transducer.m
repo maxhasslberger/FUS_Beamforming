@@ -1,8 +1,9 @@
-function [karray_t, t_mask_ps, active_ids, num_elements, mask2el_delayFiles] = create_transducer(kgrid, plot_offset, t_offset_karr, t_name, sparsity_name, ...
+function [karray_t, t_mask_ps, active_ids, n_arr_elements, mask2el_delayFiles] = create_transducer(kgrid, plot_offset, t_offset_karr, t_name, sparsity_name, ...
     t_pos, t_rot, active_tr_ids, el_sz)
 
 karray_t = kWaveArray(); % real array elements including the geometry
-[elementAll_pos, t_rot_per_el, active_ids, num_elements, mask2el_delayFiles] = get_arr_el_positions(t_name, sparsity_name, t_pos, t_rot, t_offset_karr, active_tr_ids); 
+[elementAll_pos_orig, t_rot_per_el, n_arr_elements, n_arr_el_tot] = get_arr_el_positions(t_name, sparsity_name, t_pos, t_rot, t_offset_karr);
+[elementAll_pos, t_rot_per_el, active_ids, mask2el_delayFiles] = assign_arr_el_positions(elementAll_pos_orig, t_rot_per_el, active_tr_ids, n_arr_elements, n_arr_el_tot);
 
 % Add one array element after another
 t_mask_ps = zeros(size(kgrid.k));

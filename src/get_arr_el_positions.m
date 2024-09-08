@@ -1,4 +1,4 @@
-function [elementAll_pos, t_rot_per_el, active_ids, num_elements, mask2el_delayFiles] = get_arr_el_positions(t_name, sparsity_name, t_pos, t_rot, t_offset_karr, active_tr_ids)
+function [elementAll_pos_orig, t_rot_per_el, n_arr_elements, n_arr_el_tot] = get_arr_el_positions(t_name, sparsity_name, t_pos, t_rot, t_offset_karr)
 
 % Correct for scan offset
 t_pos = t_pos + t_offset_karr;
@@ -10,8 +10,6 @@ if ~strcmp(sparsity_name, "")
     sparsity_ids = load(fullfile("..", "Array_Positions", sparsity_name + ".mat")).numbers; % sparsity ids -> element_pos
     element_pos = element_pos(:, sparsity_ids);
 end
-
-num_elements = length(element_pos);
 
 n_arr_elements = size(element_pos, 2);
 n_arr_el_tot = n_arr_elements * size(t_pos, 2);
@@ -32,35 +30,6 @@ for tx = 1:size(t_pos, 2) % for each transducer
 
     t_rot_per_el(:, (tx - 1) * n_arr_elements + 1 : tx * n_arr_elements) = repmat(tx_rot, 1, size(element_pos, 2));
 end
-
-[elementAll_pos, el2mask_ids, mask2el_ids] = el2mask_indexing(elementAll_pos_orig, n_arr_elements);
-t_rot_per_el = t_rot_per_el(:, el2mask_ids);
-
-% Obtain transducer element ids in the right order -> t_mask
-active_ids = mask2el_ids(:, active_tr_ids);
-active_ids = sort(active_ids(:)); 
-elementAll_pos = elementAll_pos(:, active_ids);
-t_rot_per_el = t_rot_per_el(:, active_ids);
-
-rem_el = reshape((1:n_arr_el_tot), n_arr_elements, []);
-rem_el = rem_el(:, active_tr_ids);
-
-[~, ~, mask2el_delayFiles] = el2mask_indexing(elementAll_pos_orig(:, rem_el), n_arr_elements);
-
-end
-
-
-function [elementAll_pos, el2mask_ids, mask2el_ids] = el2mask_indexing(elementAll_pos_orig, n_arr_elements)
-
-elementAll_pos = flip(elementAll_pos_orig, 1);
-
-[elementAll_pos, el2mask_ids] = sortrows(elementAll_pos'); % refer element indices to mask -> right order in getDistributedSourceSignal
-
-elementAll_pos = elementAll_pos';
-elementAll_pos = flip(elementAll_pos, 1);
-
-[~, mask2el_ids] = sort(el2mask_ids); % Refer back to original order
-mask2el_ids = reshape(mask2el_ids, n_arr_elements, []); % Original order per transducer assuming each transducer has the same amount of elements
 
 end
 
