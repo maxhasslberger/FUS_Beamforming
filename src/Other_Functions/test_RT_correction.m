@@ -19,7 +19,12 @@ err_dis = err_dis .* posNegDis;
 err_time = err_dis / min(app.medium.sound_speed(:));
 err_phi = err_time * 2*pi* app.CenterFreqkHzEditField.Value * 1e3;
 
-[~, el2mask_ids, ~] = el2mask_indexing(elementAll_pos_new, n_arr_elements);
-err_phi_sorted = err_phi(el2mask_ids);
 
-app.ip.p = app.ip.p .* exp(1j * err_phi_sorted');
+[~, el2mask_ids_new, ~] = el2mask_indexing(elementAll_pos_new, n_arr_elements);
+err_phi_sorted = err_phi(el2mask_ids_new);
+
+[~, ~, mask2el_ids_orig] = el2mask_indexing(elementAll_pos_orig, n_arr_elements);
+p_sort = app.ip.p(mask2el_ids_orig);
+p_sort = p_sort(el2mask_ids_new);
+
+app.ip.p = p_sort .* exp(1j * err_phi_sorted');
