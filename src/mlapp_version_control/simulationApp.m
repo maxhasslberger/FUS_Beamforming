@@ -1193,12 +1193,12 @@ classdef simulationApp < matlab.apps.AppBase
             [t_mask_psP, karray_tP, ~, ~] = transducer_geometry_init(app, kgridP, dx_factorP, tr_offset_karrP);
 
             if app.use_greens_fctn
-                [amp_in, phase_in] = get_amp_phase_mask(app.kgrid, f0, app.ip.p, t_mask_psP, karray_tP);
-                b_gt = acousticFieldPropagator(amp_in, phase_in, app.kgrid.dx, f0, app.medium.sound_speed);
+                [amp_in, phase_in] = get_amp_phase_mask(kgridP, f0, app.ip.p, t_mask_psP, karray_tP);
+                b_gt = acousticFieldPropagator(amp_in, phase_in, kgridP.dx, f0, mediumP.sound_speed);
             else
                 b_gt = sim_exe(kgridP, mediumP, sensorP, f0, app.ip.p, t_mask_psP, sensor_maskP, true, app.input_args, ...
                     'karray_t', karray_tP);
-                b_gt = reshape(b_gt, size(app.kgrid.k));
+                b_gt = reshape(b_gt, size(kgridP.k));
             end
 
             %% Plot
