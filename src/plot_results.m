@@ -32,7 +32,7 @@ if ~isempty(varargin)
     end
 end
 
-save_as_tex = true;
+save_as_tex = false;
 filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
 
 %% Plot magnitude and phase of array elements
