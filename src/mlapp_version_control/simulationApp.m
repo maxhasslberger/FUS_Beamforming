@@ -460,7 +460,7 @@ classdef simulationApp < matlab.apps.AppBase
                 sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
 
                 t_pos_3D = app.t_pos * app.dx_scan;
-                active_tr_ids = 1:n_trs;
+                active_tr_ids = 1:n_trs; % Can be modified such that only particular transducer columns are loaded
 
                 if strcmp(app.ElementGeometrySwitch.Value, 'Rect')
                     el_sz = [app.LengthmmEditField.Value, app.WidthmmEditField.Value];
