@@ -32,9 +32,8 @@ if ~isempty(varargin)
     end
 end
 
-% if ~isempty(fig_pos{1})
-%     close all;
-% end
+save_as_tex = true;
+filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
 
 %% Plot magnitude and phase of array elements
 if ~isempty(excitation)
@@ -56,6 +55,10 @@ if ~isempty(excitation)
     ylabel('Phase (deg)')
 
     fontsize(f_param, 12,"points")
+
+    if save_as_tex
+        SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"));
+    end
 end
 
 %% Plot the pressure field 
@@ -152,7 +155,11 @@ else
 end
 
 fontsize(f_data, 12,"points")
+if save_as_tex
+    SAVE_fig_to_tikz(convertStringsToChars(filename + "_data"));
+end
 
+% 3D sliceViewer
 if kgrid.dim == 3
     f_3D = figure('color','w');
 
@@ -170,7 +177,6 @@ else
 end
 
 if save_results
-    filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
     if ~isempty(excitation)
         export_fig(f_param, filename + "_param.pdf");
     end
