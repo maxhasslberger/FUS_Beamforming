@@ -24,7 +24,7 @@ err_phi = err_time * 2*pi* app.CenterFreqkHzEditField.Value * 1e3;
 err_phi_sorted = err_phi(el2mask_ids_new);
 
 [~, ~, mask2el_ids_orig] = el2mask_indexing(elementAll_pos_orig, n_arr_elements);
-p_sort = app.ip.p(mask2el_ids_orig);
-p_sort = p_sort(el2mask_ids_new);
+app.ip.p = app.ip.p(mask2el_ids_orig);
+app.ip.p = app.ip.p(el2mask_ids_new);
 
-app.ip.p = p_sort .* exp(1j * err_phi_sorted');
+app.ip.p = app.ip.p .* exp(1j * err_phi_sorted');
