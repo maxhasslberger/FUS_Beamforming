@@ -1219,6 +1219,17 @@ classdef simulationApp < matlab.apps.AppBase
 
                 % Evaluate Pressure Distribution
                 evaluate_metrics(app, plot_title, b_gt_lim, app.vol_ids, app.logical_dom_ids, app.skull_ids, app.init_ids);
+
+                % Compare to IP solution
+                err = abs(app.ip.b) - abs(b_gt);
+                plot_results(kgridP, [], err, 'Difference', app.mask2el, app.t1w_filename, app.plot_offset, ...
+                    app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
+                    'slice_dim', app.SliceDimDropDown.Value);
+
+                f_hist = figure('color','w');
+                f_hist.Position = [1025 55 625 300];
+                histogram(err(:))
+                xlabel("Pressure Deviation (Pa)")
             end
 
             app.sv_obj = plot_results(kgridP, [], b_gt_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
