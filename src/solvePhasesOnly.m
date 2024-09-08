@@ -1,8 +1,5 @@
-function p = solvePhasesOnly(iter_mode, A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, term, mask2el, el_per_t, via_abs, tot_1amp)
+function p = solvePhasesOnly(iter_mode, A1, A2, b1, b2, p_init, beta, term, mask2el, el_per_t, via_abs, tot_1amp)
 p_init = double(p_init);
-
-% Separate A and b
-[A1, A2, b1, b2] = prepare_opt_vars(A, b, cons_ids, vol_ids, init_ids, ineq_active);
 
 clear A;
 

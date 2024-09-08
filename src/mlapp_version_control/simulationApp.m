@@ -239,6 +239,10 @@ classdef simulationApp < matlab.apps.AppBase
         b_ip_des
         ip
         A
+        A1
+        A2
+        b1
+        b2
         skull_ids
         vol_ids
         init_ids
@@ -1093,6 +1097,16 @@ classdef simulationApp < matlab.apps.AppBase
                 app.SliceIndexEditField.Value = round(app.init1_id(app.slice_dim) / app.dx_factor - app.plot_offset(app.slice_dim));
                 SliceIndexEditFieldValueChanged(app);
             end
+
+            %% Get ids considered in inequality constraints
+            dom_active = app.LimitIntracranialOffTargetPressureCheckBox.Value;
+            skull_active = app.LimitSkullPressureCheckBox.Value;
+
+            ineq_active = skull_active || dom_active;
+            cons_ids = (skull_active & app.skull_ids) | (dom_active & app.logical_dom_ids);
+
+            %% Separate A and b
+            [app.A1, app.A2, app.b1, app.b2] = prepare_opt_vars(app.A, app.b_ip_des, cons_ids, app.vol_ids, app.init_ids, ineq_active);
             
             % Create preview plot
             b_mask_plot = b_mask_plot + app.full_bmask;
@@ -1142,13 +1156,6 @@ classdef simulationApp < matlab.apps.AppBase
         function OptimizeButtonPushed(app, event)
             get_initial_solution(app);
 
-            %% Get ids considered in inequality constraints
-            dom_active = app.LimitIntracranialOffTargetPressureCheckBox.Value;
-            skull_active = app.LimitSkullPressureCheckBox.Value;
-
-            ineq_active = skull_active || dom_active;
-            cons_ids = (skull_active & app.skull_ids) | (dom_active & app.logical_dom_ids);
-
             %% Get Optimization Options
             term.fun_tol = app.RelFunctionToleranceEditField.Value;
             term.constr_tol = app.ConstraintToleranceEditField.Value;
@@ -1161,11 +1168,11 @@ classdef simulationApp < matlab.apps.AppBase
             %% Optimize
             tic
             if app.OptimizeforPhasesandAmplitudesButton.Value
-                app.ip.p = solvePhasesAmp(app.opt_mode.Value, app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, ...
-                    app.init_ids, app.ip.beta, ineq_active, term);
+                app.ip.p = solvePhasesAmp(app.opt_mode.Value, app.A1, app.A2, app.b1, app.b2, app.ip.p_init, ...
+                    app.ip.beta, term);
             else
-                app.ip.p = solvePhasesOnly(app.opt_mode.Value, app.A, app.b_ip_des, cons_ids, app.vol_ids, app.ip.p_init, ...
-                    app.init_ids, app.ip.beta, ineq_active, term, ...
+                app.ip.p = solvePhasesOnly(app.opt_mode.Value, app.A1, app.A2, app.b1, app.b2, app.ip.p_init, ...
+                    app.ip.beta, term, ...
                     app.mask2el, app.el_per_t, true, app.OptimizeforPhasesand1AmpButton.Value);
             end
 

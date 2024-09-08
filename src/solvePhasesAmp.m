@@ -1,10 +1,6 @@
-function p = solvePhasesAmp(iter_mode, A, b, cons_ids, vol_ids, p_init, init_ids, beta, ineq_active, term)
+function p = solvePhasesAmp(iter_mode, A1, A2, b1, b2, p_init, beta, term)
 p_init = double(p_init);
 
-% Separate A and b
-[A1, A2, b1, b2] = prepare_opt_vars(A, b, cons_ids, vol_ids, init_ids, ineq_active);
-
-clear A;
 
 A0 = zeros(1, length(p_init));
 b0 = 0.0;
