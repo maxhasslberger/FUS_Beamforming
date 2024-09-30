@@ -1,8 +1,6 @@
 function p = solvePhasesOnly(iter_mode, A1, A2, b1, b2, p_init, beta, term, mask2el, el_per_t, via_abs, tot_1amp)
 p_init = double(p_init);
 
-clear A;
-
 if ~tot_1amp
     % Obtain one amp per transducer
     n_amps = length(el_per_t);
@@ -28,10 +26,6 @@ if via_abs
 
     p_start(n_amps + (1:ceil((end-n_amps)/2))) = real(p_init);
     p_start(n_amps + ceil((end-n_amps)/2) + 1:end) = imag(p_init);
-
-    % Cost fctn and constraints
-    fun = @(p)cost_fctn(p, A1, b1, trx_ids);
-    nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
 else
     % Define initial vector
     p_start = zeros(length(p_init) + n_amps, 1);
@@ -39,10 +33,6 @@ else
     p_start(1:n_amps) = 1.0;
 
     p_start(n_amps + 1:end) = angle(p_init);
-
-    % Cost fctn and constraints
-    fun = @(p)cost_fctn2(p, A1, b1, amp_fac, trx_ids);
-    nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
 end
 
 if isempty(term)
@@ -53,10 +43,13 @@ if isempty(term)
     term.norm_val = 10;
 end
 
+% Cost fctn
+fun = @(p)cost_fctn(p, n_amps, term.norm_val, beta);
+
 % Optimization options
-% term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
+term_fctn = @(x, optimValues, state)customOutputFcn(x, optimValues, state, term.fun_tol, term.constr_tol, term.iter_lim);
 options = optimoptions('fmincon','Display','iter', 'FunctionTolerance', term.fun_tol, 'ConstraintTolerance', term.constr_tol, ...
-    'Algorithm', 'active-set', 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf); % , 'OutputFcn', term_fctn); 
+    'Algorithm', 'active-set', 'MaxIterations', term.iter_lim + term.iter_tol, 'MaxFunctionEvaluations', inf, 'OutputFcn', term_fctn); 
 % Algorithms: interior-point, sqp, trust-region-reflective, active-set
 
 if ~iter_mode
@@ -144,34 +137,53 @@ nonlcon = @(p)unitdisk(p, A1, b1, A2, b2, via_abs, amp_fac, trx_ids);
 
 end
 
-function stop = customOutputFcn(x, optimValues, state, fval_tol, constr_tol)
-    stop = false;
-    % Check if the absolute function value is less than the threshold
-    if abs(optimValues.fval) < fval_tol && optimValues.constrviolation < constr_tol
-        stop = true;
-        disp('Terminating: Absolute function value is below the threshold.');
-    end
+function stop = customOutputFcn(x, optimValues, state, fun_tol, constr_tol, iter_lim)
+
+stop = false;
+persistent prevFval % Store the previous function value
+currFval = optimValues.fval;
+
+if strcmp(state, 'init')
+    % Initialize prevFval during the first iteration
+    prevFval = inf;
+end
+        
+% Check if the values are less than the thresholds
+fun_tol_curr = (prevFval - currFval) / (currFval + 1);
+if optimValues.constrviolation < constr_tol && (currFval == 0 || (fun_tol_curr < fun_tol && fun_tol_curr > 0) || optimValues.iteration >= iter_lim)
+    stop = true;
+    disp(strcat("Terminating: Optimality conditions fulfilled. Rel. function tolerance: ", ...
+        num2str(fun_tol_curr), ", Max. constraint violation: ", num2str(optimValues.constrviolation)));
+end
+
+% Update prevFval for the next iteration
+prevFval = currFval;
+
 end
 
 
-function val = cost_fctn(p, A1, b1, trx_ids)
+function val = cost_fctn(p, n_amps, norm_val, beta)
 
-% [x_r, x_i] = getElements_abs(p, trx_ids);
-% val = norm(sqrt((real(A1) * x_r - imag(A1) * x_i).^2 + (imag(A1) * x_r + real(A1) * x_i).^2) - b1);
-val = 0;
+if beta(1)
+    val = norm(p(1:n_amps), norm_val);
+else
+    % [x_r, x_i] = getElements_abs(p, trx_ids);
+    % val = norm(sqrt((real(A1) * x_r - imag(A1) * x_i).^2 + (imag(A1) * x_r + real(A1) * x_i).^2) - b1);
+    val = 0;
+end
 
 end
 
-function val = cost_fctn2(p, A1, b1, amp_fac, trx_ids)
-% n_amps = length(trx_ids);
+% function val = cost_fctn2(p, A1, b1, amp_fac, trx_ids)
+% % n_amps = length(trx_ids);
+% % 
+% % p_0 = zeros(size(A1, 2), 1);
+% % p_0 = getAmpPerElement(p_0, p, trx_ids);
+% % 
+% % val = norm(amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b1);
+% val = 0;
 % 
-% p_0 = zeros(size(A1, 2), 1);
-% p_0 = getAmpPerElement(p_0, p, trx_ids);
-% 
-% val = norm(amp_fac * abs(A1 * (p_0 .* exp(1j * p(n_amps + 1:end)))) - b1);
-val = 0;
-
-end
+% end
 
 
 % function [x_r, x_i] = getElements_abs(p, trx_ids)
