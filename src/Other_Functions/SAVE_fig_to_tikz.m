@@ -1,6 +1,9 @@
-function [ ] = SAVE_fig_to_tikz( filename )
+function [ ] = SAVE_fig_to_tikz( filename, cmap )
 %UNTITLED Summary of this function goes here
 % Detailed explanation goes here
+
+set(gcf,'colormap', cmap);
+
 matlab2tikz([filename,'.tex'],'width','\fw','height','\fh','extraaxisoptions',['title style={font=\small},'...
 'xlabel style={font=\small},'...
 'ylabel style={font=\small},',...

@@ -57,7 +57,7 @@ if ~isempty(excitation)
     fontsize(f_param, 12,"points")
 
     if save_as_tex
-        SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"));
+        SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"), cmap);
     end
 end
 
@@ -156,7 +156,7 @@ end
 
 fontsize(f_data, 12,"points")
 if save_as_tex
-    SAVE_fig_to_tikz(convertStringsToChars(filename + "_data"));
+    SAVE_fig_to_tikz(convertStringsToChars(filename + "_data"), cmap);
 end
 
 % 3D sliceViewer
