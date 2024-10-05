@@ -6,7 +6,7 @@ slice_dim_in = 'Y';
 scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
-ax = [];
+contour_mask = [];
 fig_pos = {[1025 55 625 300], [800 450 475 525], [755 55 250 300]};
 
 if ~isempty(varargin)
@@ -22,8 +22,8 @@ if ~isempty(varargin)
                 plot_colorbar = varargin{arg_idx+1};
             case 'cmap'
                 cmap = varargin{arg_idx+1};
-            case 'axes'
-                ax = varargin{arg_idx+1};
+            case 'contour_mask'
+                contour_mask = varargin{arg_idx+1};
             case 'fig_pos'
                 fig_pos = varargin{arg_idx+1};
             otherwise
@@ -73,6 +73,10 @@ if kgrid.dim == 2
 else
     slice_p = round((plot_offset(slice_dim) + slice_coord) * dx_factor); % p space
     p_data = abs(index2Dto3D(data, slice_dim, slice_p));
+
+    if ~isempty(contour_mask)
+        contour_mask = index2Dto3D(contour_mask, slice_dim, slice_p);
+    end
 
     grid_size = grid_size(dims_2D);
 end
@@ -133,8 +137,8 @@ if ~isempty(t1w_filename)
     ylabel(ax1, dims_char(dims_2D(2)));
 else
 
-    ax = axes;
-    imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90))); % relative to transducer 1 face (center)
+    ax1 = axes;
+    imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90))); % relative to transducer 1 face (center)
     
     colormap(cmap);
     xlabel(strcat(dims_char(dims_2D(1)), ' (mm)'));
@@ -146,12 +150,24 @@ else
 %     c = colorbar;
 %     c.Label.String = 'Pressure (kPa)';
 
-    set(ax,'Position',[.17 .11 .685 .815]);
+    set(ax1,'Position',[.17 .11 .685 .815]);
     if plot_colorbar
-        cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
+        cb = colorbar(ax1,'Position',[.85 .11 .0275 .815]);
         xlabel(cb, 'Pressure (kPa)');
     end
-    set(ax, 'ydir', 'normal')
+    set(ax1, 'ydir', 'normal')
+end
+
+if ~isempty(contour_mask)
+    % Extract contour coordinates from the contour_mask
+    contour_mask = fliplr(imrotate(contour_mask, -90));
+    [row_indices, col_indices] = find(contour_mask);
+
+    contour_vec_x = plot_vecx(col_indices);
+    contour_vec_y = plot_vecy(row_indices);
+    
+    % plot the white contour line
+    plot(ax1, contour_vec_x, contour_vec_y, 'w.', 'MarkerSize', 5);
 end
 
 fontsize(f_data, 12,"points")

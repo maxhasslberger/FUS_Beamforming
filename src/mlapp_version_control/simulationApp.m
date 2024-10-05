@@ -252,6 +252,7 @@ classdef simulationApp < matlab.apps.AppBase
         dims_2D
         sv_obj
         init1_id
+        contour_mask
     end
     
     methods (Access = private)
@@ -288,7 +289,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.sv_obj = plot_results(app.kgrid, p, b_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
                 app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'slice_dim', app.SliceDimDropDown.Value, 'axes', []);%app.UIAxesParam);
+                'slice_dim', app.SliceDimDropDown.Value);%app.UIAxesParam);
 
             % Plot mask with pressure above off-target limit
             masked_b = abs(b_lim);
@@ -296,7 +297,7 @@ classdef simulationApp < matlab.apps.AppBase
             plot_results(app.kgrid, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', ...
                 app.SliceIndexEditField.Value, 'fig_pos', {[], [1400 450 475 525], [1660 55 250 300]}, ...
-                'slice_dim', app.SliceDimDropDown.Value);
+                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask);
 
             %% Evaluate pressure distribution
             app.p_curr = p;
@@ -1090,6 +1091,8 @@ classdef simulationApp < matlab.apps.AppBase
                 [app.min_dist, app.min_dist_reg] * 1e-3, app.b_mask, ...
                 find([app.force_pressures, app.force_pressures_reg])); % Indices where pressure values forced
 
+            app.contour_mask = b_mask_plot == 0.5;
+
             % Update displayed slice based on first init_id
             if app.n_dim == 3
                 [dispX, dispY, dispZ] = ind2sub(size(app.kgrid.k), find(app.init_ids));
@@ -1251,7 +1254,7 @@ classdef simulationApp < matlab.apps.AppBase
             plot_results(kgridP, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', ...
                 app.SliceIndexEditField.Value, 'fig_pos', {[], [1400 450 475 525], [1660 55 250 300]}, ...
-                'slice_dim', app.SliceDimDropDown.Value);
+                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask);
 
             % Save results in mat file
             app.ip.b_gt = b_gt;
