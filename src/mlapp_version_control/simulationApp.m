@@ -289,7 +289,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.sv_obj = plot_results(app.kgrid, p, b_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, ...
                 app.grid_size, app.dx_factor, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'slice_dim', app.SliceDimDropDown.Value);%app.UIAxesParam);
+                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask);%app.UIAxesParam);
 
             % Plot mask with pressure above off-target limit
             masked_b = abs(b_lim);
@@ -547,7 +547,7 @@ classdef simulationApp < matlab.apps.AppBase
                 term.fun_tol = app.RelFunctionToleranceEditField.Value;
                 term.constr_tol = app.ConstraintToleranceEditField.Value;
                 term.max_iter = app.MaxNoofIterationsEditField.Value;
-                term.algorithm = app.AlgorithmDropDown.Value;
+                % term.algorithm = app.AlgorithmDropDown.Value;
 
                 ip_sol = app.ip;
 
@@ -1247,7 +1247,7 @@ classdef simulationApp < matlab.apps.AppBase
 
             app.sv_obj = plot_results(kgridP, [], b_gt_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
                 dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'slice_dim', app.SliceDimDropDown.Value);
+                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask);
 
             masked_b = abs(b_gt_lim);
             masked_b(masked_b <= plot_thr) = 0.0;
@@ -1514,7 +1514,7 @@ classdef simulationApp < matlab.apps.AppBase
                 app.RelFunctionToleranceEditField.Value = data.term.fun_tol;
                 app.ConstraintToleranceEditField.Value = data.term.constr_tol;
                 app.MaxNoofIterationsEditField.Value = data.term.max_iter;
-                app.AlgorithmDropDown.Value = data.term.algorithm;
+                % app.AlgorithmDropDown.Value = data.term.algorithm;
 
                 app.ip = data.ip_sol;
             end

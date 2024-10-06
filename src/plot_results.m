@@ -32,7 +32,7 @@ if ~isempty(varargin)
     end
 end
 
-save_as_tex = false;
+save_as_tex = true;
 filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
 
 %% Plot magnitude and phase of array elements
@@ -81,6 +81,7 @@ else
     grid_size = grid_size(dims_2D);
 end
 
+
 % Get Ticks
 p_sz = size(p_data);
 
@@ -113,6 +114,11 @@ if ~isempty(t1w_filename)
         t1w_plot = index2Dto3D(t1_img, slice_dim, slice_scan);
     end
 
+    if ~isempty(contour_mask)
+        t1w_plot(contour_mask) = 0.0;
+        p_data(contour_mask) = 0.0;
+    end
+
     % Plot
     ax1 = axes;
     imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(t1w_plot, -90)), [50,500]);
@@ -137,6 +143,10 @@ if ~isempty(t1w_filename)
     ylabel(ax1, dims_char(dims_2D(2)));
 else
 
+    if ~isempty(contour_mask)
+        p_data(contour_mask) = 0.0;
+    end
+
     ax1 = axes;
     imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90))); % relative to transducer 1 face (center)
     
@@ -158,17 +168,17 @@ else
     set(ax1, 'ydir', 'normal')
 end
 
-if ~isempty(contour_mask)
-    % Extract contour coordinates from the contour_mask
-    contour_mask = fliplr(imrotate(contour_mask, -90));
-    [row_indices, col_indices] = find(contour_mask);
-
-    contour_vec_x = plot_vecx(col_indices);
-    contour_vec_y = plot_vecy(row_indices);
-    
-    % plot the white contour line
-    plot(ax1, contour_vec_x, contour_vec_y, 'w.', 'MarkerSize', 5);
-end
+%if ~isempty(contour_mask) && ~save_as_tex
+%    % Extract contour coordinates from the contour_mask
+%    contour_mask = fliplr(imrotate(contour_mask, -90));
+%    [row_indices, col_indices] = find(contour_mask);
+%
+%    contour_vec_x = plot_vecx(col_indices);
+%    contour_vec_y = plot_vecy(row_indices);
+%    
+%    % plot the white contour line
+%    plot(ax1, contour_vec_x, contour_vec_y, 'w.', 'MarkerSize', 5);
+%end
 
 fontsize(f_data, 12,"points")
 if save_as_tex
@@ -192,8 +202,9 @@ else
     sv_obj = [];
 end
 
+safe_excitation = false;
 if save_results
-    if ~isempty(excitation)
+    if ~isempty(excitation) && safe_excitation
         export_fig(f_param, filename + "_param.pdf");
     end
     saveas(f_data, filename + "_data.pdf");
