@@ -43,7 +43,7 @@ if do_time_reversal
     tr.p = sim_exe(kgrid, medium, sensor, max(f0), b_des, full_bmask, t_mask_ps, false, input_args);
     % tr.p = max(abs(tr.p)) * exp(-1j * angle(tr.p)); % All elements with same amplitude
     tr.p = conj(tr.p); % Var amplitude
-    tr.b = sim_exe(kgridP, mediumP, sensorP, max(f0), tr.p, t_mask_psP, sensor_maskP, true, input_argsP, 'karray_t', karray_tP);
+    tr.b = sim_exe(kgrid, medium, sensor, max(f0), tr.p, t_mask_ps, sensor_mask, true, input_args, 'karray_t', karray_t);
 else
     tr = [];
 end
