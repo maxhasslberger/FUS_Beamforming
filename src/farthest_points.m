@@ -1,6 +1,6 @@
 function logical_init_ids = farthest_points(grid_sz, stim_ids, min_dist, hull_ids, cluster_labels)
 
-min_dist_hull = 3;
+min_dist_hull = 2.5;
 
 if length(grid_sz) == 2
     [x, y] = ind2sub(grid_sz, stim_ids);
@@ -57,13 +57,7 @@ for i = 1:length(hull_ids) % for each cluster
             end
             break;
         end
-        if maxDist < min_dist(i) || maxDistHull < min_dist_hull
-            if ~point_found
-                % take the point found inside surface
-                nonSelectedIndices = find(~selected_i);
-                nextPoint = nonSelectedIndices(nextIndex);
-                init_ids(end+1) = nextPoint;
-            end
+        if (maxDist < min_dist(i) || maxDistHull < min_dist_hull) && point_found
             break;
         end
     
