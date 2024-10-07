@@ -2689,7 +2689,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.LxNormEditField = uieditfield(app.AdvancedOptimizationOptionsPanel, 'numeric');
             app.LxNormEditField.RoundFractionalValues = 'on';
             app.LxNormEditField.Position = [143 12 50 22];
-            app.LxNormEditField.Value = 10;
+            app.LxNormEditField.Value = Inf;
 
             % Create PlotPanel
             app.PlotPanel = uipanel(app.OptimizeTab);
