@@ -33,6 +33,7 @@ if ~isempty(varargin)
 end
 
 save_as_tex = false;
+plot_rel_pressure = true;
 filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
 
 %% Plot magnitude and phase of array elements
@@ -56,9 +57,9 @@ if ~isempty(excitation)
 
     fontsize(f_param, 12,"points")
 
-    if save_as_tex
-        SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"), cmap);
-    end
+    % if save_as_tex
+    %     SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"), cmap);
+    % end
 end
 
 %% Plot the pressure field 
@@ -75,7 +76,7 @@ else
     p_data = abs(index2Dto3D(data, slice_dim, slice_p));
 
     if ~isempty(contour_mask)
-        contour_mask = index2Dto3D(contour_mask, slice_dim, slice_p);
+        contour_mask_2D = index2Dto3D(contour_mask, slice_dim, slice_p);
     end
 
     grid_size = grid_size(dims_2D);
@@ -115,8 +116,16 @@ if ~isempty(t1w_filename)
     end
 
     if ~isempty(contour_mask)
-        t1w_plot(contour_mask) = 0.0;
-        p_data(contour_mask) = 0.0;
+        t1w_plot(contour_mask_2D) = 0.0;
+        p_data(contour_mask_2D) = 0.0;
+    end
+
+    if ~plot_rel_pressure
+        plot_data = p_data * scale_factor;
+        cblabel = 'Pressure (kPa)';
+    else
+        plot_data = p_data / max(p_data(:));
+        cblabel = 'p / p_{max}';
     end
 
     % Plot
@@ -125,7 +134,7 @@ if ~isempty(t1w_filename)
     hold all;
 %     hold(ax1,'all')
     ax2 = axes;
-    im2 = imagesc(ax2, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90)));
+    im2 = imagesc(ax2, plot_vecx, plot_vecy, fliplr(imrotate(plot_data, -90)));
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
@@ -133,7 +142,7 @@ if ~isempty(t1w_filename)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     if plot_colorbar
         cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
-        xlabel(cb2, 'Pressure (kPa)');
+        xlabel(cb2, cblabel);
     end
 
     title(ax1, plot_title)
@@ -144,7 +153,7 @@ if ~isempty(t1w_filename)
 else
 
     if ~isempty(contour_mask)
-        p_data(contour_mask) = 0.0;
+        p_data(contour_mask_2D) = 0.0;
     end
 
     ax1 = axes;
@@ -188,6 +197,10 @@ end
 % 3D sliceViewer
 if kgrid.dim == 3
     f_3D = figure('color','w');
+
+    if ~isempty(contour_mask)
+        data(contour_mask) = 0.0;
+    end
 
     data = permute(data, [dims_2D(1), slice_dim, dims_2D(2)]);
     sv_obj = sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
