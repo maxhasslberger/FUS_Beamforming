@@ -2544,7 +2544,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.MaxPressurekPaEditField = uieditfield(app.TargetingTab, 'numeric');
             app.MaxPressurekPaEditField.ValueChangedFcn = createCallbackFcn(app, @MaxPressurekPaEditFieldValueChanged, true);
             app.MaxPressurekPaEditField.Position = [191 24 44 22];
-            app.MaxPressurekPaEditField.Value = 317;
+            app.MaxPressurekPaEditField.Value = 318.2;
 
             % Create LimitIntracranialOffTargetPressureCheckBox
             app.LimitIntracranialOffTargetPressureCheckBox = uicheckbox(app.TargetingTab);
