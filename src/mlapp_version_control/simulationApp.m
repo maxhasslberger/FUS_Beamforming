@@ -2380,7 +2380,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create PressureAmplitudekPaEditField
             app.PressureAmplitudekPaEditField = uieditfield(app.TargetManPanel, 'numeric');
             app.PressureAmplitudekPaEditField.Position = [164 47 40 22];
-            app.PressureAmplitudekPaEditField.Value = 300;
+            app.PressureAmplitudekPaEditField.Value = 450;
 
             % Create MinPointDistancemmEditFieldLabel
             app.MinPointDistancemmEditFieldLabel = uilabel(app.TargetManPanel);
@@ -2488,7 +2488,7 @@ classdef simulationApp < matlab.apps.AppBase
             % Create PressureAmplitudekPaEditFieldReg
             app.PressureAmplitudekPaEditFieldReg = uieditfield(app.TargetRegPanel, 'numeric');
             app.PressureAmplitudekPaEditFieldReg.Position = [172 65 40 22];
-            app.PressureAmplitudekPaEditFieldReg.Value = 300;
+            app.PressureAmplitudekPaEditFieldReg.Value = 450;
 
             % Create ConfirmRegTargetButton
             app.ConfirmRegTargetButton = uibutton(app.TargetRegPanel, 'push');
@@ -2544,7 +2544,7 @@ classdef simulationApp < matlab.apps.AppBase
             app.MaxPressurekPaEditField = uieditfield(app.TargetingTab, 'numeric');
             app.MaxPressurekPaEditField.ValueChangedFcn = createCallbackFcn(app, @MaxPressurekPaEditFieldValueChanged, true);
             app.MaxPressurekPaEditField.Position = [191 24 44 22];
-            app.MaxPressurekPaEditField.Value = 200;
+            app.MaxPressurekPaEditField.Value = 317;
 
             % Create LimitIntracranialOffTargetPressureCheckBox
             app.LimitIntracranialOffTargetPressureCheckBox = uicheckbox(app.TargetingTab);
