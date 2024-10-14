@@ -48,15 +48,18 @@ if compute_waveform
         % Amplitudes and phases of each freq
         if use_multi_freq
             % amp_2d = [20, 40, 60, 80, 100] * 1e3; % kPa
-            amp_2d = rand(1,5) * 1e5;
+            % amp_2d = rand(1,5) * 1e5;
+            amp_2d = [13605.494,95156.625,95613.454,58101.878,6162.839];
             % phi_2d = [0,0.2,0.4,0.6,0.8];
-            phi_2d = rand(1,5) * 2 * pi;
+            % phi_2d = rand(1,5) * 2 * pi;
+            phi_2d = [1.475,2.219,5.1597,0.0968,0.270];
         else
             amp = 20*1e3;
             phi = 0;
         end        
         if apply_factoring
-            factors = [1/.97, 1/.99, 1, 1/.99, 1/.97];
+            % factors = [1/.97, 1/.99, 1, 1/.99, 1/.97];
+            factors = [1,1,1,1,1];
             amp_2d_factored = amp_2d .* factors; % Pa                         
             amp = reshape(amp_2d_factored, 1, 1, nfreq);
             amp_unfactored = reshape(amp_2d, 1, 1, nfreq);
@@ -69,7 +72,7 @@ if compute_waveform
         if use_multi_freq
             w = reshape(w, 1, 1, nfreq);
             phi = reshape(phi_2d, 1, 1, nfreq);                
-            pulse_train_duration = 3 * T_m;
+            pulse_train_duration = 2 * T_m;
         else
             % pulse_train_duration = 30*T;
             pulse_train_duration = 200* 1e-6;

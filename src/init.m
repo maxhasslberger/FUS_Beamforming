@@ -17,18 +17,18 @@ t_rot = [45, -45]; % deg
 slice_idx_2D = 30; % Observed slice in t1w/ct scan + Ref for focus and transducer plane 
 % scan_focus_z = [-27, -19]; % comment out for seg
 % des_pressures = [300, 300]; % kPa % comment out for seg
-% focus_radius = [7, 7] * 1e-3; % mm
+% focus_radius = [7, 7] * 1e-3; % mm % comment out for seg
 scan_focus_x = []; % comment in for seg
 scan_focus_z = []; % comment in for seg
 des_pressures = []; % kPa % comment in for seg
 
-region_labels = ["leftAmygdala", "rightAmygdala"]; % comment in for seg
+region_labels = ["rightAmygdala"]; % comment in for seg
 % region_labels = ["leftHippocampus", "rightHippocampus"];
-des_pressures_region = [300, 300]; % kPa % comment in for seg
-% region_labels = [];
-% des_pressures_region = []; % kPa
+des_pressures_region = [300]; % kPa % comment in for seg
+% region_labels = []; % comment out for seg
+% des_pressures_region = []; % kPa % comment out for seg
 
-force_pressures = [1, 2]; % regions where pressure forced to exact value
+force_pressures = [1]; % regions where pressure forced to exact value
 
 sidelobe_tol = 50; % percent
 max_skull_pressure = 1e3; % kPa
