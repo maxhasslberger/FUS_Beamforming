@@ -1,12 +1,13 @@
-function plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
-
+function sv_obj = plot_results(kgrid, excitation, data, plot_title, mask2el, t1w_filename, plot_offset, grid_size, dx_factor, save_results, current_datetime, varargin)
 %% Optional Inputs
 slice_coord = 32;
 dx_scan = 1e-3;
-slice_dim = 2;
+slice_dim_in = 'Y';
 scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
+contour_mask = [];
+fig_pos = {[1025 55 625 300], [800 450 475 525], [755 55 250 300]};
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -16,55 +17,71 @@ if ~isempty(varargin)
             case 'dx_scan'
                 dx_scan = varargin{arg_idx+1};
             case 'slice_dim'
-                slice_dim = varargin{arg_idx+1};
+                slice_dim_in = varargin{arg_idx+1};
             case 'colorbar'
                 plot_colorbar = varargin{arg_idx+1};
             case 'cmap'
                 cmap = varargin{arg_idx+1};
+            case 'contour_mask'
+                contour_mask = varargin{arg_idx+1};
+            case 'fig_pos'
+                fig_pos = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
     end
 end
 
+save_as_tex = false;
+plot_rel_pressure = true;
+filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
+
 %% Plot magnitude and phase of array elements
 if ~isempty(excitation)
-    nfreq = size(excitation, 2);
-    excitation = excitation(reshape(mask2el, 1, []), :); % Sort acc to transducer id
-
+    excitation = excitation(reshape(mask2el, 1, [])); % Sort acc to transducer id
+    
     f_param = figure('color','w');
-    f_param.Position = [700 50 650 350];
-    
-    for freq_idx = 1:nfreq
+    f_param.Position = fig_pos{1};
 
-        % Extract excitation vector for specific freq
-        excitation_temp = excitation(:,freq_idx);
+    subplot(2, 1, 1)
+    plot(abs(excitation * 1e-3), '.')
+    title(plot_title);
+    xlim([1 length(excitation)])
+    ylabel('Amplitude (kPa)')
     
-        subplot(nfreq, 2, 2 * freq_idx - 1)
-        plot(abs(excitation_temp * 1e-3), '.')
-        title([plot_title ' - Frequency ' num2str(freq_idx)]);
-        xlim([1 length(excitation_temp)])
-        xlabel('Array Element #')
-        ylabel('Amplitude (kPa)')
-        
-        subplot(nfreq, 2, 2 * freq_idx)
-        plot(rad2deg(angle(excitation_temp)), '.')
-        xlim([1 length(excitation_temp)])
-        xlabel('Array Element #')
-        ylabel('Phase (deg)')
-    end
+    subplot(2, 1, 2)
+    plot(rad2deg(angle(excitation)), '.')
+    xlim([1 length(excitation)])
+    xlabel('Array Element #')
+    ylabel('Phase (deg)')
 
     fontsize(f_param, 12,"points")
+
+    % if save_as_tex
+    %     SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"), cmap);
+    % end
 end
 
 %% Plot the pressure field 
 
+dims_char = ['X', 'Y', 'Z'];
+
+slice_dim = dim2num(slice_dim_in);
+dims_2D = exclude_dim(slice_dim);
+
 if kgrid.dim == 2
     p_data = abs(data);
 else
-    slice_p = round((plot_offset(2) + slice_coord) * dx_factor); % p space
-    p_data = squeeze(abs(data(:,slice_p,:)));
+    slice_p = round((plot_offset(slice_dim) + slice_coord) * dx_factor); % p space
+    p_data = abs(index2Dto3D(data, slice_dim, slice_p));
+
+    if ~isempty(contour_mask)
+        contour_mask_2D = index2Dto3D(contour_mask, slice_dim, slice_p);
+    end
+
+    grid_size = grid_size(dims_2D);
 end
+
 
 % Get Ticks
 p_sz = size(p_data);
@@ -72,33 +89,52 @@ p_sz = size(p_data);
 plot_vecy = linspace(0, grid_size(2)-kgrid.dy, p_sz(2)) / dx_scan;
 plot_vecx = linspace(0, grid_size(1)-kgrid.dx, p_sz(1)) / dx_scan;
 
-plot_vecy = plot_vecy - plot_offset(3) + kgrid.dy / dx_scan;
-plot_vecx = plot_vecx - plot_offset(1) + kgrid.dx / dx_scan;
+plot_vecy = plot_vecy - plot_offset(dims_2D(2)) + kgrid.dy / dx_scan;
+plot_vecx = plot_vecx - plot_offset(dims_2D(1)) + kgrid.dx / dx_scan;
 
-f_data = figure('color','w');
-f_data.Position = [1400 50 484 512];
+% if isempty(ax)
+    f_data = figure('color','w');
+%     f_data.Position = [1400 50 484 512];
+    f_data.Position = fig_pos{2};
+%     ax = axes;
+% end
 
 % Include a t1w scan
 if ~isempty(t1w_filename)
     t1_img = niftiread(t1w_filename);
 
-    slice_scan = round(plot_offset(2) + slice_coord); % scan space
-    t1w_sz = [size(t1_img, 1), size(t1_img, 3)];
+    slice_scan = round(plot_offset(slice_dim) + slice_coord); % scan space
+    t1w_sz = size(t1_img);
+    t1w_sz = t1w_sz(dims_2D);
     if ~isequal(p_sz, t1w_sz)
         % Interpolate to adapt to grid size
         [X, Y] = meshgrid(1:t1w_sz(1), 1:t1w_sz(2));
         [Xq, Yq] = meshgrid(linspace(1, t1w_sz(1), p_sz(1)), linspace(1, t1w_sz(2), p_sz(2)));
-        t1w_plot = interp2(X, Y, squeeze(double(t1_img(:, slice_scan, :)))', Xq, Yq, "linear")';
+        t1w_plot = interp2(X, Y, double(index2Dto3D(t1_img, slice_dim, slice_scan))', Xq, Yq, "linear")';
+    else 
+        t1w_plot = index2Dto3D(t1_img, slice_dim, slice_scan);
+    end
+
+    if ~isempty(contour_mask)
+        t1w_plot(contour_mask_2D) = 0.0;
+        p_data(contour_mask_2D) = 0.0;
+    end
+
+    if ~plot_rel_pressure
+        plot_data = p_data * scale_factor;
+        cblabel = 'Pressure (kPa)';
     else
-        t1w_plot = squeeze(t1_img(:, slice_scan, :));
+        plot_data = p_data / max(p_data(:));
+        cblabel = 'p / p_{max}';
     end
 
     % Plot
     ax1 = axes;
     imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(t1w_plot, -90)), [50,500]);
     hold all;
+%     hold(ax1,'all')
     ax2 = axes;
-    im2 = imagesc(ax2, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90)));
+    im2 = imagesc(ax2, plot_vecx, plot_vecy, fliplr(imrotate(plot_data, -90)));
     im2.AlphaData = 0.5;
     linkaxes([ax1,ax2]); ax2.Visible = 'off'; ax2.XTick = []; ax2.YTick = [];
     colormap(ax1,'gray')
@@ -106,20 +142,26 @@ if ~isempty(t1w_filename)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     if plot_colorbar
         cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
-        xlabel(cb2, 'Pressure (kPa)');
+        xlabel(cb2, cblabel);
     end
+
     title(ax1, plot_title)
     set(ax1, 'ydir', 'normal')
     set(ax2, 'ydir', 'normal')
-
+    xlabel(ax1, dims_char(dims_2D(1)));
+    ylabel(ax1, dims_char(dims_2D(2)));
 else
 
-    ax = axes;
-    imagesc(ax, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90))); % relative to transducer 1 face (center)
+    if ~isempty(contour_mask)
+        p_data(contour_mask_2D) = 0.0;
+    end
+
+    ax1 = axes;
+    imagesc(ax1, plot_vecx, plot_vecy, fliplr(imrotate(p_data * scale_factor, -90))); % relative to transducer 1 face (center)
     
     colormap(cmap);
-    xlabel('x (mm)');
-    ylabel('z (mm)');
+    xlabel(strcat(dims_char(dims_2D(1)), ' (mm)'));
+    ylabel(strcat(dims_char(dims_2D(2)), ' (mm)'));
     axis image;
     % clim([0 30000])
     title(plot_title);
@@ -127,28 +169,57 @@ else
 %     c = colorbar;
 %     c.Label.String = 'Pressure (kPa)';
 
-    set(ax,'Position',[.17 .11 .685 .815]);
+    set(ax1,'Position',[.17 .11 .685 .815]);
     if plot_colorbar
-        cb = colorbar(ax,'Position',[.85 .11 .0275 .815]);
+        cb = colorbar(ax1,'Position',[.85 .11 .0275 .815]);
         xlabel(cb, 'Pressure (kPa)');
     end
-    set(ax, 'ydir', 'normal')
+    set(ax1, 'ydir', 'normal')
 end
 
-fontsize(f_data, 12,"points")
+%if ~isempty(contour_mask) && ~save_as_tex
+%    % Extract contour coordinates from the contour_mask
+%    contour_mask = fliplr(imrotate(contour_mask, -90));
+%    [row_indices, col_indices] = find(contour_mask);
+%
+%    contour_vec_x = plot_vecx(col_indices);
+%    contour_vec_y = plot_vecy(row_indices);
+%    
+%    % plot the white contour line
+%    plot(ax1, contour_vec_x, contour_vec_y, 'w.', 'MarkerSize', 5);
+%end
 
+fontsize(f_data, 12,"points")
+if save_as_tex
+    SAVE_fig_to_tikz(convertStringsToChars(filename + "_data"), cmap);
+end
+
+% 3D sliceViewer
 if kgrid.dim == 3
-    sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", figure);
+    f_3D = figure('color','w');
+
+    if ~isempty(contour_mask)
+        data(contour_mask) = 0.0;
+    end
+
+    data = permute(data, [dims_2D(1), slice_dim, dims_2D(2)]);
+    sv_obj = sliceViewer(double(flip(imrotate(abs(data * scale_factor), 90), 1)), 'Colormap', cmap, 'SliceNumber', slice_p, 'SliceDirection', 'Y', "Parent", f_3D);
+
     if plot_colorbar
         cb3 = colorbar;
         xlabel(cb3, 'Pressure (kPa)');
     end
     title(plot_title);
+    f_3D.Position = fig_pos{3};
+else
+    sv_obj = [];
 end
 
+safe_excitation = false;
 if save_results
-    filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
-    export_fig(f_param, filename + "_param.pdf");
+    if ~isempty(excitation) && safe_excitation
+        export_fig(f_param, filename + "_param.pdf");
+    end
     saveas(f_data, filename + "_data.pdf");
 end
 
