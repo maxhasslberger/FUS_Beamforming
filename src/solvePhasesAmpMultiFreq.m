@@ -107,7 +107,7 @@ function val = cost_fctn(p, A0, b0)
 
 p = getCompVec(p);
 % Calc cost fctn value
-val = norm(abs(A0 * p) - b0);
+val = norm(abs(A0 * p) - b0, "inf");
 
 end
 
