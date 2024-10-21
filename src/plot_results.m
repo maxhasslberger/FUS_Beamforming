@@ -57,9 +57,9 @@ if ~isempty(excitation)
 
     fontsize(f_param, 12,"points")
 
-    % if save_as_tex
-    %     SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"), cmap);
-    % end
+    if save_as_tex
+        SAVE_fig_to_tikz(convertStringsToChars(filename + "_param"), cmap);
+    end
 end
 
 %% Plot the pressure field 
@@ -191,7 +191,7 @@ end
 
 fontsize(f_data, 12,"points")
 if save_as_tex
-    SAVE_fig_to_tikz(convertStringsToChars(filename + "_data"), cmap);
+    SAVE_fig_to_tikz2(convertStringsToChars(filename + "_data"), cmap);
 end
 
 % 3D sliceViewer
@@ -215,9 +215,9 @@ else
     sv_obj = [];
 end
 
-safe_excitation = false;
+save_results = false;
 if save_results
-    if ~isempty(excitation) && safe_excitation
+    if ~isempty(excitation)
         export_fig(f_param, filename + "_param.pdf");
     end
     saveas(f_data, filename + "_data.pdf");
