@@ -1,4 +1,6 @@
 
+app.ip.b_gt = [];
+
 % Std params
 t_name = app.ArrayElementsPositionsfilenameDropDown.Value(1:end-4);
 sparsity_name = app.SparsityfilenameDropDown.Value(1:end-4);
@@ -13,14 +15,20 @@ t_rot_orig = [0, 0; 45, -45; 180, 180];
 % New positions
 [elementAll_pos_new, ~, n_arr_elements] = get_arr_el_positions(t_name, sparsity_name, app.t_pos * app.dx_scan, app.t_rot, tr_offset_karr_out);
 
-% Compute error distance
-err_dis = vecnorm(elementAll_pos_new - elementAll_pos_orig);
+% % Compute error distance to original transducer position
+% err_dis = vecnorm(elementAll_pos_new - elementAll_pos_orig);
+% 
+% % Check where shift is positive or negative
+% elAll_pos_new_scan = round( (elementAll_pos_new - tr_offset_karr_out) / app.kgrid.dx + app.plot_offset(:) );
+% elAll_pos_orig_scan = round( (elementAll_pos_orig - tr_offset_karr_out) / app.kgrid.dx + app.plot_offset(:) );
+% posNegDis = (( vecnorm(elAll_pos_new_scan - app.init1_id(:)) > vecnorm(elAll_pos_orig_scan - app.init1_id(:)) ) - 0.5) * 2;
+% err_dis = err_dis .* posNegDis;
 
-% Check where shift is positive or negative
+% Compute error distance by difference distance to init point 1
 elAll_pos_new_scan = round( (elementAll_pos_new - tr_offset_karr_out) / app.kgrid.dx + app.plot_offset(:) );
 elAll_pos_orig_scan = round( (elementAll_pos_orig - tr_offset_karr_out) / app.kgrid.dx + app.plot_offset(:) );
-posNegDis = (( vecnorm(elAll_pos_new_scan - app.init1_id(:)) > vecnorm(elAll_pos_orig_scan - app.init1_id(:)) ) - 0.5) * 2;
-err_dis = err_dis .* posNegDis;
+err_dis = vecnorm(elAll_pos_new_scan - app.init1_id(:)) - vecnorm(elAll_pos_orig_scan - app.init1_id(:));
+err_dis = err_dis * app.kgrid.dx; % m
 
 % Convert to time and phase
 err_time = err_dis / min(app.medium.sound_speed(:));
@@ -31,7 +39,9 @@ err_phi = err_time * 2*pi* app.CenterFreqkHzEditField.Value * 1e3;
 err_phi_sorted = err_phi(el2mask_ids_new);
 
 [~, ~, mask2el_ids_orig] = el2mask_indexing(elementAll_pos_orig, n_arr_elements);
-app.ip.p = app.ip.p(mask2el_ids_orig);
-app.ip.p = app.ip.p(el2mask_ids_new);
+exc = exc(mask2el_ids_orig);
+exc = exc(el2mask_ids_new);
 
-app.ip.p = app.ip.p .* exp(1j * err_phi_sorted');
+if false % true for RT correction, false if only tr position different from original one
+    exc = exc .* exp(1j * err_phi_sorted');
+end
