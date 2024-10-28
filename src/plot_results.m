@@ -8,6 +8,7 @@ plot_colorbar = true;
 cmap = turbo();
 contour_mask = [];
 fig_pos = {[1025 55 625 300], [800 450 475 525], [755 55 250 300]};
+p_tar = [];
 
 if ~isempty(varargin)
     for arg_idx = 1:2:length(varargin)
@@ -26,6 +27,8 @@ if ~isempty(varargin)
                 contour_mask = varargin{arg_idx+1};
             case 'fig_pos'
                 fig_pos = varargin{arg_idx+1};
+            case 'p_tar'
+                p_tar = varargin{arg_idx+1};
             otherwise
                 error('Unknown optional input.');
         end
@@ -123,9 +126,14 @@ if ~isempty(t1w_filename)
     if ~plot_rel_pressure
         plot_data = p_data * scale_factor;
         cblabel = 'Pressure (kPa)';
+        cb_limits = [];
     else
-        plot_data = p_data / max(p_data(:));
-        cblabel = 'p / p_{max}';
+        if isempty(p_tar)
+            p_tar = max(p_data(:));
+        end
+        plot_data = p_data / p_tar;
+        cblabel = 'p / p_{tar}';
+        cb_limits = [0 max(1.0, max(plot_data(:)))];
     end
 
     % Plot
@@ -142,6 +150,10 @@ if ~isempty(t1w_filename)
     set([ax1,ax2],'Position',[.17 .11 .685 .815]);
     if plot_colorbar
         cb2 = colorbar(ax2,'Position',[.85 .11 .0275 .815]);
+        if ~isempty(cb_limits)
+            clim(cb_limits)
+            cb2.Limits = cb_limits;
+        end
         xlabel(cb2, cblabel);
     end
 
