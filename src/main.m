@@ -2,14 +2,14 @@ clear;
 close all;
 
 %% Init
-freq_spacing = 5; % kHz
-upper_limit = 510; % grid res changes based on this
-lower_limit = 430;
+freq_spacing = 10; % kHz
+upper_limit = 550; % grid res changes based on this
+lower_limit = 450;
 f0 = [lower_limit:freq_spacing:upper_limit] * 1e3; % Hz - transducer frequency
-% f0 = 490 * 1e3;
+% f0 = 500 * 1e3;
 n_dim = 2;
 dx = 1e-3; % set dx manually since we are using 500 kHz
-% dx = [];
+% dx = [];es
 plot_dx_factor = 1;
 
 t1w_filename = fullfile('..', 'Scans', 'dummy_t1w.nii');
@@ -17,7 +17,7 @@ ct_filename = fullfile('..', 'Scans', 'dummy_pseudoCT.nii');
 % t1w_filename = [];
 % ct_filename = [];
 
-sidelobe_tol = 40; % percent of max amplitude
+sidelobe_tol = 50; % percent of max amplitude
 
 % Simulation config
 only_focus_opt = false; % Optimize only for focal spots or entire observation domain
@@ -224,8 +224,8 @@ disp(double(ip.b(domain_ids &  init_ids)))
 ip.b = reshape(ip.b, size(kgrid.k));
 
 % Comment this in for intracranial pressures
-ip.b(~domain_ids) = 0.0;
-ip.b(~domain_ids & ~skull_ids) = 0.0;
+% ip.b(~domain_ids) = 0.0;
+% ip.b(~domain_ids & ~skull_ids) = 0.0;
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     [kgridP, mediumP, sensorP, sensor_maskP, ~, ~, ~, ~, t_mask_psP, karray_tP, ~, ~, ...
@@ -298,11 +298,11 @@ if do_ground_truth % For different resolution: Only supported in 3D at the momen
 %         histogram(err(:))
 %         xlabel("Pressure Deviation (Pa)")
 %     end
-else
-    plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
-        current_datetime, 'slice', point_pos.slice);
-    plot_results(kgrid, [], abs(ip.b_gt) > max(b_des) / 2, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
-        current_datetime, 'slice', point_pos.slice, 'colorbar', true, 'cmap', gray());
+% else
+    % plot_results(kgrid, ip.p_gt, ip.b_gt, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
+        % current_datetime, 'slice', point_pos.slice);
+    % plot_results(kgrid, [], abs(ip.b_gt) > max(b_des) / 2, 'Inverse Problem Comp', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, ...
+        % current_datetime, 'slice', point_pos.slice, 'colorbar', true, 'cmap', gray());
 end
 
 %% Metrics evaluation

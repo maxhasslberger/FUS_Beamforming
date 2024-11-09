@@ -24,7 +24,7 @@ des_pressures = []; % kPa % comment in for seg
 
 region_labels = ["rightAmygdala"]; % comment in for seg
 % region_labels = ["leftHippocampus", "rightHippocampus"];
-des_pressures_region = [300]; % kPa % comment in for seg
+des_pressures_region = [450]; % kPa % comment in for seg
 % region_labels = []; % comment out for seg
 % des_pressures_region = []; % kPa % comment out for seg
 

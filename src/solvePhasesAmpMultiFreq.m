@@ -8,7 +8,7 @@ p_init = double(p_init);
 %   A - cell array containing propagation matrix for each frequency
 %   b - vector with desired pressures
 %   p_init - initial excitation vector solution for each frequency
-%
+% 
 % Outputs:
 %   p - optimal excitation vector
 

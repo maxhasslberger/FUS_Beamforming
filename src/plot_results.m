@@ -6,7 +6,7 @@ slice_dim_in = 'Y';
 scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
-contour_mask = [];
+contour_mask = true;
 fig_pos = {[1025 55 625 300], [800 450 475 525], [755 55 250 300]};
 
 if ~isempty(varargin)
@@ -33,7 +33,7 @@ if ~isempty(varargin)
 end
 
 save_as_tex = false;
-plot_rel_pressure = true;
+plot_rel_pressure = false;
 filename = fullfile("..", "Results", current_datetime + "_" + plot_title);
 
 %% Plot magnitude and phase of array elements
