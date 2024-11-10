@@ -74,6 +74,7 @@ dims_2D = exclude_dim(slice_dim);
 
 if kgrid.dim == 2
     p_data = abs(data);
+%     p_data = data;
 else
     slice_p = round((plot_offset(slice_dim) + slice_coord) * dx_factor); % p space
     p_data = abs(index2Dto3D(data, slice_dim, slice_p));
