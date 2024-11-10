@@ -105,6 +105,13 @@ if islogical(get_current_A)
                 else
                     a_coli = single(sim_exe(kgrid, medium, sensor, f0, input, [], sensor_mask, true, input_args, 'karray_t', karray_tmp));
                 end
+
+%                 a_col_plot = a_coli;
+%                 max_val = 0.25 * max(abs(a_col_plot(:)));
+%                 a_col_plot(abs(a_col_plot) > max_val) = max_val * exp(1j * angle(a_col_plot(abs(a_col_plot) > max_val)));
+%                 a_col_plot = abs(a_col_plot) .* cos(angle(a_col_plot));
+%                 plot_results(kgrid, [], a_col_plot, '', [], '..\Scans\dummy_t1w.nii', [97 128 127], [0.1920 0.2560 0.2560], 1, false, []);
+
                 a_coli = reshape(a_coli, [], 1);
                 A(:, i) = a_coli;
 
