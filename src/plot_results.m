@@ -6,7 +6,7 @@ slice_dim_in = 'Y';
 scale_factor = 1e-3;
 plot_colorbar = true;
 cmap = turbo();
-contour_mask = true;
+contour_mask = [];
 fig_pos = {[1025 55 625 300], [800 450 475 525], [755 55 250 300]};
 
 if ~isempty(varargin)
