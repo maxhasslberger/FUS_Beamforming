@@ -475,7 +475,7 @@ classdef simulationApp < matlab.apps.AppBase
                 end
             
                 [karray_t_out, t_mask_ps_out, active_ids_out, num_elements, app.mask2el] = create_transducer(kgrid_in, ...
-                    app.plot_offset, tr_offset_karr_in, t_name, sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
+                    app.plot_offset * dx_factor_in, tr_offset_karr_in, t_name, sparsity_name, t_pos_3D, app.t_rot, active_tr_ids, el_sz * 1e-3);
             
                 el_per_t_out = num_elements * ones(1, length(active_tr_ids));
             end
