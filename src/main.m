@@ -162,12 +162,15 @@ else
     [init_ids, ~, b_mask_plot] = get_init_ids(kgrid, min(medium.sound_speed(:)) / mean(f0), b_mask, force_pressures); % Indices where pressure values given
     
     ip.beta = 0.0;
+    
+    % Define contour mask
+    contour_mask = b_mask_plot == 0.5;
 
     % New preplot with init point arg
     preplot_arg = preplot_arg + b_mask_plot;
     preplot_arg = preplot_arg / max(preplot_arg(:));
     plot_results(kgrid, [], preplot_arg, 'Plot Preview 2', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, false, [], 'slice', point_pos.slice, ...
-        'colorbar', false, 'cmap', hot());
+        'colorbar', false, 'cmap', hot(), 'contour_mask', contour_mask);
 end
 
 % Compute pseudoinverse for each frequency, then stack the resulting
@@ -281,9 +284,9 @@ if do_time_reversal
 end
 
 %% IP Results
-plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice);
+plot_results(kgrid, ip.p, ip.b, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, 'slice', point_pos.slice, 'contour_mask', contour_mask);
 plot_results(kgrid, [], abs(ip.b) > plot_thr, 'Inverse Problem', mask2el, t1w_filename, plot_offset, grid_size, dx_factor1, save_results, current_datetime, ...
-    'slice', point_pos.slice, 'colorbar', true, 'cmap', gray()); % plot mask with pressure above off-target limit
+    'slice', point_pos.slice, 'colorbar', true, 'cmap', gray(), 'contour_mask', contour_mask); % plot mask with pressure above off-target limit
 
 if do_ground_truth % For different resolution: Only supported in 3D at the moment
     plot_results(kgridP, [], ip.b_gt, 'Ground Truth', mask2el, t1w_filename, plot_offsetP, grid_sizeP, dx_factorP, save_results, ...
