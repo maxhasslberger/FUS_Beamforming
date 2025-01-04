@@ -500,6 +500,7 @@ classdef simulationApp < matlab.apps.AppBase
                 het_coord = [app.scanxEditField.Value, app.scanyEditField.Value, app.scanzEditField.Value];
                 dx_t1w = app.ScanSpatialResolutionmmEditField.Value;
                 seg_labels = app.segment_labels;
+                mask2el = app.mask2el;
                 
                 % Transducer param
                 TransducersTabButtonDown(app);
@@ -553,7 +554,7 @@ classdef simulationApp < matlab.apps.AppBase
 
                 save(fullfile("..", "Results", app.current_datetime + "_" + res_filename + ".mat"), "dim_switch", "f0", "slice_direction", "slice_index", "dx", ...
                     "medium_type", "green_function", "hom_coord", "t1w_file", "ct_file", "het_coord", "dx_t1w", "dropdowns", "array", "tr", "matrix_name", ...
-                    "man", "reg", "ineq_flag", "ineq_val", "skull_flag", "skull_val", "opt", "gt_dx_factor", "term", "ip_sol", "seg_labels");
+                    "man", "mask2el", "reg", "ineq_flag", "ineq_val", "skull_flag", "skull_val", "opt", "gt_dx_factor", "term", "ip_sol", "seg_labels");
                 
             end
         end
@@ -1208,13 +1209,13 @@ classdef simulationApp < matlab.apps.AppBase
                 b_gt = acousticFieldPropagator(amp_in, phase_in, kgridP.dx, f0, mediumP.sound_speed);
             else
                 exc = app.ip.p;
-                %if isempty(app.ip.b_gt)
+                if isempty(app.ip.b_gt)
                     b_gt = sim_exe(kgridP, mediumP, sensorP, f0, exc, t_mask_psP, sensor_maskP, true, app.input_args, ...
                         'karray_t', karray_tP);
                     b_gt = reshape(b_gt, size(kgridP.k));
-                %else
-                %    b_gt = app.ip.b_gt;
-                %end
+                else
+                    b_gt = app.ip.b_gt;
+                end
             end
 
             %% Plot
@@ -1250,20 +1251,21 @@ classdef simulationApp < matlab.apps.AppBase
                 xlabel("Pressure Deviation (Pa)")
             end
 
+            % Save results in mat file
+            app.ip.b_gt = b_gt;
+            save_results_mat(app);
+            
             app.sv_obj = plot_results(kgridP, [], b_gt_lim, plot_title, app.mask2el, app.t1w_filename, app.plot_offset, app.grid_size, ...
                 dx_factorP, save_results, app.current_datetime, 'slice', app.SliceIndexEditField.Value, ...
-                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask, 'p_tar', app.b_des(1));
+                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask);
 
             masked_b = abs(b_gt_lim);
             masked_b(masked_b <= plot_thr) = 0.0;
             plot_results(kgridP, [], masked_b, strcat(plot_title, ' Mask'), app.mask2el, app.t1w_filename, ...
                 app.plot_offset, app.grid_size, dx_factorP, save_results, app.current_datetime, 'slice', ...
                 app.SliceIndexEditField.Value, 'fig_pos', {[], [1400 450 475 525], [1660 55 250 300]}, ...
-                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask, 'p_tar', app.b_des(1));
-
-            % Save results in mat file
-            app.ip.b_gt = b_gt;
-            save_results_mat(app);
+                'slice_dim', app.SliceDimDropDown.Value, 'contour_mask', app.contour_mask);
+            
         end
 
         % Button down function: OptimizeTab
