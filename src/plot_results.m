@@ -120,8 +120,8 @@ if ~isempty(t1w_filename)
     end
 
     if ~isempty(contour_mask)
-        t1w_plot(contour_mask) = 0.0;
-        p_data(contour_mask) = 0.0;
+        t1w_plot(contour_mask_2D) = 0.0;
+        p_data(contour_mask_2D) = 0.0;
     end
 
     if ~plot_rel_pressure
