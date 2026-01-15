@@ -1,13 +1,13 @@
 clear;
 
 %% Load desired Results file
-in_filename = "20240327204947_results";
+in_filename = "20241203232003_results";
 load(fullfile("..", "..", "Results", in_filename + ".mat"));
 
 for i = 1:size(mask2el, 2) % for each transducer
 
     %% Compute Delays for Inverse Problem
-    ip_corrected = ip.p(mask2el(:, i));
+    ip_corrected = ip_sol.p(mask2el(:, i));
     ip_angles = angle(ip_corrected') + pi; % between 0 and 2*pi
     ip_delays = ip_angles / (2*pi * f0);
     
