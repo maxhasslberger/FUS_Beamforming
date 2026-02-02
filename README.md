@@ -19,4 +19,4 @@ Please refer to the `README` files in the respective subfolders for details on t
 ## Final Notes
 This codebase is intended for research and prototyping purposes and has not been optimized for production deployment.
 
-Please don't hesitate to [contact me](hasslberger.max@gmail.com) with questions, recommendations, or feedback on this work!
+Please don't hesitate to [contact me](mailto:hasslberger.max@gmail.com) with questions, recommendations, or feedback on this work!
