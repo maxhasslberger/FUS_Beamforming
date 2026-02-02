@@ -1,7 +1,7 @@
 # Fast Optimization for Multi-Target Focused Ultrasound in Linear Regimes
 A fast, constraint-based optimization framework for multi-target focused ultrasound using phased array transducers and k-wave-based acoustic propagation models.
 
-This repository contains the code used to generate the results reported in the associated publication Rapid optimization of focused ultrasound for complex targeting with phased array transducers and precomputed propagation operators (DOI: 10.1088/1361-6560/ae3afe).
+This repository contains the code used to generate the results reported in the associated publication [Rapid optimization of focused ultrasound for complex targeting with phased array transducers and precomputed propagation operators](https://iopscience.iop.org/article/10.1088/1361-6560/ae3afe) (DOI: 10.1088/1361-6560/ae3afe).
 
 ## Dependencies
 - [k-wave](http://www.k-wave.org)
